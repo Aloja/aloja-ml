@@ -358,6 +358,8 @@ testing <- predict(linreg1,newdata=bttaux);
 mean(abs(testing - bttaux[,1]));
 mean(abs((testing - bttaux[,1])/bttaux[,1]));
 
+points(testing[rownames(bttaux) %in% rownames(bttaux[bttaux[,"dfsioe_read"]==1,])],bttaux[rownames(bttaux) %in% rownames(bttaux[bttaux[,"dfsioe_read"]==1,]),1],col="red");
+
 
 ###################################################
 ## Neural Networks
