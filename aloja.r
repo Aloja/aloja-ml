@@ -4,6 +4,8 @@ library(RWeka);
 library(devtools);
 library(scales);
 library(reshape);
+library(nnet);
+set.seed(1234567890);
 
 source("functions.r");
 source("nnet_plot_update.r");
@@ -202,6 +204,7 @@ testing <- predict(result$ml,newdata=ttaux);
 	abline(1,1);
 #dev.off();
 mean(abs(testing - ttaux[,vout]));
+mean(abs((testing - ttaux[,vout])/ttaux[,vout]));
 
 ###################################################
 ## Training M5P with example selection
@@ -242,6 +245,7 @@ testing <- predict(result$ml,newdata=ttaux);
 	abline(1,1);
 #dev.off();
 mean(abs(testing - ttaux[,vout]));
+mean(abs((testing - ttaux[,vout])/ttaux[,vout]));
 
 ###################################################
 ## Training M5P with benchmark separation
@@ -301,7 +305,8 @@ testing <- predict(ibk1,newdata=ttaux);
 	plot(testing,ttaux[,vout],main=paste("Test k-NN K = ",1));
 	abline(1,1);
 #dev.off();
-mean(abs(testing - ttaux[,vout]));	
+mean(abs(testing - ttaux[,vout]));
+mean(abs((testing - ttaux[,vout])/ttaux[,vout]));
 
 ############################################################
 # Others (Regression)
@@ -316,46 +321,52 @@ vbin <- colnames(bntaux[-1]);
 vsplit <- 0.66;
 selected <- sample(1:length(bntaux[,1]),length(bntaux[,1])*vsplit);
 trauxbin <- bntaux[selected,];
-tvauxbin <- bntaux[-selected,];
+tvauxbin <- bntaux[!(rownames(tvauxbin) %in% selected)),];
 
 #trauxbin <- trauxbin[trauxbin[,"dfsioe_read"]==0,];
 #tvauxbin <- tvauxbin[tvauxbin[,"dfsioe_read"]==0,];
 #bttaux <- bttaux[bttaux[,"dfsioe_read"]==0,];
 
-trauxbin <- trauxbin[trauxbin[,vout] <= mean(trauxbin[,vout]) + 3 * sd(trauxbin[,vout]),];
-tvauxbin <- tvauxbin[tvauxbin[,vout] <= mean(tvauxbin[,vout]) + 3 * sd(tvauxbin[,vout]),];
+#trauxbin <- read.table("linreg-polynom3-approach/linreg-trpolynom3.csv",header=T,sep=",")
+#tvauxbin <- read.table("linreg-polynom3-approach/linreg-tvpolynom3.csv",header=T,sep=",")
+#bttaux <- read.table("linreg-polynom3-approach/linreg-ttpolynom3.csv",header=T,sep=",")
 
-#linreg1 <- LinearRegression(formula=trauxbin[,vout] ~ . , data = trauxbin[,vbin], control = Weka_control());
+trauxbin <- trauxbin[trauxbin[,1] <= mean(trauxbin[,1]) + 3 * sd(trauxbin[,1]),];
+tvauxbin <- tvauxbin[tvauxbin[,1] <= mean(tvauxbin[,1]) + 3 * sd(tvauxbin[,1]),];
+
+#linreg1 <- LinearRegression(formula=trauxbin[,vout] ~ . , data = trauxbin[,-1], control = Weka_control());
 #evaluate_Weka_classifier(linreg1, numFolds = 10);
 linreg1 <- lm(formula=trauxbin[,vout] ~ . + (.)^2 + (.)^3, data=trauxbin[,vbin]);
 prediction <- predict(linreg1,newdata=tvauxbin);
 
 #png("linreg-polynom-app.png",width=1000,height=500);
-	plot(prediction,tvauxbin[,vout],main="Polynomial Regression var + var^2 + var^3");
+	plot(prediction,tvauxbin[,1],main="Polynomial Regression var + var^2 + var^3");
 	abline(1,1);
 #dev.off();
-mean(abs(prediction - tvauxbin[,vout]));	
+mean(abs(prediction - tvauxbin[,1]));	
 
 #savemodel (trauxbin, tvauxbin, bttaux, linreg1, "polynom3","linreg");
 
 testing <- predict(linreg1,newdata=bttaux);
 #png("linreg-polynom3-test.png",width=1000,height=500);
 	par(mfrow=c(1,2));
-	plot(prediction,tvauxbin[,vout],main="Polynomial Regression var + var^2 + var^3");
+	plot(prediction,tvauxbin[,1],main="Polynomial Regression var + var^2 + var^3");
 	abline(1,1);
-	plot(testing,bttaux[,vout],main="Test Polynomial Regression var + var^2 + var^3");
+	plot(testing,bttaux[,1],main="Test Polynomial Regression var + var^2 + var^3");
 	abline(1,1);
 #dev.off();
-mean(abs(testing - bttaux[,vout]));	
+mean(abs(testing - bttaux[,1]));
+mean(abs((testing - bttaux[,1])/bttaux[,1]));
 
 
 ###################################################
 ## Neural Networks
 
-#nnet function from nnet package
-library(nnet)
-set.seed(1234567890)
 #mod1<-nnet(rand.vars,resp,data=dat.in,size=10,linout=T)
+
+bttauxbkp <- bttaux;
+bttaux <- bttauxbkp;
+bttaux <- cbind(bttaux[,1:25],rep(0,length(bttaux[,1])),bttaux[,26:33]);
 
 # Normalize values
 trauxnorm <- NULL;
@@ -390,7 +401,8 @@ testing <- predict(nn1,newdata=ttauxnorm[,-c(1,8,26)]);
 	plot(testing,ttauxnorm[,1],main="Test NN 31-5-1, decay 5e-4, maxit 1000");
 	abline(0,1);
 #dev.off();
-mean(abs(testing - ttauxnorm[,vout]));
+mean(abs(testing - ttauxnorm[,1]));
+mean(abs((testing - ttauxnorm[,1])/ttauxnorm[,1]));
 plot.nnet(nn1);
 plot.nnet(nn1$wts,nn1$n);
  
@@ -465,6 +477,7 @@ testing <- predict(linreg2,newdata=data.frame(ttpaux[,2:21]));
 	abline(0,1);
 #dev.off();
 mean(abs(testing[testing<10000 & testing>0]-ttpaux[testing<10000 & testing>0,1]));
+mean(abs((testing[testing<10000 & testing>0]-ttpaux[testing<10000 & testing>0,1])/ttpaux[testing<10000 & testing>0,1]));
 points(testing[rownames(ttpaux) %in% rownames(auxpca[auxpca[,"dfsioe_read"]==1,])],ttpaux[rownames(ttpaux) %in% rownames(auxpca[auxpca[,"dfsioe_read"]==1,]),1],col="red");
 
 ###################################################
@@ -493,6 +506,7 @@ testing <- predict(result$ml,newdata=data.frame(ttpaux[,2:21]));
 	abline(0,1);
 #dev.off();
 mean(abs(testing[testing<10000 & testing>0]-ttpaux[testing<10000 & testing>0,1]));
+mean(abs((testing[testing<10000 & testing>0]-ttpaux[testing<10000 & testing>0,1])/ttpaux[testing<10000 & testing>0,1]));
 points(testing[rownames(ttpaux) %in% rownames(auxpca[auxpca[,"dfsioe_read"]==1,])],ttpaux[rownames(ttpaux) %in% rownames(auxpca[auxpca[,"dfsioe_read"]==1,]),1],col="red");
 
 ############################################################
