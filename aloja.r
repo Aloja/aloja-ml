@@ -393,14 +393,14 @@ prediction <- predict(nn1,newdata=tvauxnorm[,-c(1,8,26)]);
 	abline(0,1);
 #dev.off();
 
-#savemodel (trauxnorm, tvauxnorm, ttauxnorm, NULL, "31-5-1","nnet");
+#savemodel (trauxnorm, tvauxnorm, ttauxnorm, NULL, "32-5-1","nnet");
 
 testing <- predict(nn1,newdata=ttauxnorm[,-c(1,8,26)]);
-#png("nnet-31-5-1-test.png",width=1000,height=500);
+#png("nnet-32-5-1-test.png",width=1000,height=500);
 	par(mfrow=c(1,2));
-	plot(prediction,tvauxnorm[,1],main="NN 31-5-1, decay 5e-4, maxit 1000");
+	plot(prediction,tvauxnorm[,1],main="NN 32-5-1, decay 5e-4, maxit 1000");
 	abline(0,1);
-	plot(testing,ttauxnorm[,1],main="Test NN 31-5-1, decay 5e-4, maxit 1000");
+	plot(testing,ttauxnorm[,1],main="Test NN 32-5-1, decay 5e-4, maxit 1000");
 	abline(0,1);
 #dev.off();
 mean(abs(testing - ttauxnorm[,1]));
