@@ -20,7 +20,7 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 # Relation among output variables                                             #
 ###############################################################################
 
-# TODO FIXME
+# TODO Decide if fix, expand or destroy
 plot(dataset_sub[,1],dataset_sub[,2]);
 aux <- dataset_sub[strptime(dataset_sub[,"End.time"],format="%F")<=strptime("2014-03-11 00:00:00 CET",format="%F"),];
 points(aux[,1],aux[,2],col="red");
@@ -69,112 +69,34 @@ points(aux[,1],aux[,2],col="red");
 	}
 	rm (baux,taux,name);
 
-############################################################
+###############################################################################
 # k-Nearest Neighbor
 
-	#ibk1 <- regnneighbors(dataset,vin,vout);
-	ibk1 <- regnneighbors(dataset,vin,vout,saveall=c("simple","ibk"),pngval="ibk-simple-app",pngtest="ibk-simple-test");
+	#ibk1 <- regnneighbors(dataset,vin,vout,ttaux=m5p1$testset);
+	ibk1 <- regnneighbors(dataset,vin,vout,ttaux=m5p1$testset,saveall=c("simple","ibk"),pngval="ibk-simple-app",pngtest="ibk-simple-test");
 
-############################################################
+###############################################################################
 # Others (Regression)
 
-## Binarization of categorical values
-bntaux <- bindataset(ntaux);
-bttaux <- bindataset(ttaux);
-vbin <- colnames(bntaux[-1]);
+	#######################################################################
+	## LinReg (Binarized & Polynomial)
 
-###################################################
-## LinReg Again (Binarized & Polynomial)
-vsplit <- 0.66;
-selected <- sample(1:length(bntaux[,1]),length(bntaux[,1])*vsplit);
-trauxbin <- bntaux[selected,];
-tvauxbin <- bntaux[!(rownames(bntaux) %in% selected),];
+	#pr3 <- reglinreg(dataset,vin,vout,ppoly=3);
+	pr3 <- reglinreg(dataset,vin,vout,ppoly=3,saveall=c("polynom3","linreg"),pngval="linreg-polynom3-app",pngtest="linreg-polynom3-test");
 
-#trauxbin <- trauxbin[trauxbin[,"dfsioe_read"]==0,];
-#tvauxbin <- tvauxbin[tvauxbin[,"dfsioe_read"]==0,];
-#bttaux <- bttaux[bttaux[,"dfsioe_read"]==0,];
-
-#trauxbin <- read.table("linreg-polynom3-approach/linreg-trpolynom3.csv",header=T,sep=",")
-#tvauxbin <- read.table("linreg-polynom3-approach/linreg-tvpolynom3.csv",header=T,sep=",")
-#bttaux <- read.table("linreg-polynom3-approach/linreg-ttpolynom3.csv",header=T,sep=",")
-
-trauxbin <- trauxbin[trauxbin[,1] <= mean(trauxbin[,1]) + 3 * sd(trauxbin[,1]),];
-tvauxbin <- tvauxbin[tvauxbin[,1] <= mean(tvauxbin[,1]) + 3 * sd(tvauxbin[,1]),];
-
-#linreg1 <- LinearRegression(formula=trauxbin[,vout] ~ . , data = trauxbin[,-1], control = Weka_control());
-#evaluate_Weka_classifier(linreg1, numFolds = 10);
-linreg1 <- lm(formula=trauxbin[,vout] ~ . + (.)^2 + (.)^3, data=trauxbin[,vbin]);
-prediction <- predict(linreg1,newdata=tvauxbin);
-
-#png("linreg-polynom-app.png",width=1000,height=500);
-	plot(prediction,tvauxbin[,1],main="Polynomial Regression var + var^2 + var^3");
-	abline(1,1);
-#dev.off();
-mean(abs(prediction - tvauxbin[,1]));	
-
-#savemodel (trauxbin, tvauxbin, bttaux, linreg1, "polynom3","linreg");
-
-testing <- predict(linreg1,newdata=bttaux);
-#png("linreg-polynom3-test.png",width=1000,height=500);
 	par(mfrow=c(1,2));
-	plot(prediction,tvauxbin[,1],main="Polynomial Regression var + var^2 + var^3");
-	abline(1,1);
-	plot(testing,bttaux[,1],main="Test Polynomial Regression var + var^2 + var^3");
-	abline(1,1);
-#dev.off();
-mean(abs(testing - bttaux[,1]));
-mean(abs((testing - bttaux[,1])/bttaux[,1]));
-
-points(testing[rownames(bttaux) %in% rownames(bttaux[bttaux[,"dfsioe_read"]==1,])],bttaux[rownames(bttaux) %in% rownames(bttaux[bttaux[,"dfsioe_read"]==1,]),1],col="red");
-
-
-###################################################
-## Neural Networks
-
-#mod1<-nnet(rand.vars,resp,data=dat.in,size=10,linout=T)
-
-bttauxbkp <- bttaux;
-bttaux <- bttauxbkp;
-bttaux <- cbind(bttaux[,1:25],rep(0,length(bttaux[,1])),bttaux[,26:33]);
-
-# Normalize values
-trauxnorm <- NULL;
-tvauxnorm <- NULL;
-ttauxnorm <- NULL;
-for (i in 1:length(trauxbin))
-{
-	trauxnorm <- cbind(trauxnorm, (trauxbin[,i]-min(c(trauxbin[,i],tvauxbin[,i])))/max(c(trauxbin[,i],tvauxbin[,i])));
-	tvauxnorm <- cbind(tvauxnorm, (tvauxbin[,i]-min(c(trauxbin[,i],tvauxbin[,i])))/max(c(trauxbin[,i],tvauxbin[,i])));
-	ttauxnorm <- cbind(ttauxnorm, (bttaux[,i]-min(c(trauxbin[,i],tvauxbin[,i])))/max(c(trauxbin[,i],tvauxbin[,i]))); # Same Norm (tr,tv) as not seen before
-}
-
-nn1<-nnet(y=trauxnorm[,1],x=trauxnorm[,-c(1,8,26)],size=5,decay=5e-4,maxit=1000);
-c <- (nn1$fitted.values - min(nn1$fitted.values))
-c <- c / max(c);
-plot(c,trauxnorm[,1]);
-abline(0,1);
-
-prediction <- predict(nn1,newdata=tvauxnorm[,-c(1,8,26)]);
-#png("nnet-31-5-1-app.png",width=1000,height=500);
-	plot(prediction,tvauxnorm[,1],main="NN 31-5-1, decay 5e-4, maxit 1000");
+	plot(pr3$predval,pr3$validset[,vout],main=paste("Polynomial Regression power =",pr3$ppoly));
 	abline(0,1);
-#dev.off();
-
-#savemodel (trauxnorm, tvauxnorm, ttauxnorm, NULL, "32-5-1","nnet");
-
-testing <- predict(nn1,newdata=ttauxnorm[,-c(1,8,26)]);
-#png("nnet-32-5-1-test.png",width=1000,height=500);
-	par(mfrow=c(1,2));
-	plot(prediction,tvauxnorm[,1],main="NN 32-5-1, decay 5e-4, maxit 1000");
+	plot(pr3$predtest,pr3$testset[,vout],main=paste("Test Polynomial Regression power =",pr3$ppoly));
 	abline(0,1);
-	plot(testing,ttauxnorm[,1],main="Test NN 32-5-1, decay 5e-4, maxit 1000");
-	abline(0,1);
-#dev.off();
-mean(abs(testing - ttauxnorm[,1]));
-mean(abs((testing - ttauxnorm[,1])/ttauxnorm[,1]));
-plot.nnet(nn1);
-plot.nnet(nn1$wts,nn1$n);
- 
+	points(pr3$predtest[rownames(pr3$testset) %in% rownames(pr3$testset[pr3$testset[,"dfsioe_read"]==1,])],pr3$testset[rownames(pr3$testset) %in% rownames(pr3$testset[pr3$testset[,"dfsioe_read"]==1,]),1],col="red");
+
+
+	#######################################################################
+	## Neural Networks
+
+	#nn1 <- regnnets(dataset,vin,vout);
+	nn1 <- regnnets(dataset,vin,vout,hlayers=5,saveall=c("32-5-1","nnet"),pngval="nnet-32-5-1-app",pngtest="nnet-32-5-1-test"); 
 
 ###############################################################################
 # Clustering and dimensional techniques                                       #

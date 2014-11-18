@@ -128,14 +128,14 @@ anova_ds <- function (ds)
 }
 
 ###############################################################################
-# Regression Tree Learning                                                    #
+# Data-set splitting functions                                                #
 ###############################################################################
 
 split_ds <- function (ds, vin, vout, tsplit, vsplit)
 {
 	retval <- list();
 
-	aux <- dataset[,c(vout,vin)];
+	aux <- ds[,c(vout,vin)];
 	retval[["dataset"]] <- aux;
 
 	selected <- sample(1:length(aux[,1]),length(aux[,1])*tsplit);
@@ -160,7 +160,7 @@ loadsplit_ds <- function (ds, vin, vout, ttaux, traux, tvaux)
 {
 	retval <- list();
 
-	aux <- dataset[,c(vout,vin)];
+	aux <- ds[,c(vout,vin)];
 	retval[["dataset"]] <- aux;
 
 	retval[["tselected"]] <- rownames(ttaux);
@@ -177,7 +177,7 @@ loadtestsplit_ds <- function (ds, vin, vout, ttaux, vsplit)
 {
 	retval <- list();
 
-	aux <- dataset[,c(vout,vin)];
+	aux <- ds[,c(vout,vin)];
 	retval[["dataset"]] <- aux;
 
 	retval[["tselected"]] <- rownames(ttaux);
@@ -211,6 +211,150 @@ loadfiles_ds <- function (ttfile, trfile, tvfile)
 	retval;
 }
 
+###############################################################################
+# Learning methods                                                            #
+###############################################################################
+
+regnnets <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE, pngval = NULL, pngtest = NULL, saveall = NULL, ttaux = NULL, ntaux = NULL, traux = NULL, tvaux = NULL, sigma = 3, ttfile = NULL, trfile = NULL, tvfile = NULL, decay = 5e-4, hlayers = 3, maxit = 1000)
+{
+	rt <- NULL;
+
+	# Binarization of variables FIXME - Que passa quan entra ttaux directament?
+	dsbaux <- bindataset(ds[,c(vout,vin)]);
+	vin <- colnames(dsbaux[-1]);
+
+	# Load and split datasets
+	if (!is.null(ttfile) & !is.null(trfile) & !is.null(tvfile)) {
+		rt <- loadfiles_ds(dsbaux,vin,vout,tsplit,vsplit);
+	} else if (!is.null(ttaux) & !is.null(traux) & !is.null(tvaux)) {
+		rt <- loadsplit_ds(dsbaux,vin,vout,ttaux,traux,tvaux);
+	} else if (!is.null(ttaux) & is.null(tvaux) & is.null(traux))	{
+		rt <- loadtestsplit_ds(dsbaux,vin,vout,ttaux,vsplit);
+	} else	{
+		rt <- split_ds(dsbaux,vin,vout,tsplit,vsplit);
+	}
+
+	# Remove outliers (leap of faith, as vout may not be normal
+	if (rmols)
+	{
+		rt[["olstrain"]] <- rt$trainset[rt$trainset[,vout] > mean(rt$trainset[,vout]) + sigma * sd(rt$trainset[,vout]),];
+		rt[["olsvalid"]] <- rt$validset[rt$validset[,vout] > mean(rt$validset[,vout]) + sigma * sd(rt$validset[,vout]),];
+		
+		rt$trainset <- rt$trainset[rt$trainset[,vout] <= mean(rt$trainset[,vout]) + sigma * sd(rt$trainset[,vout]),];
+		rt$validset <- rt$validset[rt$validset[,vout] <= mean(rt$validset[,vout]) + sigma * sd(rt$validset[,vout]),];
+	}
+
+	# Normalize values
+	trauxnorm <- NULL;
+	tvauxnorm <- NULL;
+	ttauxnorm <- NULL;
+	for (i in 1:length(rt$trainset))
+	{
+		trauxnorm <- cbind(trauxnorm, (rt$trainset[,i]-min(c(rt$trainset[,i],rt$validset[,i])))/max(c(rt$trainset[,i],rt$validset[,i])));
+		tvauxnorm <- cbind(tvauxnorm, (rt$validset[,i]-min(c(rt$trainset[,i],rt$validset[,i])))/max(c(rt$trainset[,i],rt$validset[,i])));
+		ttauxnorm <- cbind(ttauxnorm, (rt$testset[,i]-min(c(rt$trainset[,i],rt$validset[,i])))/max(c(rt$trainset[,i],rt$validset[,i]))); # Same Norm (tr,tv) as not seen before
+	}
+	rt[["normtrainset"]] <- trauxnorm;
+	rt[["normvalidset"]] <- tvauxnorm;
+	rt[["normtestset"]] <- ttauxnorm;
+	rt[["maxout"]] <- max(c(rt$trainset[,vout],rt$validset[,vout]));
+	rt[["minout"]] <- min(c(rt$trainset[,vout],rt$validset[,vout]));
+
+	vout <- 1;
+	
+	# Training and Validation
+	rt[["model"]] <- nnet(y=rt$normtrainset[,vout],x=rt$normtrainset[,-c(vout,8,26)],size=hlayers,decay=decay,maxit=maxit);
+	rt[["predval"]] <- predict(rt$model,newdata=rt$normvalidset[,-c(vout,8,26)]);
+	rt[["maeval"]] <- mean(abs(rt$predval - rt$validset[,vout]));
+	rt[["raeval"]] <- mean(abs((rt$predval - rt$validset[,vout])/rt$validset[,vout]));
+
+	if (!is.null(pngval)) png(paste(pngval,".png",sep=""),width=500,height=500);
+		plot(rt$predval,rt$normvalidset[,vout],main=paste("NN 32-5-1, decay",decay,"maxit",maxit));
+		abline(0,1);
+	if (!is.null(pngval)) dev.off();
+
+	if (!is.null(saveall)) savemodel (rt$trainset, rt$validset, rt$testset, NULL, saveall[1], saveall[2]);
+
+	# Testing and evaluation
+	rt[["predtest"]] <- predict(rt$model,newdata=rt$normtestset[,-c(vout,8,26)]);
+	rt[["maetest"]] <- mean(abs(rt$predtest - rt$testset[,vout]));
+	rt[["raetest"]] <- mean(abs((rt$predtest - rt$testset[,vout])/rt$testset[,vout]));
+
+	if (!is.null(pngtest)) png(paste(pngtest,".png",sep=""),width=1000,height=500);
+		par(mfrow=c(1,2));
+		plot(rt$predval,rt$normvalidset[,vout],main=paste("NN 32-5-1, decay",decay,"maxit",maxit));
+		abline(0,1);
+		plot(rt$predtest,rt$normtestset[,vout],main=paste("NN 32-5-1, decay",decay,"maxit",maxit));
+		abline(0,1);
+	if (!is.null(pngtest)) dev.off();
+	#plot.nnet(rt$model);
+	#plot.nnet(rt$model$wts,rt$model$n);
+
+	rt;
+}
+
+reglinreg <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE, pngval = NULL, pngtest = NULL, saveall = NULL, ttaux = NULL, ntaux = NULL, traux = NULL, tvaux = NULL, sigma = 3, ttfile = NULL, trfile = NULL, tvfile = NULL, ppoly = 1)
+{
+	rt <- NULL;
+
+	# Binarization of variables FIXME - Que passa quan entra ttaux directament?
+	dsbaux <- bindataset(ds[,c(vout,vin)]);
+	vin <- colnames(dsbaux[-1]);
+
+	# Load and split datasets
+	if (!is.null(ttfile) & !is.null(trfile) & !is.null(tvfile)) {
+		rt <- loadfiles_ds(dsbaux,vin,vout,tsplit,vsplit);
+	} else if (!is.null(ttaux) & !is.null(traux) & !is.null(tvaux)) {
+		rt <- loadsplit_ds(dsbaux,vin,vout,ttaux,traux,tvaux);
+	} else if (!is.null(ttaux) & is.null(tvaux) & is.null(traux))	{
+		rt <- loadtestsplit_ds(dsbaux,vin,vout,ttaux,vsplit);
+	} else	{
+		rt <- split_ds(dsbaux,vin,vout,tsplit,vsplit);
+	}
+
+	# Remove outliers (leap of faith, as vout may not be normal
+	if (rmols)
+	{
+		rt[["olstrain"]] <- rt$trainset[rt$trainset[,vout] > mean(rt$trainset[,vout]) + sigma * sd(rt$trainset[,vout]),];
+		rt[["olsvalid"]] <- rt$validset[rt$validset[,vout] > mean(rt$validset[,vout]) + sigma * sd(rt$validset[,vout]),];
+		
+		rt$trainset <- rt$trainset[rt$trainset[,vout] <= mean(rt$trainset[,vout]) + sigma * sd(rt$trainset[,vout]),];
+		rt$validset <- rt$validset[rt$validset[,vout] <= mean(rt$validset[,vout]) + sigma * sd(rt$validset[,vout]),];
+	}
+
+	rt[["ppoly"]] <- ppoly;
+
+	# Training and Validation
+	if (ppoly == 1) rt[["model"]] <- lm(formula=rt$trainset[,vout] ~ ., data=rt$trainset[,vin]);
+	if (ppoly == 2) rt[["model"]] <- lm(formula=rt$trainset[,vout] ~ . + (.)^2, data=rt$trainset[,vin]);
+	if (ppoly == 3) rt[["model"]] <- lm(formula=rt$trainset[,vout] ~ . + (.)^2 + (.)^3, data=rt$trainset[,vin]);
+	rt[["predval"]] <- predict(rt$model,newdata=rt$validset);
+	rt[["maeval"]] <- mean(abs(rt$predval - rt$validset[,vout]));
+	rt[["raeval"]] <- mean(abs((rt$predval - rt$validset[,vout])/rt$validset[,vout]));
+
+	if (!is.null(pngval)) png(paste(pngval,".png",sep=""),width=500,height=500);
+		plot(rt$predval,rt$validset[,vout],main=paste("Polynomial Regression power =",ppoly));
+		abline(0,1);
+	if (!is.null(pngval)) dev.off();
+
+	if (!is.null(saveall)) savemodel (rt$trainset, rt$validset, rt$testset, NULL, saveall[1], saveall[2]);
+
+	# Testing and evaluation
+	rt[["predtest"]] <- predict(rt$model,newdata=rt$testset);
+	rt[["maetest"]] <- mean(abs(rt$predtest - rt$testset[,vout]));
+	rt[["raetest"]] <- mean(abs((rt$predtest - rt$testset[,vout])/rt$testset[,vout]));
+
+	if (!is.null(pngtest)) png(paste(pngtest,".png",sep=""),width=1000,height=500);
+		par(mfrow=c(1,2));
+		plot(rt$predval,rt$validset[,vout],main=paste("Polynomial Regression power =",ppoly));
+		abline(0,1);
+		plot(rt$predtest,rt$testset[,vout],main=paste("Test Polynomial Regression power =",ppoly));
+		abline(0,1);
+	if (!is.null(pngtest)) dev.off();
+
+	rt;
+}
+
 regnneighbors <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE, pngval = NULL, pngtest = NULL, saveall = NULL, ttaux = NULL, ntaux = NULL, traux = NULL, tvaux = NULL, sigma = 3, ttfile = NULL, trfile = NULL, tvfile = NULL, kparam = 1, iparam = TRUE)
 {
 	rt <- NULL;
@@ -236,9 +380,12 @@ regnneighbors <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = 
 		rt$validset <- rt$validset[rt$validset[,vout] <= mean(rt$validset[,vout]) + sigma * sd(rt$validset[,vout]),];
 	}
 
+	rt[["kparam"]] <- kparam;
+	rt[["iparam"]] <- iparam;
+
 	# Training and Validation TODO - Parameter automatic choice
 	rt[["model"]] <- IBk(formula=rt$trainset[,vout] ~ . , data = rt$trainset[,vin], control = Weka_control(K = kparam, I = iparam));
-	##evaluate_Weka_classifier(rt[["model"]], numFolds = 10);
+	evaluate_Weka_classifier(rt[["model"]], numFolds = 10);
 	rt[["predval"]] <- predict(rt$model,newdata=rt$validset);
 	rt[["maeval"]] <- mean(abs(rt$predval - rt$validset[,vout]));
 	rt[["raeval"]] <- mean(abs((rt$predval - rt$validset[,vout])/rt$validset[,vout]));
@@ -340,7 +487,7 @@ regtrees <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE,
 }
 
 ###############################################################################
-# Find best M for M5P according to minimal validation MAE                     #
+# Fine-tunning parameters for Learning Algorithms                             #
 ###############################################################################
 
 bestm5p <- function (vout_1, vin_1, traux_1, tvaux_1, mintervals_1)
@@ -364,10 +511,10 @@ bestm5p <- function (vout_1, vin_1, traux_1, tvaux_1, mintervals_1)
 	print (mean(abs(ml_1$predictions - traux_1[,vout_1])));
 
 	retval <- list();
-	retval$ml <- ml_1;
-	retval$trmae <- trmae_1;
-	retval$tvmae <- tvmae_1;
-	retval$mmin <- mmin_1;
+	retval[["ml"]] <- ml_1;
+	retval[["trmae"]] <- trmae_1;
+	retval[["tvmae"]] <- tvmae_1;
+	retval[["mmin"]] <- mmin_1;
 	
 	retval;
 }
@@ -388,8 +535,11 @@ savemodel <- function (traux_2, tvaux_2, ttaux_2, model_2, name_2, algor_2)
 {
 	saveloads(traux_2, tvaux_2, ttaux_2, name_2, algor_2);
 
-	rJava::.jcache(model_2$classifier);
-	save(model_2,file=paste(algor_2,"-",name_2,"-model.dat",sep=""));
+	if (!is.null(model_2))
+	{
+		rJava::.jcache(model_2$classifier);
+		save(model_2,file=paste(algor_2,"-",name_2,"-model.dat",sep=""));
+	}
 }
 
 loadmodel <- function (name,algor_0)

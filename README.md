@@ -5,8 +5,8 @@ This repo contains the scripts and tests done for the Machine Learning part of A
 
 #### Files:
 
-* **aloja.r** Contains the main snippets for R to process data, run experiments also plot stuff
-* **functions.r** Library with common functions used by aloja.r
+* **aloja.r** Contains the main scripting for R to process data, run experiments also plot stuff
+* **functions.r** Library with all the ALOJA functions, like learning methods and data-set treatments, used by aloja.r
 * **nnet_plot_update.r** Library obtained from https://gist.githubusercontent.com/fawda123 for nnet plots
 * **aloja-dataset.csv** Contains the dataset
 * **aloja-process.csv** Contains the dataset, without redundance
