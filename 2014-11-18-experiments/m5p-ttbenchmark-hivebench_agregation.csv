@@ -1,0 +1,6 @@
+"Exe.Time","Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster"
+"4361",759,"hivebench_agregation","IB","SSD",12,10,1,4096,"None",0,"Local 1"
+"4110",1471,"hivebench_agregation","IB","SSD",12,10,1,65536,"None",32,"Local 1"
+"4092",2478,"hivebench_agregation","IB","HDD",12,10,1,65536,"None",32,"Local 1"
+"4218",1296,"hivebench_agregation","IB","SSD",12,10,1,65536,"None",256,"Local 1"
+"4264",744,"hivebench_agregation","IB","HDD",12,10,1,65536,"ZLIB",0,"Local 1"

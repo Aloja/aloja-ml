@@ -1,312 +1,79 @@
 
-library(stringr);
-library(RWeka);
-library(devtools);
-library(scales);
-library(reshape);
-library(nnet);
-set.seed(1234567890);
-
 source("functions.r");
 source("nnet_plot_update.r");
 #source_url('https://gist.githubusercontent.com/fawda123/7471137/raw/466c1474d0a505ff044412703516c34f1a4684a5/nnet_plot_update.r')
 
 options(width=as.integer(Sys.getenv("COLUMNS")));
 
-fileread <- "aloja-dataset.csv";
-fileproc <- "aloja-process.csv";
-fileout <- "output.txt";
-histdataset <- FALSE;
-confdataset <- TRUE;
-
 ###############################################################################
 # Read datasets and prepare them for usage                                    #
 ###############################################################################
 
-dataset <- read.table(fileread,header=T,sep=",");
+	aux <- obtain_data (fread = "aloja-dataset.csv", cds = FALSE, hds = FALSE, fproc = "aloja-process");
 
-aux <- strptime(dataset[,"End.time"],format="%Y%m%d%H%M%S");
-dataset[,"End.time"] <- NULL;
-names <- colnames(dataset);
-dataset <- cbind(dataset,aux);
-colnames(dataset) <- c(names,"End.time");
-rm(aux,names);
+	dataset <- aux$ds;
+	dataset_sub <- aux$ds_sub;
 
-if (confdataset)
-{
-	split <- str_split_fixed(dataset[,"Exec.Conf"], "/", 2);
-	exec_conf <- str_split_fixed(split[,1], "_", 13);
-	aux <- strptime(paste(exec_conf[,1],exec_conf[,2],sep=""),format="%Y%m%d%H%M%S");
-	exec_conf <- exec_conf[,-c(1,2)];
-	exec_conf <- cbind(matrix(as.character(aux)),exec_conf);
-	colnames(exec_conf) <- paste("Conf.",c("Time","Conf","Net","Disk","B","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster"),sep="")
-	bench_conf <- str_split_fixed(split[,2], "_", 2);
-	colnames(bench_conf) <- c("Conf.Benchmark","Conf.Options");
-	dataset <- cbind(dataset,exec_conf,bench_conf);
-	rm(exec_conf,bench_conf,split);
-	"Deglosed Exec.Conf";
-}
-rm(confdataset);
-
-if (histdataset)
-{
-	split <- str_split_fixed(dataset[,"Histogram"], "/", 2);
-	histogram <- str_split_fixed(split[,1], "_", 13);
-	colnames(histogram) <- paste("Hist.",c("Date","Time","Conf","Net","Disk","B","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster"),sep="")
-	bench_hist <- str_split_fixed(split[,2], "_", 2);
-	colnames(bench_conf) <- c("Hist.Benchmark","Hist.Options");
-	dataset <- cbind(dataset,histogram,bench_hist);
-	rm(histogram,bench_hist,split);
-	"Deglosed Histogram";
-}
-rm(histdataset);
-
-dataset <- subset(dataset,select=-c(X,Exec.Conf,Histogram,PARAVER));
-dataset_sub <- subset(dataset,select=c(Exe.Time,Running.Cost..,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Cluster,End.time));
-
-write.table(dataset,file=fileproc,sep=",",row.names=F);
-
-###############################################################################
-# Print summaries for each benchmark                                          #
-###############################################################################
-
-sink(file=fileout,append=FALSE);
-options(width=1000);
-
-############################################################
-# Summary for General
-cat("Summary for General Data","\n");
-summary(subset(dataset,select=-c(ID)),maxsum=10);
-
-############################################################
-# Summary per Benchmark
-for (name in levels(dataset[,"Benchmark"]))
-{
-	cat("\n","Summary per Benchmark",name,"\n");
-	print(summary(dataset_sub[dataset[,"Benchmark"]==name,],maxsum=10));
-}
-rm(name);
-
-sink(NULL);
-options(width=as.integer(Sys.getenv("COLUMNS")));
+	print_summaries (fprint="output.txt", ds=dataset, ds_sub=dataset_sub, fwidth = 1000, ms = 10);
 
 ###############################################################################
 # Relation among output variables                                             #
 ###############################################################################
 
+# TODO FIXME
 plot(dataset_sub[,1],dataset_sub[,2]);
 aux <- dataset_sub[strptime(dataset_sub[,"End.time"],format="%F")<=strptime("2014-03-11 00:00:00 CET",format="%F"),];
 points(aux[,1],aux[,2],col="red");
 #points(aux[,1]*0.6,aux[,2],col="green");
 
-
 ###############################################################################
 # ANOVA of current variables                                                  #
 ###############################################################################
 
-anova_1 <- list();
-anova_1$alpha <- 0.05;
-anova_1$N <- NULL;
-anova_1$K <- NULL;
-anova_1$gmean <- NULL;
-anova_1$ssb <- 0;
-anova_1$ssw <- 0;
-anova_1$mse <- NULL;
-anova_1$f <- NULL;
-
-bmks <- list();
-anova_1$means <- list();
-anova_1$stdevs <- list();
-
-for (i in levels(dataset[,"Benchmark"]))
-{
-	bmks[[i]] <- dataset[dataset[,"Benchmark"]==i,c("Exe.Time","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster")];
-	anova_1$means[[i]] <- mean(bmks[[i]][,"Exe.Time"]);
-	anova_1$stdevs[[i]] <- sd(bmks[[i]][,"Exe.Time"]);
-}
-anova_1$gmean <- mean(rapply(anova_1$means,function(x) x));
-
-for (i in levels(dataset[,"Benchmark"]))
-{
-	anova_1$ssb <- anova_1$ssb + (length(bmks[[i]][,"Exe.Time"]) * (anova_1$means[[i]] - anova_1$gmean)^2);
-}
-
-anova_1$N <- length(dataset[,1]);
-anova_1$K <- length(levels(dataset[,"Benchmark"]));
-for (i in 1:anova_1$N)
-{
-	anova_1$ssw <- anova_1$ssw + (dataset[i,"Exe.Time"] - anova_1$means[[dataset[i,"Benchmark"]]])^2;
-}
-anova_1$mse <- anova_1$ssw / (anova_1$N - anova_1$K);
-anova_1$f <- (anova_1$ssb / (anova_1$K - 1)) / anova_1$mse;
-anova_1$critical <- qf(1-anova_1$alpha, anova_1$K-1, anova_1$N-1);
-
-print (c("Means are equal: ",anova_1$f < anova_1$critical));
-rm(i,bmks);
+	anova_1 <- anova_ds (dataset);
+	print (c("Means are equal: ",anova_1$f < anova_1$critical));
 
 ###############################################################################
 # Learning from the variables                                                 #
 ###############################################################################
 
-vout <- "Exe.Time";
-vin <- c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster");
+	vout <- "Exe.Time";
+	vin <- c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster");
 
-############################################################
-# LinReg (just to discard)
-aux <- dataset[,c(vout,vin)];
-aux <- aux[,sapply(aux,is.numeric)];
-ml0 <- lm(formula=aux[,vout] ~ ., data=aux[,names(aux)!=vout]);
-mean(abs(ml0$fitted.values - dataset[,vout]));
-plot(ml0$fitted.values,dataset[,vout])
-abline(1,1)
-rm(aux);
-
-############################################################
+###############################################################################
 # Decision/Regression Tree
-aux <- dataset[,c(vout,vin)];
 
-tsplit <- 0.25;
-selected <- sample(1:length(aux[,1]),length(aux[,1])*tsplit);
-ttaux <- aux[selected,];
-ntaux <- aux[-selected,];
+	#######################################################################
+	## Training M5P without example selection
 
-###################################################
-## Training M5P without example selection
-vsplit <- 0.66;
-selected <- sample(1:length(ntaux[,1]),length(ntaux[,1])*vsplit);
-traux <- ntaux[selected,];
-tvaux <- ntaux[-selected,];
+	#m5p1 <- regtrees(dataset,vin,vout);
+	m5p1 <- regtrees(dataset,vin,vout,saveall=c("simple","m5p"),pngval="m5p-simple-app",pngtest="m5p-simple-test");
 
-traux <- traux[traux[,vout] <= mean(traux[,vout]) + 3 * sd(traux[,vout]),];
-tvaux <- tvaux[tvaux[,vout] <= mean(tvaux[,vout]) + 3 * sd(tvaux[,vout]),];
+	#######################################################################
+	## Training M5P with example selection
 
-result <- bestm5p(vout, vin, traux, tvaux, c("1","2","5","10","25","50","75","100","150","200"));
-prediction <- predict(result$ml,newdata=tvaux);
-#png("m5p-simple-app.png",width=1000,height=500);
-	par(mfrow=c(1,2));
-	plot(prediction,tvaux[,vout],main=paste("Best Validation M5P M = ",result$mmin));
-	abline(1,1);
-	plot(result$trmae,ylim=c(min(c(result$trmae,result$tvmae)),max(result$trmae,result$tvmae)),main="Error vs M");
-	points(result$tvmae,col="red");
-	legend("topleft",pch=1,c("trmae","tvmae"),col=c("black","red"));
-#dev.off();
+	#m5p2 <- regtrees(dataset,vin,vout,ttaux=m5p1$testset,exsel=8000);
+	m5p2 <- regtrees(dataset,vin,vout,ttaux=m5p1$testset,exsel=8000,saveall=c("exselect","m5p"),pngval="m5p-exsel-app",pngtest="m5p-exsel-test");
 
-#savemodel (traux, tvaux, ttaux, result$ml, "simple","m5p");
-#loadmodel("simple","m5p");
-#rm(prediction,selected,aux,tsplit,vsplit);
+	#######################################################################
+	## Training M5P with benchmark separation
 
-testing <- predict(result$ml,newdata=ttaux);
-#png("m5p-simple-test.png",width=1000,height=500);
-	par(mfrow=c(1,2));
-	plot(prediction,tvaux[,vout],main=paste("Best Validation M5P M = ",result$mmin));
-	abline(1,1);
-	plot(testing,ttaux[,vout],main=paste("Test M5P M = ",result$mmin));
-	abline(1,1);
-#dev.off();
-mean(abs(testing - ttaux[,vout]));
-mean(abs((testing - ttaux[,vout])/ttaux[,vout]));
+	m5px <- list();
+	for (name in levels(dataset[,"Benchmark"]))
+	{
+		baux <- dataset[dataset[,"Benchmark"]==name,];
+		taux <- m5p1$testset[m5p1$testset[,"Benchmark"]==name,];
 
-###################################################
-## Training M5P with example selection
-vsplit <- 0.66;
-aux5000 <- ntaux[ntaux[,vout]>8000,];
-aux0000 <- ntaux[ntaux[,vout]<=8000,];
-
-selected5000 <- sample(1:length(aux5000[,1]),length(aux5000[,1])*vsplit);
-selected0000 <- sample(1:length(aux0000[,1]),length(aux0000[,1])*vsplit);
-
-trauxes <- rbind(aux5000[selected5000,],aux0000[selected0000,]);
-tvauxes <- rbind(aux5000[-selected5000,],aux0000[-selected0000,]);
-
-trauxes <- trauxes[trauxes[,vout] <= mean(trauxes[,vout]) + 3 * sd(trauxes[,vout]),];
-tvauxes <- tvauxes[tvauxes[,vout] <= mean(tvauxes[,vout]) + 3 * sd(tvauxes[,vout]),];
-
-result <- bestm5p(vout, vin, trauxes, tvauxes, c("1","2","5","10","25","50","75","100","150","200"));
-prediction <- predict(result$ml,newdata=tvauxes);
-#png("m5p-exselect-app.png",width=1000,height=500);
-	par(mfrow=c(1,2));
-	plot(prediction,tvauxes[,vout],main=paste("Best Validation M5P M = ",result$mmin));
-	abline(1,1);
-	plot(result$trmae,ylim=c(min(c(result$trmae,result$tvmae)),max(result$trmae,result$tvmae)),main="Error vs M");
-	points(result$tvmae,col="red");
-	legend("topleft",pch=1,c("trmae","tvmae"),col=c("black","red"));
-#dev.off();
-
-#savemodel (trauxes, tvauxes, ttaux, result$ml, "exselect","m5p");
-#loadmodel ("exselect","m5p");
-#rm(prediction,selected0000,selected5000,aux5000,aux0000,vsplit);
-
-testing <- predict(result$ml,newdata=ttaux);
-#png("m5p-exselect-test.png",width=1000,height=500);
-	par(mfrow=c(1,2));
-	plot(prediction,tvauxes[,vout],main=paste("Best Validation M5P M = ",result$mmin));
-	abline(1,1);
-	plot(testing,ttaux[,vout],main=paste("Test M5P M = ",result$mmin));
-	abline(1,1);
-#dev.off();
-mean(abs(testing - ttaux[,vout]));
-mean(abs((testing - ttaux[,vout])/ttaux[,vout]));
-
-###################################################
-## Training M5P with benchmark separation
-
-for (name in levels(dataset[,"Benchmark"]))
-{
-	bmkaux <- ntaux[ntaux[,"Benchmark"]==name,];
-	bmkaux <- bmkaux[bmkaux[,vout] <= mean(bmkaux[,vout]) + 3 * sd(bmkaux[,vout]),];
-
-	vsplit <- 0.66;
-	selected <- sample(1:length(bmkaux[,1]),length(bmkaux[,1])*vsplit);
-	trauxbmk <- bmkaux[selected,];
-	tvauxbmk <- bmkaux[-selected,];
-
-	result <- bestm5p(vout, vin, trauxbmk, tvauxbmk, c("1","2","5","10","25","50","75","100","150","200"));
-	prediction <- predict(result$ml,newdata=tvauxbmk);
-	#png(paste("m5p-benchmark-",name,".png",sep=""),width=1000,height=500);
-		par(mfrow=c(1,2));
-		plot(prediction,tvauxbmk[,vout],main=paste("Best M5P M = ",result$mmin," MAE = ", min(result$tvmae), " ", name, sep=""));
-		abline(1,1);
-		plot(result$trmae,ylim=c(min(c(result$trmae,result$tvmae)),max(result$trmae,result$tvmae)),main="Error vs M");
-		points(result$tvmae,col="red");
-		legend("topleft",pch=1,c("trmae","tvmae"),col=c("black","red"));
-	#dev.off();
-
-	#savemodel (trauxes, tvauxes, ttaux, result$ml, paste("benchmark",name,sep=""),"m5p");
-}
-#rm(bmkaux,vsplit,selected,prediction);
+		#m5px[[name]] <- regtrees(ds=baux,vin=vin,vout=vout,ttaux=taux);
+		m5px[[name]] <- regtrees(ds=baux,vin=vin,vout=vout,ttaux=taux,saveall=c(paste("benchmark",name,sep="-"),"m5p"),pngval=paste("m5p-benchmark",name,"val",sep="-"),pngtest=paste("m5p-benchmark",name,"test",sep="-"));
+	}
+	rm (baux,taux,name);
 
 ############################################################
 # k-Nearest Neighbor
 
-vsplit <- 0.66;
-selected <- sample(1:length(ntaux[,1]),length(ntaux[,1])*vsplit);
-trauxibk <- ntaux[selected,];
-tvauxibk <- ntaux[-selected,];
-
-trauxibk <- trauxibk[trauxibk[,vout] <= mean(trauxibk[,vout]) + 3 * sd(trauxibk[,vout]),];
-tvauxibk <- tvauxibk[tvauxibk[,vout] <= mean(tvauxibk[,vout]) + 3 * sd(tvauxibk[,vout]),];
-
-ibk1 <- IBk(formula=trauxibk[,vout] ~ . , data = trauxibk[,vin], control = Weka_control(K = 3, I = TRUE));
-evaluate_Weka_classifier(ibk1, numFolds = 10);
-
-prediction <- predict(ibk1,newdata=tvauxibk);
-#png(paste("ibk-simple-",3,"-","I",".png",sep=""),width=1000,height=500);
-	plot(prediction,tvauxibk[,vout],main="K-NN K = 1 Weight = Inv.Dist.");
-	abline(1,1);
-#dev.off();
-
-#savemodel (trauxibk, tvauxibk, ttaux, ibk1, "simple","ibk");
-
-testing <- predict(ibk1,newdata=ttaux);
-#png("ibk-simple-test.png",width=1000,height=500);
-	par(mfrow=c(1,2));
-	plot(prediction,tvauxibk[,vout],main=paste("Best Validation k-NN K = ",1));
-	abline(1,1);
-	plot(testing,ttaux[,vout],main=paste("Test k-NN K = ",1));
-	abline(1,1);
-#dev.off();
-mean(abs(testing - ttaux[,vout]));
-mean(abs((testing - ttaux[,vout])/ttaux[,vout]));
+	#ibk1 <- regnneighbors(dataset,vin,vout);
+	ibk1 <- regnneighbors(dataset,vin,vout,saveall=c("simple","ibk"),pngval="ibk-simple-app",pngtest="ibk-simple-test");
 
 ############################################################
 # Others (Regression)
@@ -321,7 +88,7 @@ vbin <- colnames(bntaux[-1]);
 vsplit <- 0.66;
 selected <- sample(1:length(bntaux[,1]),length(bntaux[,1])*vsplit);
 trauxbin <- bntaux[selected,];
-tvauxbin <- bntaux[!(rownames(tvauxbin) %in% selected)),];
+tvauxbin <- bntaux[!(rownames(bntaux) %in% selected),];
 
 #trauxbin <- trauxbin[trauxbin[,"dfsioe_read"]==0,];
 #tvauxbin <- tvauxbin[tvauxbin[,"dfsioe_read"]==0,];
