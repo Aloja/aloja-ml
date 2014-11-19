@@ -81,6 +81,43 @@ aloja_print_summaries <- function (fprint, ds, ds_sub, fwidth = 1000, ms = 10)
 	options(width=aux_tmp);
 }
 
+aloja_crossvariables <- function (ds, pnglabel = "cross", jfactor = 0)
+{
+	numaux <- sapply(data.frame(ds), is.numeric);
+
+	system("mkdir -p temp");
+	for (var1 in 1:(length(ds[1,])-1))
+	{
+		if (numaux[var1])
+		{
+			auxdata1 <- ds[,var1];
+		} else {
+			auxdata1 <- match(as.factor(ds[,var1]),levels(as.factor(ds[,var1])));
+		}
+		auxlabel1 <- colnames(ds)[var1];
+
+		for (var2 in (var1 + 1):length(ds[1,]))
+		{
+			if (numaux[var2])
+			{
+				auxdata2 <- ds[,var2];
+			} else {
+				auxdata2 <- match(as.factor(ds[,var2]),levels(as.factor(ds[,var2])));
+			}
+			auxlabel2 <- colnames(ds)[var2];
+
+			auxframe <- na.omit(data.frame(auxdata1, auxdata2));
+			png(paste("temp/",pnglabel,"-",var1,"-",var2,".png",sep=""),width=1000,height=500);
+				if (!numaux[var2]) par(oma=c(0,0,0,2));
+				plot(jitter(auxframe[,1],factor=jfactor),jitter(auxframe[,2],factor=jfactor),xlim=c(min(auxframe[,1]),max(auxframe[,1])),ylim=c(min(auxframe[,2]),max(auxframe[,2])), xlab=auxlabel1, ylab=auxlabel2);
+				if (!numaux[var1]) axis(3, at=seq(1,length(levels(as.factor(ds[,var1])))), labels=levels(as.factor(ds[,var1])), las=2);
+				if (!numaux[var2]) axis(4, at=seq(1,length(levels(as.factor(ds[,var2])))), labels=levels(as.factor(ds[,var2])), las=2);
+			dev.off();
+		}		
+	}
+}
+
+
 ###############################################################################
 # ANOVA of current variables                                                  #
 ###############################################################################
@@ -555,9 +592,10 @@ aloja_m5p_select <- function (vout_1, vin_1, traux_1, tvaux_1, mintervals_1)
 # Principal Component Analysis methods                                        #
 ###############################################################################
 
-aloja_pca <- function (dsbin, pngpca = NULL)
+aloja_pca <- function (dsbin, vin, vout, pngpca = NULL)
 {
-	pc <- princomp(dsbin);
+	pc <- princomp(dsbin[,vin]);
+	pc[["dataset"]] <- dsbin;
 
 	if (!is.null(pngpca))
 	{
@@ -568,19 +606,14 @@ aloja_pca <- function (dsbin, pngpca = NULL)
 			{
 				png(paste("temp/",pngpca,"-",var1,"-",var2,".png",sep=""),width=1000,height=500);
 					plot(1, type="n", xlim=c(min(pc$scores[,var1]),max(pc$scores[,var1])),ylim=c(min(pc$scores[,var2]),max(pc$scores[,var2])), xlab="", ylab="");
-					points(jitter(pc$scores[dsbin[,1]>3000,var1],factor=0.6),jitter(pc$scores[dsbin[,1]>3000,var2],factor=0.6),col="red");
-					points(jitter(pc$scores[dsbin[,1]>2000 & dsbin[,1]<3000,var1],factor=0.6),jitter(pc$scores[dsbin[,1]>2000 & dsbin[,1]<3000,var2],factor=0.6),col="blue");
-					points(jitter(pc$scores[dsbin[,1]>1000 & dsbin[,1]<2000,var1],factor=0.6),jitter(pc$scores[dsbin[,1]>1000 & dsbin[,1]<2000,var2],factor=0.6),col="green");
-					points(jitter(pc$scores[dsbin[,1]<1000,var1],factor=0.6),jitter(pc$scores[dsbin[,1]<1000,var2],factor=0.6),col="black");
+					points(jitter(pc$scores[dsbin[,vout]>3000,var1],factor=0.6),jitter(pc$scores[dsbin[,vout]>3000,var2],factor=0.6),col="red");
+					points(jitter(pc$scores[dsbin[,vout]>2000 & dsbin[,vout]<3000,var1],factor=0.6),jitter(pc$scores[dsbin[,vout]>2000 & dsbin[,vout]<3000,var2],factor=0.6),col="blue");
+					points(jitter(pc$scores[dsbin[,vout]>1000 & dsbin[,vout]<2000,var1],factor=0.6),jitter(pc$scores[dsbin[,vout]>1000 & dsbin[,vout]<2000,var2],factor=0.6),col="green");
+					points(jitter(pc$scores[dsbin[,vout]<1000,var1],factor=0.6),jitter(pc$scores[dsbin[,vout]<1000,var2],factor=0.6),col="black");
 				dev.off();
 			}
 		}
 	}
-
-	auxds <- cbind(pr3$dataset[,1],pca1$scores);
-	colnames(auxds) <- c("Exe.Time",colnames(pca1$scores));
-	rownames(auxds) <- seq(1,length(auxds[,1]));
-	pc[["extended"]] <- auxds;
 
 	pc;
 }

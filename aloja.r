@@ -17,14 +17,10 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 	aloja_print_summaries(fprint="output.txt", ds=dataset, ds_sub=dataset_sub, fwidth = 1000, ms = 10);
 
 ###############################################################################
-# Relation among output variables                                             #
+# Relation among input ~ output variables                                     #
 ###############################################################################
 
-# TODO Decide if fix, expand or destroy
-plot(dataset_sub[,1],dataset_sub[,2]);
-aux <- dataset_sub[strptime(dataset_sub[,"End.time"],format="%F")<=strptime("2014-03-11 00:00:00 CET",format="%F"),];
-points(aux[,1],aux[,2],col="red");
-#points(aux[,1]*0.6,aux[,2],col="green");
+	aloja_crossvariables(dataset_sub, jfactor=0.1);
 
 ###############################################################################
 # ANOVA of current variables                                                  #
@@ -105,24 +101,21 @@ points(aux[,1],aux[,2],col="red");
 ###############################################################################
 # Principal Components Analysis
 
-	pca1 <- aloja_pca(pr3$dataset[-1], pngpca="pca");
+	pca1 <- aloja_pca(pr3$dataset,colnames(pr3$dataset)[2:21],colnames(pr3$dataset)[1],pngpca="pca");
 	pca1$loadings;
-
-	#paux <- pca1$scores;
-	#pout <- pr3$dataset[,1];
 
 	#######################################################################
 	## LinReg (with reduced dimension)
 
-	#pr3dim <- aloja_linreg(pca1$extended,colnames(pca1$extended)[2:21],colnames(pca1$extended)[1],ppoly=3,prange=c(1e-4,1e+4));
-	pr3dim <- aloja_linreg(pca1$extended,colnames(pca1$extended)[2:21],colnames(pca1$extended)[1],ppoly=3,prange=c(1e-4,1e+4),saveall=c("polynom3 redim","linreg"),pngval="linreg-polynom3-redim-app",pngtest="linreg-polynom3-redim-test");
+	#pr3dim <- aloja_linreg(pca1$dataset,colnames(pca1$dataset)[2:21],colnames(pca1$dataset)[1],ppoly=3,prange=c(1e-4,1e+4));
+	pr3dim <- aloja_linreg(pca1$dataset,colnames(pca1$dataset)[2:21],colnames(pca1$dataset)[1],ppoly=3,prange=c(1e-4,1e+4),saveall=c("polynom3 redim","linreg"),pngval="linreg-polynom3-redim-app",pngtest="linreg-polynom3-redim-test");
 
 	par(mfrow=c(1,2));
 	plot(pr3dim$predval,pr3dim$validset[,vout],main=paste("Polynomial Regression power =",pr3dim$ppoly));
 	abline(0,1);
 	plot(pr3dim$predtest,pr3dim$testset[,vout],main=paste("Test Polynomial Regression power =",pr3dim$ppoly));
 	abline(0,1);
-	points(pr3dim$predtest[rownames(pr3dim$testset) %in% rownames(pr3$dataset[pr3$dataset[,"dfsioe_read"]==1,])],pr3dim$testset[rownames(pr3dim$testset) %in% rownames(pr3$dataset[pr3$dataset[,"dfsioe_read"]==1,]),1],col="red");
+	points(pr3dim$predtest[rownames(pr3dim$testset) %in% rownames(pca1$dataset[pca1$dataset[,"dfsioe_read"]==1,])],pr3dim$testset[rownames(pr3dim$testset) %in% rownames(pca1$dataset[pca1$dataset[,"dfsioe_read"]==1,]),1],col="red");
 
 
 	#######################################################################
@@ -137,12 +130,5 @@ points(aux[,1],aux[,2],col="red");
 	plot(m5p1dim$predtest,m5p1dim$testset[,vout],main=paste("Test M5P (Red.Dim.) M = ",m5p1dim$mmin));
 	abline(0,1);
 	points(m5p1dim$predtest[rownames(m5p1dim$testset) %in% rownames(pr3$dataset[pr3$dataset[,"dfsioe_read"]==1,])],m5p1dim$testset[rownames(m5p1dim$testset) %in% rownames(pr3$dataset[pr3$dataset[,"dfsioe_read"]==1,]),1],col="red");
-
-############################################################
-# K-Means as clustering
-
-auxkmn <- rbind(bntaux,bttaux);
-kc <- kmeans(auxkmn[-1],3);
-#plot(kc$cluster,auxkmn[,5]);
 
 
