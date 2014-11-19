@@ -117,7 +117,6 @@ aloja_crossvariables <- function (ds, pnglabel = "cross", jfactor = 0)
 	}
 }
 
-
 ###############################################################################
 # ANOVA of current variables                                                  #
 ###############################################################################
@@ -233,19 +232,36 @@ loadtestsplit_ds <- function (ds, vin, vout, ttaux, vsplit)
 	retval;
 }
 
-loadfiles_ds <- function (ttfile, trfile, tvfile)
+loadfiles_ds <- function (ttfile, trfile, tvfile, vin, vout)
 {
 	retval <- list();
 
-	retval[["testset"]] <- read.table(ttfile,header=T,sep=",");
+	retval[["testset"]] <- read.table(ttfile,header=T,sep=",")[,c(vout,vin)];
 	retval[["tselected"]] <- rownames(retval$testset);
-	retval[["trainset"]] <- read.table(trfile,header=T,sep=",");
+	retval[["trainset"]] <- read.table(trfile,header=T,sep=",")[,c(vout,vin)];
 	retval[["tselected"]] <- rownames(retval$trainset);
-	retval[["validset"]] <- read.table(tvfile,header=T,sep=",");
+	retval[["validset"]] <- read.table(tvfile,header=T,sep=",")[,c(vout,vin)];
 
 	retval[["dataset"]] <- rbind(retval$testset,retval$trainset,retval$validset);
 
 	retval;
+}
+
+aloja_load_datasets <- function (ds, vi, vout, tsplit, vsplit, ttaux = NULL, ntaux = NULL, traux = NULL, tvaux = NULL, ttfile = NULL, trfile = NULL, tvfile = NULL)
+{
+	rt <- NULL;
+
+	if (!is.null(ttfile) & !is.null(trfile) & !is.null(tvfile)) {
+		rt <- loadfiles_ds(ds,vin,vout,tsplit,vsplit);
+	} else if (!is.null(ttaux) & !is.null(traux) & !is.null(tvaux)) {
+		rt <- loadsplit_ds(dsbaux,vin,vout,ttaux,traux,tvaux);
+	} else if (!is.null(ttaux) & is.null(tvaux) & is.null(traux))	{
+		rt <- loadtestsplit_ds(dsbaux,vin,vout,ttaux,vsplit);
+	} else	{
+		rt <- split_ds(dsbaux,vin,vout,tsplit,vsplit);
+	}
+
+	rt;
 }
 
 ###############################################################################
@@ -254,22 +270,12 @@ loadfiles_ds <- function (ttfile, trfile, tvfile)
 
 aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE, pngval = NULL, pngtest = NULL, saveall = NULL, ttaux = NULL, ntaux = NULL, traux = NULL, tvaux = NULL, sigma = 3, ttfile = NULL, trfile = NULL, tvfile = NULL, decay = 5e-4, hlayers = 3, maxit = 1000, prange = NULL)
 {
-	rt <- NULL;
-
 	# Binarization of variables FIXME - Que passa quan entra ttaux directament?
 	dsbaux <- aloja_binarize_ds(ds[,c(vout,vin)]);
 	vin <- colnames(dsbaux[,-1]);
 
 	# Load and split datasets
-	if (!is.null(ttfile) & !is.null(trfile) & !is.null(tvfile)) {
-		rt <- loadfiles_ds(dsbaux,vin,vout,tsplit,vsplit);
-	} else if (!is.null(ttaux) & !is.null(traux) & !is.null(tvaux)) {
-		rt <- loadsplit_ds(dsbaux,vin,vout,ttaux,traux,tvaux);
-	} else if (!is.null(ttaux) & is.null(tvaux) & is.null(traux))	{
-		rt <- loadtestsplit_ds(dsbaux,vin,vout,ttaux,vsplit);
-	} else	{
-		rt <- split_ds(dsbaux,vin,vout,tsplit,vsplit);
-	}
+	rt <- aloja_load_datasets (dsbaux,vin,vout,tsplit,vsplit,ttaux,ntaux,traux,tvaux,ttfile,trfile,tvfile);
 
 	# Remove outliers (leap of faith, as vout may not be normal
 	if (rmols)
@@ -301,9 +307,12 @@ aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TR
 	
 	# Training and Validation
 	rt[["model"]] <- nnet(y=rt$normtrainset[,vout],x=rt$normtrainset[,-c(vout,8,26)],size=hlayers,decay=decay,maxit=maxit);
+	rt[["predtrain"]] <- rt$model$fitted.values;
 	rt[["predval"]] <- predict(rt$model,newdata=rt$normvalidset[,-c(vout,8,26)]);
 	if (!is.null(prange))
 	{
+		rt$predtrain[rt$predtrain < prange[1]] <- prange[1];
+		rt$predtrain[rt$predtrain > prange[2]] <- prange[2];
 		rt$predval[rt$predval < prange[1]] <- prange[1];
 		rt$predval[rt$predval > prange[2]] <- prange[2];
 	}
@@ -314,8 +323,6 @@ aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TR
 		plot(rt$predval,rt$normvalidset[,vout],main=paste("NN 32-5-1, decay",decay,"maxit",maxit));
 		abline(0,1);
 	if (!is.null(pngval)) dev.off();
-
-	if (!is.null(saveall)) savemodel (rt$trainset, rt$validset, rt$testset, NULL, saveall[1], saveall[2]);
 
 	# Testing and evaluation
 	rt[["predtest"]] <- predict(rt$model,newdata=rt$normtestset[,-c(vout,8,26)]);
@@ -337,27 +344,22 @@ aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TR
 	#plot.nnet(rt$model);
 	#plot.nnet(rt$model$wts,rt$model$n);
 
+	if (!is.null(saveall))
+	{
+		aloja_save_predictions(rt$dataset,rt$trainset,rt$predtrain,rt$validset,rt$predval,rt$testset,rt$predtest,testname=saveall);
+	}
+
 	rt;
 }
 
 aloja_linreg <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE, pngval = NULL, pngtest = NULL, saveall = NULL, ttaux = NULL, ntaux = NULL, traux = NULL, tvaux = NULL, sigma = 3, ttfile = NULL, trfile = NULL, tvfile = NULL, ppoly = 1, prange = NULL)
 {
-	rt <- NULL;
-
 	# Binarization of variables FIXME - Que passa quan entra ttaux directament?
 	dsbaux <- aloja_binarize_ds(ds[,c(vout,vin)]);
 	vin <- colnames(dsbaux[,-1]);
 
 	# Load and split datasets
-	if (!is.null(ttfile) & !is.null(trfile) & !is.null(tvfile)) {
-		rt <- loadfiles_ds(dsbaux,vin,vout,tsplit,vsplit);
-	} else if (!is.null(ttaux) & !is.null(traux) & !is.null(tvaux)) {
-		rt <- loadsplit_ds(dsbaux,vin,vout,ttaux,traux,tvaux);
-	} else if (!is.null(ttaux) & is.null(tvaux) & is.null(traux))	{
-		rt <- loadtestsplit_ds(dsbaux,vin,vout,ttaux,vsplit);
-	} else	{
-		rt <- split_ds(dsbaux,vin,vout,tsplit,vsplit);
-	}
+	rt <- aloja_load_datasets (dsbaux,vin,vout,tsplit,vsplit,ttaux,ntaux,traux,tvaux,ttfile,trfile,tvfile);
 
 	# Remove outliers (leap of faith, as vout may not be normal)
 	if (rmols)
@@ -375,10 +377,12 @@ aloja_linreg <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = T
 	if (ppoly == 1) rt[["model"]] <- lm(formula=rt$trainset[,vout] ~ ., data=data.frame(rt$trainset[,vin]));
 	if (ppoly == 2) rt[["model"]] <- lm(formula=rt$trainset[,vout] ~ . + (.)^2, data=data.frame(rt$trainset[,vin]));
 	if (ppoly == 3) rt[["model"]] <- lm(formula=rt$trainset[,vout] ~ . + (.)^2 + (.)^3, data=data.frame(rt$trainset[,vin]));
-
+	rt[["predtrain"]] <- rt$model$fitted.values;
 	rt[["predval"]] <- predict(rt$model,newdata=data.frame(rt$validset));
 	if (!is.null(prange))
 	{
+		rt$predtrain[rt$predtrain < prange[1]] <- prange[1];
+		rt$predtrain[rt$predtrain > prange[2]] <- prange[2];
 		rt$predval[rt$predval < prange[1]] <- prange[1];
 		rt$predval[rt$predval > prange[2]] <- prange[2];
 	}
@@ -389,8 +393,6 @@ aloja_linreg <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = T
 		plot(rt$predval,rt$validset[,vout],main=paste("Polynomial Regression power =",ppoly));
 		abline(0,1);
 	if (!is.null(pngval)) dev.off();
-
-	if (!is.null(saveall)) savemodel (rt$trainset, rt$validset, rt$testset, NULL, saveall[1], saveall[2]);
 
 	# Testing and evaluation
 	rt[["predtest"]] <- predict(rt$model,newdata=data.frame(rt$testset));
@@ -410,23 +412,18 @@ aloja_linreg <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = T
 		abline(0,1);
 	if (!is.null(pngtest)) dev.off();
 
+	if (!is.null(saveall))
+	{
+		aloja_save_predictions(rt$dataset,rt$trainset,rt$predtrain,rt$validset,rt$predval,rt$testset,rt$predtest,testname=saveall);
+	}
+
 	rt;
 }
 
 aloja_nneighbors <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE, pngval = NULL, pngtest = NULL, saveall = NULL, ttaux = NULL, ntaux = NULL, traux = NULL, tvaux = NULL, sigma = 3, ttfile = NULL, trfile = NULL, tvfile = NULL, kparam = 1, iparam = TRUE)
 {
-	rt <- NULL;
-
 	# Load and split datasets
-	if (!is.null(ttfile) & !is.null(trfile) & !is.null(tvfile)) {
-		rt <- loadfiles_ds(ds,vin,vout,tsplit,vsplit);
-	} else if (!is.null(ttaux) & !is.null(traux) & !is.null(tvaux)) {
-		rt <- loadsplit_ds(ds,vin,vout,ttaux,traux,tvaux);
-	} else if (!is.null(ttaux) & is.null(tvaux) & is.null(traux))	{
-		rt <- loadtestsplit_ds(ds,vin,vout,ttaux,vsplit);
-	} else	{
-		rt <- split_ds(ds,vin,vout,tsplit,vsplit);
-	}
+	rt <- aloja_load_datasets (dsbaux,vin,vout,tsplit,vsplit,ttaux,ntaux,traux,tvaux,ttfile,trfile,tvfile);
 
 	# Remove outliers (leap of faith, as vout may not be normal
 	if (rmols)
@@ -444,6 +441,7 @@ aloja_nneighbors <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols
 	# Training and Validation TODO - Parameter automatic choice
 	rt[["model"]] <- IBk(formula=rt$trainset[,vout] ~ . , data = rt$trainset[,vin], control = Weka_control(K = kparam, I = iparam));
 	evaluate_Weka_classifier(rt[["model"]], numFolds = 10);
+	rt[["predtrain"]] <- rt$model$ml$predictions;
 	rt[["predval"]] <- predict(rt$model,newdata=rt$validset);
 	rt[["maeval"]] <- mean(abs(rt$predval - rt$validset[,vout]));
 	rt[["raeval"]] <- mean(abs((rt$predval - rt$validset[,vout])/rt$validset[,vout]));
@@ -453,8 +451,6 @@ aloja_nneighbors <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols
 		plot(rt$predval,rt$validset[,vout],main=paste("K-NN K =",kparam,ifelse(iparam,"Weight = Inv.Dist.","")));
 		abline(0,1);
 	if (!is.null(pngval)) dev.off();
-
-	if (!is.null(saveall)) savemodel (rt$trainset, rt$validset, rt$testset, rt$model, saveall[1], saveall[2]);
 
 	# Testing and evaluation
 	rt[["predtest"]] <- predict(rt$model,newdata=rt$testset);
@@ -469,23 +465,19 @@ aloja_nneighbors <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols
 		abline(0,1);
 	if (!is.null(pngtest)) dev.off();
 
+	if (!is.null(saveall))
+	{
+		aloja_save_wekamodel(rt$model$ml,testname=saveall);
+		aloja_save_predictions(rt$dataset,rt$trainset,rt$predtrain,rt$validset,rt$predval,rt$testset,rt$predtest,testname=saveall);
+	}
+
 	rt;
 }
 
 aloja_regtree <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE, pngval = NULL, pngtest = NULL, saveall = NULL, ttaux = NULL, ntaux = NULL, traux = NULL, tvaux = NULL, sigma = 3, ttfile = NULL, trfile = NULL, tvfile = NULL, exsel = NULL, prange = NULL)
 {
-	rt <- NULL;
-
 	# Load and split datasets
-	if (!is.null(ttfile) & !is.null(trfile) & !is.null(tvfile)) {
-		rt <- loadfiles_ds(ds,vin,vout,tsplit,vsplit);
-	} else if (!is.null(ttaux) & !is.null(traux) & !is.null(tvaux)) {
-		rt <- loadsplit_ds(ds,vin,vout,ttaux,traux,tvaux);
-	} else if (!is.null(ttaux) & is.null(tvaux) & is.null(traux))	{
-		rt <- loadtestsplit_ds(ds,vin,vout,ttaux,vsplit);
-	} else	{
-		rt <- split_ds(ds,vin,vout,tsplit,vsplit);
-	}
+	rt <- aloja_load_datasets (dsbaux,vin,vout,tsplit,vsplit,ttaux,ntaux,traux,tvaux,ttfile,trfile,tvfile);
 
 	# Example selection from a threshold, balancing outputs
 	if (!is.null(exsel))
@@ -513,9 +505,12 @@ aloja_regtree <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = 
 
 	# Training and Validation
 	rt[["model"]] <- aloja_m5p_select(vout, vin, rt$trainset, rt$validset, c("1","2","5","10","25","50","75","100","150","200"));
+	rt[["predtrain"]] <- rt$model$ml$predictions;
 	rt[["predval"]] <- predict(rt$model$ml,newdata=data.frame(rt$validset));
 	if (!is.null(prange))
 	{
+		rt$predtrain[rt$predtrain < prange[1]] <- prange[1];
+		rt$predtrain[rt$predtrain > prange[2]] <- prange[2];
 		rt$predval[rt$predval < prange[1]] <- prange[1];
 		rt$predval[rt$predval > prange[2]] <- prange[2];
 	}
@@ -530,8 +525,6 @@ aloja_regtree <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = 
 		points(rt$model$tvmae,col="red");
 		legend("topleft",pch=1,c("trmae","tvmae"),col=c("black","red"));
 	if (!is.null(pngval)) dev.off();
-
-	if (!is.null(saveall)) savemodel (rt$trainset, rt$validset, rt$testset, rt$model$ml, saveall[1], saveall[2]);
 
 	# Testing and evaluation
 	rt[["predtest"]] <- predict(rt$model$ml,newdata=data.frame(rt$testset));
@@ -550,6 +543,12 @@ aloja_regtree <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = 
 		plot(rt$predtest,rt$testset[,vout],main=paste("Test M5P M = ",rt$model$mmin));
 		abline(0,1);
 	if (!is.null(pngtest)) dev.off();
+
+	if (!is.null(saveall))
+	{
+		aloja_save_wekamodel(rt$model$ml,testname=saveall);
+		aloja_save_predictions(rt$dataset,rt$trainset,rt$predtrain,rt$validset,rt$predval,rt$testset,rt$predtest,testname=saveall);
+	}
 
 	rt;
 }
@@ -622,31 +621,48 @@ aloja_pca <- function (dsbin, vin, vout, pngpca = NULL)
 # Save the datasets and created models                                        #
 ###############################################################################
 
-saveloads <- function (traux_0, tvaux_0, ttaux_0, name_0, algor_0)
+aloja_save_predictions <- function (ds, trdata, trpred, tvdata, tvpred, ttdata, ttpred, testname = "default")
 {
-	write.table(tvaux_0, file = paste(algor_0,"-tv",name_0,".csv",sep=""), sep = ",");
-	write.table(traux_0, file = paste(algor_0,"-tr",name_0,".csv",sep=""), sep = ",");
-	write.table(ttaux_0, file = paste(algor_0,"-tt",name_0,".csv",sep=""), sep = ",");
+	trIDs <- ds[rownames(ds) %in% rownames(trdata),"ID"];
+	tvIDs <- ds[rownames(ds) %in% rownames(tvdata),"ID"];
+	ttIDs <- ds[rownames(ds) %in% rownames(ttdata),"ID"];
+
+	traux <- cbind(trIDs,trdata,trpred);
+	tvaux <- cbind(tvIDs,tvdata,tvpred);
+	ttaux <- cbind(ttIDs,ttdata,ttpred);
+	
+	colnames(traux) <- c("ID",colnames(trdata),"Pred.Exe.Time");
+	colnames(tvaux) <- c("ID",colnames(tvdata),"Pred.Exe.Time");
+	colnames(ttaux) <- c("ID",colnames(ttdata),"Pred.Exe.Time");
+
+	write.table(traux, file = paste(testname,"-tr.csv",sep=""), sep = ",", row.names=FALSE);
+	write.table(tvaux, file = paste(testname,"-tv.csv",sep=""), sep = ",", row.names=FALSE);
+	write.table(ttaux, file = paste(testname,"-tt.csv",sep=""), sep = ",", row.names=FALSE);
 }
 
-savemodel <- function (traux_2, tvaux_2, ttaux_2, model_2, name_2, algor_2)
+aloja_save_datasets <- function (traux_0, tvaux_0, ttaux_0, name_0, algor_0)
 {
-	saveloads(traux_2, tvaux_2, ttaux_2, name_2, algor_2);
+	write.table(tvaux_0, file = paste(algor_0,"-",name_0,"-tv.csv",sep=""), sep = ",");
+	write.table(traux_0, file = paste(algor_0,"-",name_0,"-tr.csv",sep=""), sep = ",");
+	write.table(ttaux_0, file = paste(algor_0,"-",name_0,"-tt.csv",sep=""), sep = ",");
+}
 
-	if (!is.null(model_2))
+aloja_save_wekamodel <- function (model_0, testname = "default")
+{
+	if (!is.null(model_0))
 	{
-		rJava::.jcache(model_2$classifier);
-		save(model_2,file=paste(algor_2,"-",name_2,"-model.dat",sep=""));
+		rJava::.jcache(model_0$classifier);
+		save(model_2,file=paste(testname,"-model.dat",sep=""));
 	}
 }
 
-loadmodel <- function (name,algor_0)
+aloja_load_model <- function (testname = "default")
 {
-	load(paste(algor_0,"-",name,"-model.dat",sep=""));
+	load(paste(testname,"-model.dat",sep=""));
 	##rJava::.jstrVal(ml1$classifier);
 }
 
-savestatus <- function ()
+aloja_save_status <- function ()
 {
 	save.session("RData");
 	savehistory("Rhistory");

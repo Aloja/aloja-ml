@@ -10,9 +10,9 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 ###############################################################################
 
 	aux <- aloja_get_data(fread = "aloja-dataset.csv", cds = FALSE, hds = FALSE, fproc = "aloja-process");
-
 	dataset <- aux$ds;
 	dataset_sub <- aux$ds_sub;
+	rm(aux);
 
 	aloja_print_summaries(fprint="output.txt", ds=dataset, ds_sub=dataset_sub, fwidth = 1000, ms = 10);
 
@@ -43,13 +43,13 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 	## Training M5P without example selection
 
 	#m5p1 <- aloja_regtree(dataset,vin,vout);
-	m5p1 <- aloja_regtree(dataset,vin,vout,saveall=c("simple","m5p"),pngval="m5p-simple-app",pngtest="m5p-simple-test");
+	m5p1 <- aloja_regtree(dataset,vin,vout,saveall="m5p-simple",pngval="m5p-simple-app",pngtest="m5p-simple-test");
 
 	#######################################################################
 	## Training M5P with example selection
 
 	#m5p2 <- aloja_regtree(dataset,vin,vout,ttaux=m5p1$testset,exsel=8000);
-	m5p2 <- aloja_regtree(dataset,vin,vout,ttaux=m5p1$testset,exsel=8000,saveall=c("exselect","m5p"),pngval="m5p-exsel-app",pngtest="m5p-exsel-test");
+	m5p2 <- aloja_regtree(dataset,vin,vout,ttaux=m5p1$testset,exsel=8000,saveall="m5p-simple",pngval="m5p-exsel-app",pngtest="m5p-exsel-test");
 
 	#######################################################################
 	## Training M5P with benchmark separation
@@ -61,7 +61,7 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 		taux <- m5p1$testset[m5p1$testset[,"Benchmark"]==name,];
 
 		#m5px[[name]] <- aloja_regtree(ds=baux,vin=vin,vout=vout,ttaux=taux);
-		m5px[[name]] <- aloja_regtree(ds=baux,vin=vin,vout=vout,ttaux=taux,saveall=c(paste("benchmark",name,sep="-"),"m5p"),pngval=paste("m5p-benchmark",name,"val",sep="-"),pngtest=paste("m5p-benchmark",name,"test",sep="-"));
+		m5px[[name]] <- aloja_regtree(ds=baux,vin=vin,vout=vout,ttaux=taux,saveall=paste("m5p-benchmark",name,sep="-"),pngval=paste("m5p-benchmark",name,"val",sep="-"),pngtest=paste("m5p-benchmark",name,"test",sep="-"));
 	}
 	rm (baux,taux,name);
 
@@ -69,7 +69,7 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 # k-Nearest Neighbor
 
 	#ibk1 <- aloja_nneighbors(dataset,vin,vout,ttaux=m5p1$testset);
-	ibk1 <- aloja_nneighbor(dataset,vin,vout,ttaux=m5p1$testset,saveall=c("simple","ibk"),pngval="ibk-simple-app",pngtest="ibk-simple-test");
+	ibk1 <- aloja_nneighbor(dataset,vin,vout,ttaux=m5p1$testset,saveall="ibk-simple",pngval="ibk-simple-app",pngtest="ibk-simple-test");
 
 ###############################################################################
 # Others (Regression)
@@ -78,7 +78,7 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 	## LinReg (Binarized & Polynomial)
 
 	#pr3 <- aloja_linreg(dataset,vin,vout,ppoly=3);
-	pr3 <- aloja_linreg(dataset,vin,vout,ppoly=3,saveall=c("polynom3","linreg"),pngval="linreg-polynom3-app",pngtest="linreg-polynom3-test");
+	pr3 <- aloja_linreg(dataset,vin,vout,ppoly=3,saveall="linreg-polynom3",pngval="linreg-polynom3-app",pngtest="linreg-polynom3-test");
 
 	par(mfrow=c(1,2));
 	plot(pr3$predval,pr3$validset[,vout],main=paste("Polynomial Regression power =",pr3$ppoly));
@@ -92,7 +92,7 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 	## Neural Networks
 
 	#nn1 <- aloja_nnet(dataset,vin,vout);
-	nn1 <- aloja_nnet(dataset,vin,vout,hlayers=5,saveall=c("32-5-1","nnet"),pngval="nnet-32-5-1-app",pngtest="nnet-32-5-1-test"); 
+	nn1 <- aloja_nnet(dataset,vin,vout,hlayers=5,saveall="nnet-32-5-1",pngval="nnet-32-5-1-app",pngtest="nnet-32-5-1-test"); 
 
 ###############################################################################
 # Clustering and dimensional techniques                                       #
