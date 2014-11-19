@@ -10,7 +10,7 @@ library(session);
 # Read datasets and prepare them for usage                                    #
 ###############################################################################
 
-obtain_data <- function (fread, cds = FALSE, hds = FALSE, fproc = NULL)
+aloja_get_data <- function (fread, cds = FALSE, hds = FALSE, fproc = NULL)
 {
 	retval <- list();
 
@@ -61,7 +61,7 @@ obtain_data <- function (fread, cds = FALSE, hds = FALSE, fproc = NULL)
 # Print summaries for each benchmark                                          #
 ###############################################################################
 
-print_summaries <- function (fprint, ds, ds_sub, fwidth = 1000, ms = 10)
+aloja_print_summaries <- function (fprint, ds, ds_sub, fwidth = 1000, ms = 10)
 {
 	sink(file=fprint,append=FALSE,type="output");
 
@@ -85,7 +85,7 @@ print_summaries <- function (fprint, ds, ds_sub, fwidth = 1000, ms = 10)
 # ANOVA of current variables                                                  #
 ###############################################################################
 
-anova_ds <- function (ds)
+aloja_anova <- function (ds)
 {
 	anova_1 <- list();
 	anova_1[["alpha"]] <- 0.05;
@@ -215,13 +215,13 @@ loadfiles_ds <- function (ttfile, trfile, tvfile)
 # Learning methods                                                            #
 ###############################################################################
 
-regnnets <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE, pngval = NULL, pngtest = NULL, saveall = NULL, ttaux = NULL, ntaux = NULL, traux = NULL, tvaux = NULL, sigma = 3, ttfile = NULL, trfile = NULL, tvfile = NULL, decay = 5e-4, hlayers = 3, maxit = 1000)
+aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE, pngval = NULL, pngtest = NULL, saveall = NULL, ttaux = NULL, ntaux = NULL, traux = NULL, tvaux = NULL, sigma = 3, ttfile = NULL, trfile = NULL, tvfile = NULL, decay = 5e-4, hlayers = 3, maxit = 1000, prange = NULL)
 {
 	rt <- NULL;
 
 	# Binarization of variables FIXME - Que passa quan entra ttaux directament?
-	dsbaux <- bindataset(ds[,c(vout,vin)]);
-	vin <- colnames(dsbaux[-1]);
+	dsbaux <- aloja_binarize_ds(ds[,c(vout,vin)]);
+	vin <- colnames(dsbaux[,-1]);
 
 	# Load and split datasets
 	if (!is.null(ttfile) & !is.null(trfile) & !is.null(tvfile)) {
@@ -265,6 +265,11 @@ regnnets <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE
 	# Training and Validation
 	rt[["model"]] <- nnet(y=rt$normtrainset[,vout],x=rt$normtrainset[,-c(vout,8,26)],size=hlayers,decay=decay,maxit=maxit);
 	rt[["predval"]] <- predict(rt$model,newdata=rt$normvalidset[,-c(vout,8,26)]);
+	if (!is.null(prange))
+	{
+		rt$predval[rt$predval < prange[1]] <- prange[1];
+		rt$predval[rt$predval > prange[2]] <- prange[2];
+	}
 	rt[["maeval"]] <- mean(abs(rt$predval - rt$validset[,vout]));
 	rt[["raeval"]] <- mean(abs((rt$predval - rt$validset[,vout])/rt$validset[,vout]));
 
@@ -277,6 +282,11 @@ regnnets <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE
 
 	# Testing and evaluation
 	rt[["predtest"]] <- predict(rt$model,newdata=rt$normtestset[,-c(vout,8,26)]);
+	if (!is.null(prange))
+	{
+		rt$predtest[rt$predtest < prange[1]] <- prange[1];
+		rt$predtest[rt$predtest > prange[2]] <- prange[2];
+	}
 	rt[["maetest"]] <- mean(abs(rt$predtest - rt$testset[,vout]));
 	rt[["raetest"]] <- mean(abs((rt$predtest - rt$testset[,vout])/rt$testset[,vout]));
 
@@ -293,13 +303,13 @@ regnnets <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE
 	rt;
 }
 
-reglinreg <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE, pngval = NULL, pngtest = NULL, saveall = NULL, ttaux = NULL, ntaux = NULL, traux = NULL, tvaux = NULL, sigma = 3, ttfile = NULL, trfile = NULL, tvfile = NULL, ppoly = 1)
+aloja_linreg <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE, pngval = NULL, pngtest = NULL, saveall = NULL, ttaux = NULL, ntaux = NULL, traux = NULL, tvaux = NULL, sigma = 3, ttfile = NULL, trfile = NULL, tvfile = NULL, ppoly = 1, prange = NULL)
 {
 	rt <- NULL;
 
 	# Binarization of variables FIXME - Que passa quan entra ttaux directament?
-	dsbaux <- bindataset(ds[,c(vout,vin)]);
-	vin <- colnames(dsbaux[-1]);
+	dsbaux <- aloja_binarize_ds(ds[,c(vout,vin)]);
+	vin <- colnames(dsbaux[,-1]);
 
 	# Load and split datasets
 	if (!is.null(ttfile) & !is.null(trfile) & !is.null(tvfile)) {
@@ -312,7 +322,7 @@ reglinreg <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE
 		rt <- split_ds(dsbaux,vin,vout,tsplit,vsplit);
 	}
 
-	# Remove outliers (leap of faith, as vout may not be normal
+	# Remove outliers (leap of faith, as vout may not be normal)
 	if (rmols)
 	{
 		rt[["olstrain"]] <- rt$trainset[rt$trainset[,vout] > mean(rt$trainset[,vout]) + sigma * sd(rt$trainset[,vout]),];
@@ -325,10 +335,16 @@ reglinreg <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE
 	rt[["ppoly"]] <- ppoly;
 
 	# Training and Validation
-	if (ppoly == 1) rt[["model"]] <- lm(formula=rt$trainset[,vout] ~ ., data=rt$trainset[,vin]);
-	if (ppoly == 2) rt[["model"]] <- lm(formula=rt$trainset[,vout] ~ . + (.)^2, data=rt$trainset[,vin]);
-	if (ppoly == 3) rt[["model"]] <- lm(formula=rt$trainset[,vout] ~ . + (.)^2 + (.)^3, data=rt$trainset[,vin]);
-	rt[["predval"]] <- predict(rt$model,newdata=rt$validset);
+	if (ppoly == 1) rt[["model"]] <- lm(formula=rt$trainset[,vout] ~ ., data=data.frame(rt$trainset[,vin]));
+	if (ppoly == 2) rt[["model"]] <- lm(formula=rt$trainset[,vout] ~ . + (.)^2, data=data.frame(rt$trainset[,vin]));
+	if (ppoly == 3) rt[["model"]] <- lm(formula=rt$trainset[,vout] ~ . + (.)^2 + (.)^3, data=data.frame(rt$trainset[,vin]));
+
+	rt[["predval"]] <- predict(rt$model,newdata=data.frame(rt$validset));
+	if (!is.null(prange))
+	{
+		rt$predval[rt$predval < prange[1]] <- prange[1];
+		rt$predval[rt$predval > prange[2]] <- prange[2];
+	}
 	rt[["maeval"]] <- mean(abs(rt$predval - rt$validset[,vout]));
 	rt[["raeval"]] <- mean(abs((rt$predval - rt$validset[,vout])/rt$validset[,vout]));
 
@@ -340,7 +356,12 @@ reglinreg <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE
 	if (!is.null(saveall)) savemodel (rt$trainset, rt$validset, rt$testset, NULL, saveall[1], saveall[2]);
 
 	# Testing and evaluation
-	rt[["predtest"]] <- predict(rt$model,newdata=rt$testset);
+	rt[["predtest"]] <- predict(rt$model,newdata=data.frame(rt$testset));
+	if (!is.null(prange))
+	{
+		rt$predtest[rt$predtest < prange[1]] <- prange[1];
+		rt$predtest[rt$predtest > prange[2]] <- prange[2];
+	}
 	rt[["maetest"]] <- mean(abs(rt$predtest - rt$testset[,vout]));
 	rt[["raetest"]] <- mean(abs((rt$predtest - rt$testset[,vout])/rt$testset[,vout]));
 
@@ -355,7 +376,7 @@ reglinreg <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE
 	rt;
 }
 
-regnneighbors <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE, pngval = NULL, pngtest = NULL, saveall = NULL, ttaux = NULL, ntaux = NULL, traux = NULL, tvaux = NULL, sigma = 3, ttfile = NULL, trfile = NULL, tvfile = NULL, kparam = 1, iparam = TRUE)
+aloja_nneighbors <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE, pngval = NULL, pngtest = NULL, saveall = NULL, ttaux = NULL, ntaux = NULL, traux = NULL, tvaux = NULL, sigma = 3, ttfile = NULL, trfile = NULL, tvfile = NULL, kparam = 1, iparam = TRUE)
 {
 	rt <- NULL;
 
@@ -414,7 +435,7 @@ regnneighbors <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = 
 	rt;
 }
 
-regtrees <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE, pngval = NULL, pngtest = NULL, saveall = NULL, ttaux = NULL, ntaux = NULL, traux = NULL, tvaux = NULL, sigma = 3, ttfile = NULL, trfile = NULL, tvfile = NULL, exsel = NULL)
+aloja_regtree <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE, pngval = NULL, pngtest = NULL, saveall = NULL, ttaux = NULL, ntaux = NULL, traux = NULL, tvaux = NULL, sigma = 3, ttfile = NULL, trfile = NULL, tvfile = NULL, exsel = NULL, prange = NULL)
 {
 	rt <- NULL;
 
@@ -453,9 +474,14 @@ regtrees <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE,
 		rt$validset <- rt$validset[rt$validset[,vout] <= mean(rt$validset[,vout]) + sigma * sd(rt$validset[,vout]),];
 	}
 
-	# Training and Validation TODO - Improve overfitting detection
-	rt[["model"]] <- bestm5p(vout, vin, rt$trainset, rt$validset, c("1","2","5","10","25","50","75","100","150","200"));
-	rt[["predval"]] <- predict(rt$model$ml,newdata=rt$validset);
+	# Training and Validation
+	rt[["model"]] <- aloja_m5p_select(vout, vin, rt$trainset, rt$validset, c("1","2","5","10","25","50","75","100","150","200"));
+	rt[["predval"]] <- predict(rt$model$ml,newdata=data.frame(rt$validset));
+	if (!is.null(prange))
+	{
+		rt$predval[rt$predval < prange[1]] <- prange[1];
+		rt$predval[rt$predval > prange[2]] <- prange[2];
+	}
 	rt[["maeval"]] <- mean(abs(rt$predval - rt$validset[,vout]));
 	rt[["raeval"]] <- mean(abs((rt$predval - rt$validset[,vout])/rt$validset[,vout]));
 
@@ -471,7 +497,12 @@ regtrees <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE,
 	if (!is.null(saveall)) savemodel (rt$trainset, rt$validset, rt$testset, rt$model$ml, saveall[1], saveall[2]);
 
 	# Testing and evaluation
-	rt[["predtest"]] <- predict(rt$model$ml,newdata=rt$testset);
+	rt[["predtest"]] <- predict(rt$model$ml,newdata=data.frame(rt$testset));
+	if (!is.null(prange))
+	{
+		rt$predtest[rt$predtest < prange[1]] <- prange[1];
+		rt$predtest[rt$predtest > prange[2]] <- prange[2];
+	}
 	rt[["maetest"]] <- mean(abs(rt$predtest - rt$testset[,vout]));
 	rt[["raetest"]] <- mean(abs((rt$predtest - rt$testset[,vout])/rt$testset[,vout]));
 
@@ -490,23 +521,24 @@ regtrees <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE,
 # Fine-tunning parameters for Learning Algorithms                             #
 ###############################################################################
 
-bestm5p <- function (vout_1, vin_1, traux_1, tvaux_1, mintervals_1)
+#TODO - Improve overfitting detection
+aloja_m5p_select <- function (vout_1, vin_1, traux_1, tvaux_1, mintervals_1)
 {
 	trmae_1 <- NULL;
 	tvmae_1 <- NULL;
 	for (i in mintervals_1)
 	{
-		ml_1 <- M5P(formula=traux_1[,vout_1] ~ .,data=traux_1[,vin_1], control = Weka_control(M = i));
+		ml_1 <- M5P(formula=traux_1[,vout_1] ~ .,data=data.frame(traux_1[,vin_1]), control = Weka_control(M = i));
 		mae <- (sum(abs(ml_1$predictions - traux_1[,vout_1])))/length(traux_1[,1]);
 		trmae_1 <- c(trmae_1,mae);
 
-		prediction <- predict(ml_1,newdata=tvaux_1);
+		prediction <- predict(ml_1,newdata=data.frame(tvaux_1));
 		mae <- (sum(abs(prediction - tvaux_1[,vout_1])))/length(tvaux_1[,1]);
 		tvmae_1 <- c(tvmae_1,mae);
 	}
 
 	mmin_1 <- mintervals_1[which.min(tvmae_1)];
-	ml_1 <- M5P(formula=traux_1[,vout_1] ~ .,data=traux_1[,vin_1], control = Weka_control(M = mmin_1));
+	ml_1 <- M5P(formula=traux_1[,vout_1] ~ .,data=data.frame(traux_1[,vin_1]), control = Weka_control(M = mmin_1));
 
 	print (mean(abs(ml_1$predictions - traux_1[,vout_1])));
 
@@ -519,6 +551,39 @@ bestm5p <- function (vout_1, vin_1, traux_1, tvaux_1, mintervals_1)
 	retval;
 }
 
+###############################################################################
+# Principal Component Analysis methods                                        #
+###############################################################################
+
+aloja_pca <- function (dsbin, pngpca = NULL)
+{
+	pc <- princomp(dsbin);
+
+	if (!is.null(pngpca))
+	{
+		system("mkdir -p temp");
+		for (var1 in 1:(length(pc$scores[1,])-1))
+		{
+			for (var2 in (var1 + 1):length(pc$scores[1,]))
+			{
+				png(paste("temp/",pngpca,"-",var1,"-",var2,".png",sep=""),width=1000,height=500);
+					plot(1, type="n", xlim=c(min(pc$scores[,var1]),max(pc$scores[,var1])),ylim=c(min(pc$scores[,var2]),max(pc$scores[,var2])), xlab="", ylab="");
+					points(jitter(pc$scores[dsbin[,1]>3000,var1],factor=0.6),jitter(pc$scores[dsbin[,1]>3000,var2],factor=0.6),col="red");
+					points(jitter(pc$scores[dsbin[,1]>2000 & dsbin[,1]<3000,var1],factor=0.6),jitter(pc$scores[dsbin[,1]>2000 & dsbin[,1]<3000,var2],factor=0.6),col="blue");
+					points(jitter(pc$scores[dsbin[,1]>1000 & dsbin[,1]<2000,var1],factor=0.6),jitter(pc$scores[dsbin[,1]>1000 & dsbin[,1]<2000,var2],factor=0.6),col="green");
+					points(jitter(pc$scores[dsbin[,1]<1000,var1],factor=0.6),jitter(pc$scores[dsbin[,1]<1000,var2],factor=0.6),col="black");
+				dev.off();
+			}
+		}
+	}
+
+	auxds <- cbind(pr3$dataset[,1],pca1$scores);
+	colnames(auxds) <- c("Exe.Time",colnames(pca1$scores));
+	rownames(auxds) <- seq(1,length(auxds[,1]));
+	pc[["extended"]] <- auxds;
+
+	pc;
+}
 
 ###############################################################################
 # Save the datasets and created models                                        #
@@ -560,23 +625,26 @@ savestatus <- function ()
 # Operations and transformation functions                                     #
 ###############################################################################
 
-bindataset <- function (table_1)
+aloja_binarize_ds <- function (table_1)
 {
-	numaux <- sapply(table_1, is.numeric);
+	numaux <- sapply(data.frame(table_1), is.numeric);
 
 	binaux <- table_1[,numaux];
 	classaux <- table_1[,!numaux];
 
-	for (k in 1:length(classaux))
+	if (length(classaux) > 0)
 	{
-		v <- vector();
-		for (i in 1:length(levels(classaux[,k]))) v[levels(classaux[,k])[i]] <- i;
+		for (k in 1:length(classaux))
+		{
+			v <- vector();
+			for (i in 1:length(levels(classaux[,k]))) v[levels(classaux[,k])[i]] <- i;
 
-		m <- matrix(0,nrow=length(classaux[,k]),ncol=length(levels(classaux[,k])));
-		for (i in 1:length(classaux[,k])) m[i,v[classaux[i,k]]] <- 1;
-		colnames(m) <- levels(classaux[,k]);
+			m <- matrix(0,nrow=length(classaux[,k]),ncol=length(levels(classaux[,k])));
+			for (i in 1:length(classaux[,k])) m[i,v[classaux[i,k]]] <- 1;
+			colnames(m) <- levels(classaux[,k]);
 
-		binaux <- cbind(binaux,m);
+			binaux <- cbind(binaux,m);
+		}
 	}
 	binaux;
 }
