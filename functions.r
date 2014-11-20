@@ -164,7 +164,7 @@ aloja_anova <- function (ds)
 }
 
 ###############################################################################
-# Data-set splitting functions                                                #
+# Dataset splitting functions                                                 #
 ###############################################################################
 
 aloja_split_dataset <- function (ds, vin, vout, tsplit, vsplit)
@@ -264,10 +264,38 @@ aloja_load_datasets <- function (ds, vin, vout, tsplit, vsplit, ttaux = NULL, nt
 	rt;
 }
 
-aloja_binarize_mixsets <- function (traux = NULL, ntaux = NULL, tvaux = NULL, ttaux = NULL)
+###############################################################################
+# Operations and transformation functions                                     #
+###############################################################################
+
+aloja_binarize_ds <- function (table_1)
+{
+	numaux <- sapply(data.frame(table_1), is.numeric);
+
+	binaux <- table_1[,numaux];
+	classaux <- table_1[,!numaux];
+
+	if (length(classaux) > 0)
+	{
+		for (k in 1:length(classaux))
+		{
+			v <- vector();
+			for (i in 1:length(levels(classaux[,k]))) v[levels(classaux[,k])[i]] <- i;
+
+			m <- matrix(0,nrow=length(classaux[,k]),ncol=length(levels(classaux[,k])));
+			for (i in 1:length(classaux[,k])) m[i,v[classaux[i,k]]] <- 1;
+			colnames(m) <- levels(classaux[,k]);
+
+			binaux <- cbind(binaux,m);
+		}
+	}
+	binaux;
+}
+
+aloja_binarize_mixsets <- function (vin, vout, traux = NULL, ntaux = NULL, tvaux = NULL, ttaux = NULL)
 {
 	retval <- list();
-	
+
 	if (!is.null(traux)) traux <- aloja_binarize_ds(traux[,c(vout,vin)]);
 	if (!is.null(ntaux)) ntaux <- aloja_binarize_ds(ntaux[,c(vout,vin)]);
 	if (!is.null(tvaux)) tvaux <- aloja_binarize_ds(tvaux[,c(vout,vin)]);
@@ -329,7 +357,7 @@ aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TR
 {
 	# Binarization of variables
 	dsbaux <- aloja_binarize_ds(ds[,c(vout,vin)]);
-	auxset <- aloja_binarize_mixsets(traux=traux,ntaux=ntaux,tvaux=tvaux,ttaux=ttaux);
+	auxset <- aloja_binarize_mixsets(vin,vout,traux=traux,ntaux=ntaux,tvaux=tvaux,ttaux=ttaux);
 	vin <- colnames(dsbaux[,-1]);
 
 	# Load and split datasets
@@ -416,7 +444,7 @@ aloja_linreg <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = T
 {
 	# Binarization of variables
 	dsbaux <- aloja_binarize_ds(ds[,c(vout,vin)]);
-	auxset <- aloja_binarize_mixsets(traux=traux,ntaux=ntaux,tvaux=tvaux,ttaux=ttaux);
+	auxset <- aloja_binarize_mixsets(vin,vout,traux=traux,ntaux=ntaux,tvaux=tvaux,ttaux=ttaux);
 	vin <- colnames(dsbaux[,-1]);
 
 	# Load and split datasets
@@ -654,8 +682,11 @@ aloja_m5p_select <- function (vout_1, vin_1, traux_1, tvaux_1, mintervals_1)
 # Principal Component Analysis methods                                        #
 ###############################################################################
 
-aloja_pca <- function (dsbin, vin, vout, pngpca = NULL)
+aloja_pca <- function (ds, vin, vout, pngpca = NULL)
 {
+	dsbin <- aloja_binarize_ds(ds[,c(vout,vin)]);
+	vin <- colnames(dsbin[,-1]);
+
 	pc <- princomp(dsbin[,vin]);
 	pc[["dataset"]] <- dsbin;
 
@@ -730,33 +761,4 @@ aloja_save_status <- function ()
 	system(paste("tar cvzf rsession-",Sys.Date(),".tar.gz RData Rhistory",sep=""));
 	system("rm RData Rhistory");
 }
-
-###############################################################################
-# Operations and transformation functions                                     #
-###############################################################################
-
-aloja_binarize_ds <- function (table_1)
-{
-	numaux <- sapply(data.frame(table_1), is.numeric);
-
-	binaux <- table_1[,numaux];
-	classaux <- table_1[,!numaux];
-
-	if (length(classaux) > 0)
-	{
-		for (k in 1:length(classaux))
-		{
-			v <- vector();
-			for (i in 1:length(levels(classaux[,k]))) v[levels(classaux[,k])[i]] <- i;
-
-			m <- matrix(0,nrow=length(classaux[,k]),ncol=length(levels(classaux[,k])));
-			for (i in 1:length(classaux[,k])) m[i,v[classaux[i,k]]] <- 1;
-			colnames(m) <- levels(classaux[,k]);
-
-			binaux <- cbind(binaux,m);
-		}
-	}
-	binaux;
-}
-
 
