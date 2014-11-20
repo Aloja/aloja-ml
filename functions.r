@@ -167,11 +167,11 @@ aloja_anova <- function (ds)
 # Data-set splitting functions                                                #
 ###############################################################################
 
-split_ds <- function (ds, vin, vout, tsplit, vsplit)
+aloja_split_dataset <- function (ds, vin, vout, tsplit, vsplit)
 {
 	retval <- list();
 
-	aux <- ds[,c(vout,vin)];
+	aux <- ds[,c("ID",vout,vin)];
 	retval[["dataset"]] <- aux;
 
 	selected <- sample(1:length(aux[,1]),length(aux[,1])*tsplit);
@@ -192,11 +192,11 @@ split_ds <- function (ds, vin, vout, tsplit, vsplit)
 	retval;
 }
 
-loadsplit_ds <- function (ds, vin, vout, ttaux, traux, tvaux)
+aloja_split_load <- function (ds, vin, vout, ttaux, traux, tvaux)
 {
 	retval <- list();
 
-	aux <- ds[,c(vout,vin)];
+	aux <- ds[,c("ID",vout,vin)];
 	retval[["dataset"]] <- aux;
 
 	retval[["tselected"]] <- rownames(ttaux);
@@ -209,11 +209,11 @@ loadsplit_ds <- function (ds, vin, vout, ttaux, traux, tvaux)
 	retval;
 }
 
-loadtestsplit_ds <- function (ds, vin, vout, ttaux, vsplit)
+aloja_testsplit_load <- function (ds, vin, vout, ttaux, vsplit)
 {
 	retval <- list();
 
-	aux <- ds[,c(vout,vin)];
+	aux <- ds[,c("ID",vout,vin)];
 	retval[["dataset"]] <- aux;
 
 	retval[["tselected"]] <- rownames(ttaux);
@@ -232,36 +232,93 @@ loadtestsplit_ds <- function (ds, vin, vout, ttaux, vsplit)
 	retval;
 }
 
-loadfiles_ds <- function (ttfile, trfile, tvfile, vin, vout)
+aloja_datafile_load <- function (ttfile, trfile, tvfile, vin, vout)
 {
 	retval <- list();
 
-	retval[["testset"]] <- read.table(ttfile,header=T,sep=",")[,c(vout,vin)];
+	retval[["testset"]] <- read.table(ttfile,header=T,sep=",")[,c("ID",vout,vin)];
 	retval[["tselected"]] <- rownames(retval$testset);
-	retval[["trainset"]] <- read.table(trfile,header=T,sep=",")[,c(vout,vin)];
+	retval[["trainset"]] <- read.table(trfile,header=T,sep=",")[,c("ID",vout,vin)];
 	retval[["tselected"]] <- rownames(retval$trainset);
-	retval[["validset"]] <- read.table(tvfile,header=T,sep=",")[,c(vout,vin)];
+	retval[["validset"]] <- read.table(tvfile,header=T,sep=",")[,c("ID",vout,vin)];
 
 	retval[["dataset"]] <- rbind(retval$testset,retval$trainset,retval$validset);
 
 	retval;
 }
 
-aloja_load_datasets <- function (ds, vi, vout, tsplit, vsplit, ttaux = NULL, ntaux = NULL, traux = NULL, tvaux = NULL, ttfile = NULL, trfile = NULL, tvfile = NULL)
+aloja_load_datasets <- function (ds, vin, vout, tsplit, vsplit, ttaux = NULL, ntaux = NULL, traux = NULL, tvaux = NULL, ttfile = NULL, trfile = NULL, tvfile = NULL)
 {
 	rt <- NULL;
 
 	if (!is.null(ttfile) & !is.null(trfile) & !is.null(tvfile)) {
-		rt <- loadfiles_ds(ds,vin,vout,tsplit,vsplit);
+		rt <- aloja_datafile_load(ds,vin,vout,tsplit,vsplit);
 	} else if (!is.null(ttaux) & !is.null(traux) & !is.null(tvaux)) {
-		rt <- loadsplit_ds(dsbaux,vin,vout,ttaux,traux,tvaux);
+		rt <- aloja_split_load(ds,vin,vout,ttaux,traux,tvaux);
 	} else if (!is.null(ttaux) & is.null(tvaux) & is.null(traux))	{
-		rt <- loadtestsplit_ds(dsbaux,vin,vout,ttaux,vsplit);
-	} else	{
-		rt <- split_ds(dsbaux,vin,vout,tsplit,vsplit);
+		rt <- aloja_testsplit_load(ds,vin,vout,ttaux,vsplit);
+	} else {
+		rt <- aloja_split_dataset(ds,vin,vout,tsplit,vsplit);
 	}
 
 	rt;
+}
+
+aloja_binarize_mixsets <- function (traux = NULL, ntaux = NULL, tvaux = NULL, ttaux = NULL)
+{
+	retval <- list();
+	
+	if (!is.null(traux)) traux <- aloja_binarize_ds(traux[,c(vout,vin)]);
+	if (!is.null(ntaux)) ntaux <- aloja_binarize_ds(ntaux[,c(vout,vin)]);
+	if (!is.null(tvaux)) tvaux <- aloja_binarize_ds(tvaux[,c(vout,vin)]);
+	if (!is.null(ttaux)) ttaux <- aloja_binarize_ds(ttaux[,c(vout,vin)]);
+
+	if (!is.null(traux) & !is.null(tvaux) & !is.null(ttaux))
+	{
+		for(name in !(c(colnames(traux),colnames(ttaux)) %in% colnames(tvaux)))
+		{
+			auxnames <- colnames(tvaux);
+			tvaux <- cbind(tvaux,rep(0,length(tvaux[,1]))); 
+			colnames(tvaux) <- c(auxnames,name);
+		}
+
+		for(name in !(c(colnames(traux),colnames(tvaux)) %in% colnames(ttaux)))
+		{
+			auxnames <- colnames(ttaux);
+			ttaux <- cbind(ttaux,rep(0,length(ttaux[,1]))); 
+			colnames(ttaux) <- c(auxnames,name);
+		}
+
+		for(name in !(c(colnames(ttaux),colnames(tvaux)) %in% colnames(traux)))
+		{
+			auxnames <- colnames(traux);
+			traux <- cbind(traux,rep(0,length(traux[,1]))); 
+			colnames(traux) <- c(auxnames,name);
+		}
+	}
+
+	if (!is.null(ttaux) & !is.null(ntaux))
+	{
+		for(name in !(colnames(traux) %in% colnames(ntaux)))
+		{
+			auxnames <- colnames(ntaux);
+			ntaux <- cbind(ntaux,rep(0,length(ntaux[,1]))); 
+			colnames(ntaux) <- c(auxnames,name);
+		}
+
+		for(name in !(colnames(ntaux) %in% colnames(ttaux)))
+		{
+			auxnames <- colnames(ttaux);
+			ttaux <- cbind(ttaux,rep(0,length(ttaux[,1]))); 
+			colnames(ttaux) <- c(auxnames,name);
+		}
+	}
+
+	retval[["trset"]] <- traux;
+	retval[["ntset"]] <- ntaux;
+	retval[["tvset"]] <- tvaux;
+	retval[["ttset"]] <- ttaux;
+	retval;
 }
 
 ###############################################################################
@@ -270,12 +327,15 @@ aloja_load_datasets <- function (ds, vi, vout, tsplit, vsplit, ttaux = NULL, nta
 
 aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE, pngval = NULL, pngtest = NULL, saveall = NULL, ttaux = NULL, ntaux = NULL, traux = NULL, tvaux = NULL, sigma = 3, ttfile = NULL, trfile = NULL, tvfile = NULL, decay = 5e-4, hlayers = 3, maxit = 1000, prange = NULL)
 {
-	# Binarization of variables FIXME - Que passa quan entra ttaux directament?
+	# Binarization of variables
 	dsbaux <- aloja_binarize_ds(ds[,c(vout,vin)]);
+	auxset <- aloja_binarize_mixsets(traux=traux,ntaux=ntaux,tvaux=tvaux,ttaux=ttaux);
 	vin <- colnames(dsbaux[,-1]);
 
 	# Load and split datasets
-	rt <- aloja_load_datasets (dsbaux,vin,vout,tsplit,vsplit,ttaux,ntaux,traux,tvaux,ttfile,trfile,tvfile);
+	dsid <- cbind(ds[,"ID"],dsbaux);
+	colnames(dsid) <- c("ID",vout,vin);
+	rt <- aloja_load_datasets (dsid,vin,vout,tsplit,vsplit,auxset$ttaux,auxset$ntaux,auxset$traux,auxset$tvaux,ttfile,trfile,tvfile);
 
 	# Remove outliers (leap of faith, as vout may not be normal
 	if (rmols)
@@ -291,7 +351,7 @@ aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TR
 	trauxnorm <- NULL;
 	tvauxnorm <- NULL;
 	ttauxnorm <- NULL;
-	for (i in 1:length(rt$trainset))
+	for (i in c(vout,vin))
 	{
 		trauxnorm <- cbind(trauxnorm, (rt$trainset[,i]-min(c(rt$trainset[,i],rt$validset[,i])))/max(c(rt$trainset[,i],rt$validset[,i])));
 		tvauxnorm <- cbind(tvauxnorm, (rt$validset[,i]-min(c(rt$trainset[,i],rt$validset[,i])))/max(c(rt$trainset[,i],rt$validset[,i])));
@@ -354,12 +414,15 @@ aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TR
 
 aloja_linreg <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE, pngval = NULL, pngtest = NULL, saveall = NULL, ttaux = NULL, ntaux = NULL, traux = NULL, tvaux = NULL, sigma = 3, ttfile = NULL, trfile = NULL, tvfile = NULL, ppoly = 1, prange = NULL)
 {
-	# Binarization of variables FIXME - Que passa quan entra ttaux directament?
+	# Binarization of variables
 	dsbaux <- aloja_binarize_ds(ds[,c(vout,vin)]);
+	auxset <- aloja_binarize_mixsets(traux=traux,ntaux=ntaux,tvaux=tvaux,ttaux=ttaux);
 	vin <- colnames(dsbaux[,-1]);
 
 	# Load and split datasets
-	rt <- aloja_load_datasets (dsbaux,vin,vout,tsplit,vsplit,ttaux,ntaux,traux,tvaux,ttfile,trfile,tvfile);
+	dsid <- cbind(ds[,"ID"],dsbaux);
+	colnames(dsid) <- c("ID",vout,vin);
+	rt <- aloja_load_datasets (dsid,vin,vout,tsplit,vsplit,auxset$ttaux,auxset$ntaux,auxset$traux,auxset$tvaux,ttfile,trfile,tvfile);
 
 	# Remove outliers (leap of faith, as vout may not be normal)
 	if (rmols)
@@ -423,7 +486,7 @@ aloja_linreg <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = T
 aloja_nneighbors <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE, pngval = NULL, pngtest = NULL, saveall = NULL, ttaux = NULL, ntaux = NULL, traux = NULL, tvaux = NULL, sigma = 3, ttfile = NULL, trfile = NULL, tvfile = NULL, kparam = 1, iparam = TRUE)
 {
 	# Load and split datasets
-	rt <- aloja_load_datasets (dsbaux,vin,vout,tsplit,vsplit,ttaux,ntaux,traux,tvaux,ttfile,trfile,tvfile);
+	rt <- aloja_load_datasets (ds,vin,vout,tsplit,vsplit,ttaux,ntaux,traux,tvaux,ttfile,trfile,tvfile);
 
 	# Remove outliers (leap of faith, as vout may not be normal
 	if (rmols)
@@ -440,8 +503,8 @@ aloja_nneighbors <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols
 
 	# Training and Validation TODO - Parameter automatic choice
 	rt[["model"]] <- IBk(formula=rt$trainset[,vout] ~ . , data = rt$trainset[,vin], control = Weka_control(K = kparam, I = iparam));
-	evaluate_Weka_classifier(rt[["model"]], numFolds = 10);
-	rt[["predtrain"]] <- rt$model$ml$predictions;
+	#evaluate_Weka_classifier(rt[["model"]], numFolds = 10);
+	rt[["predtrain"]] <- rt$model$predictions;
 	rt[["predval"]] <- predict(rt$model,newdata=rt$validset);
 	rt[["maeval"]] <- mean(abs(rt$predval - rt$validset[,vout]));
 	rt[["raeval"]] <- mean(abs((rt$predval - rt$validset[,vout])/rt$validset[,vout]));
@@ -477,7 +540,7 @@ aloja_nneighbors <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols
 aloja_regtree <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE, pngval = NULL, pngtest = NULL, saveall = NULL, ttaux = NULL, ntaux = NULL, traux = NULL, tvaux = NULL, sigma = 3, ttfile = NULL, trfile = NULL, tvfile = NULL, exsel = NULL, prange = NULL)
 {
 	# Load and split datasets
-	rt <- aloja_load_datasets (dsbaux,vin,vout,tsplit,vsplit,ttaux,ntaux,traux,tvaux,ttfile,trfile,tvfile);
+	rt <- aloja_load_datasets (ds,vin,vout,tsplit,vsplit,ttaux,ntaux,traux,tvaux,ttfile,trfile,tvfile);
 
 	# Example selection from a threshold, balancing outputs
 	if (!is.null(exsel))
@@ -623,17 +686,15 @@ aloja_pca <- function (dsbin, vin, vout, pngpca = NULL)
 
 aloja_save_predictions <- function (ds, trdata, trpred, tvdata, tvpred, ttdata, ttpred, testname = "default")
 {
-	trIDs <- ds[rownames(ds) %in% rownames(trdata),"ID"];
-	tvIDs <- ds[rownames(ds) %in% rownames(tvdata),"ID"];
-	ttIDs <- ds[rownames(ds) %in% rownames(ttdata),"ID"];
+	traux <- cbind(trdata,trpred);
+	tvaux <- cbind(tvdata,tvpred);
+	ttaux <- cbind(ttdata,ttpred);
 
-	traux <- cbind(trIDs,trdata,trpred);
-	tvaux <- cbind(tvIDs,tvdata,tvpred);
-	ttaux <- cbind(ttIDs,ttdata,ttpred);
-	
-	colnames(traux) <- c("ID",colnames(trdata),"Pred.Exe.Time");
-	colnames(tvaux) <- c("ID",colnames(tvdata),"Pred.Exe.Time");
-	colnames(ttaux) <- c("ID",colnames(ttdata),"Pred.Exe.Time");
+	colnames(traux) <- c(colnames(trdata),"Pred.Exe.Time");
+	colnames(tvaux) <- c(colnames(tvdata),"Pred.Exe.Time");
+	colnames(ttaux) <- c(colnames(ttdata),"Pred.Exe.Time");
+
+	write.table(ds, file = paste(testname,"-ds.csv",sep=""), sep = ",", row.names=FALSE);
 
 	write.table(traux, file = paste(testname,"-tr.csv",sep=""), sep = ",", row.names=FALSE);
 	write.table(tvaux, file = paste(testname,"-tv.csv",sep=""), sep = ",", row.names=FALSE);
@@ -652,7 +713,7 @@ aloja_save_wekamodel <- function (model_0, testname = "default")
 	if (!is.null(model_0))
 	{
 		rJava::.jcache(model_0$classifier);
-		save(model_2,file=paste(testname,"-model.dat",sep=""));
+		save(model_0,file=paste(testname,"-model.dat",sep=""));
 	}
 }
 
