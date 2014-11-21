@@ -6,14 +6,15 @@ library(reshape);
 library(nnet); set.seed(1234567890);
 library(session);
 
+source("nnet_plot_update.r");
+#source_url('https://gist.githubusercontent.com/fawda123/7471137/raw/466c1474d0a505ff044412703516c34f1a4684a5/nnet_plot_update.r')
+
 ###############################################################################
 # Read datasets and prepare them for usage                                    #
 ###############################################################################
 
 aloja_get_data <- function (fread, cds = FALSE, hds = FALSE, fproc = NULL)
 {
-	retval <- list();
-
 	ds <- read.table(fread,header=T,sep=",");
 
 	aux <- strptime(ds[,"End.time"],format="%Y%m%d%H%M%S");
@@ -45,13 +46,13 @@ aloja_get_data <- function (fread, cds = FALSE, hds = FALSE, fproc = NULL)
 		ds <- cbind(ds,histogram,bench_hist);
 	}
 
-	retval[["ds"]] <- ds[,!(colnames(ds) %in% c("X","Exec.Conf","Histogram","PARAVER"))];
-	retval[["ds_sub"]] <- ds[,c("Exe.Time","Running.Cost..","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster","End.time")];
+	retval <- ds[,!(colnames(ds) %in% c("X","Exec.Conf","Histogram","PARAVER"))];
+	ds_sub <- ds[,c("Exe.Time","Running.Cost..","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster","End.time")];
 
 	if (!is.null(fproc))
 	{
-		write.table(retval$ds,file=paste(fproc,"-full.csv",sep=""),sep=",",row.names=F);
-		write.table(retval$ds_sub,file=paste(fproc,"-sub.csv",sep=""),sep=",",row.names=F);
+		write.table(retval,file=paste(fproc,"-full.csv",sep=""),sep=",",row.names=F);
+		write.table(ds_sub,file=paste(fproc,"-sub.csv",sep=""),sep=",",row.names=F);
 	}
 
 	retval;
@@ -232,15 +233,30 @@ aloja_testsplit_load <- function (ds, vin, vout, ttaux, vsplit)
 	retval;
 }
 
-aloja_datafile_load <- function (ttfile, trfile, tvfile, vin, vout)
+aloja_datafile_load <- function (ds, vin, vout, ttfile, trfile = NULL, tvfile = NULL, vsplit = 0.66)
 {
 	retval <- list();
 
 	retval[["testset"]] <- read.table(ttfile,header=T,sep=",")[,c("ID",vout,vin)];
 	retval[["tselected"]] <- rownames(retval$testset);
-	retval[["trainset"]] <- read.table(trfile,header=T,sep=",")[,c("ID",vout,vin)];
-	retval[["tselected"]] <- rownames(retval$trainset);
-	retval[["validset"]] <- read.table(tvfile,header=T,sep=",")[,c("ID",vout,vin)];
+
+	if (!is.null(trfile) & !is.null(tvfile))
+	{
+		retval[["trainset"]] <- read.table(trfile,header=T,sep=",")[,c("ID",vout,vin)];
+		retval[["rselected"]] <- rownames(retval$trainset);
+		retval[["validset"]] <- read.table(tvfile,header=T,sep=",")[,c("ID",vout,vin)];
+	} else {
+		aux <- ds[,c("ID",vout,vin)];
+		ntaux <- aux[!(rownames(aux) %in% retval$tselected),];
+
+		selected <- sample(1:length(ntaux[,1]),length(ntaux[,1])*vsplit);
+		traux <- ntaux[selected,];
+		tvaux <- ntaux[!(rownames(ntaux) %in% selected),];
+
+		retval[["rselected"]] <- selected;
+		retval[["trainset"]] <- traux;
+		retval[["validset"]] <- tvaux;
+	}
 
 	retval[["dataset"]] <- rbind(retval$testset,retval$trainset,retval$validset);
 
@@ -251,8 +267,8 @@ aloja_load_datasets <- function (ds, vin, vout, tsplit, vsplit, ttaux = NULL, nt
 {
 	rt <- NULL;
 
-	if (!is.null(ttfile) & !is.null(trfile) & !is.null(tvfile)) {
-		rt <- aloja_datafile_load(ds,vin,vout,tsplit,vsplit);
+	if (!is.null(ttfile)) {
+		rt <- aloja_datafile_load(ds, vin, vout, ttfile, trfile, tvfile, vsplit);
 	} else if (!is.null(ttaux) & !is.null(traux) & !is.null(tvaux)) {
 		rt <- aloja_split_load(ds,vin,vout,ttaux,traux,tvaux);
 	} else if (!is.null(ttaux) & is.null(tvaux) & is.null(traux))	{
@@ -516,7 +532,7 @@ aloja_nneighbors <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols
 	# Load and split datasets
 	rt <- aloja_load_datasets (ds,vin,vout,tsplit,vsplit,ttaux,ntaux,traux,tvaux,ttfile,trfile,tvfile);
 
-	# Remove outliers (leap of faith, as vout may not be normal
+	# Remove outliers (leap of faith, as vout may not be normal)
 	if (rmols)
 	{
 		rt[["olstrain"]] <- rt$trainset[rt$trainset[,vout] > mean(rt$trainset[,vout]) + sigma * sd(rt$trainset[,vout]),];
@@ -760,5 +776,29 @@ aloja_save_status <- function ()
 	savehistory("Rhistory");
 	system(paste("tar cvzf rsession-",Sys.Date(),".tar.gz RData Rhistory",sep=""));
 	system("rm RData Rhistory");
+}
+
+###############################################################################
+# R hacks and operators                                                       #
+###############################################################################
+
+':=' <- function(lhs, rhs)
+{
+	frame <- parent.frame();
+	lhs <- as.list(substitute(lhs));
+	if (length(lhs) > 1)
+		lhs <- lhs[-1];
+	if (length(lhs) == 1)
+	{
+		do.call(`=`, list(lhs[[1]], rhs), envir=frame);
+		return(invisible(NULL));
+	}
+	if (is.function(rhs) || is(rhs, 'formula'))
+		rhs <- list(rhs);
+	if (length(lhs) > length(rhs))
+		rhs <- c(rhs, rep(list(NULL), length(lhs) - length(rhs)));
+	for (i in 1:length(lhs))
+		do.call(`=`, list(lhs[[i]], rhs[[i]]), envir=frame);
+	return(invisible(NULL));
 }
 

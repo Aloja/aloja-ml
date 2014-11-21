@@ -1,26 +1,23 @@
 
 source("functions.r");
-source("nnet_plot_update.r");
-#source_url('https://gist.githubusercontent.com/fawda123/7471137/raw/466c1474d0a505ff044412703516c34f1a4684a5/nnet_plot_update.r')
-
 options(width=as.integer(Sys.getenv("COLUMNS")));
 
 ###############################################################################
 # Read datasets and prepare them for usage                                    #
 ###############################################################################
 
-	aux <- aloja_get_data(fread = "aloja-dataset.csv", cds = FALSE, hds = FALSE, fproc = "aloja-process");
-	dataset <- aux$ds;
-	dataset_sub <- aux$ds_sub;
-	rm(aux);
+	dataset <- aloja_get_data(fread = "aloja-dataset.csv", cds = FALSE, hds = FALSE, fproc = "aloja-process");
 
-	aloja_print_summaries(fprint="output.txt", ds=dataset, ds_sub=dataset_sub, fwidth = 1000, ms = 10);
+	varout <- "Exe.Time";
+	varin <- c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster");
+
+	aloja_print_summaries(fprint="output.txt", ds=dataset, ds=dataset[,c(varout,"Running.Cost..",varin)], fwidth = 1000, ms = 10);
 
 ###############################################################################
 # Relation among input ~ output variables                                     #
 ###############################################################################
 
-	aloja_crossvariables(dataset_sub, jfactor=0.1);
+	aloja_crossvariables(dataset[,c(varout,varin)], jfactor=0.1);
 
 ###############################################################################
 # ANOVA of current variables                                                  #
@@ -32,9 +29,6 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 ###############################################################################
 # Learning from the variables                                                 #
 ###############################################################################
-
-	varout <- "Exe.Time";
-	varin <- c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster");
 
 ###############################################################################
 # Regression Trees
@@ -66,7 +60,7 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 	rm (baux,taux,name);
 
 ###############################################################################
-# Nearest Neighbor
+# Nearest Neighbors
 
 	#ibk1 <- aloja_nneighbors(dataset,varin,varout,ttaux=m5p1$testset);
 	ibk1 <- aloja_nneighbors(dataset,vin=varin,vout=varout,ttaux=m5p1$testset,saveall="ibk-simple",pngval="ibk-simple-app",pngtest="ibk-simple-test");
@@ -101,14 +95,14 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 ###############################################################################
 # Principal Components Analysis
 
-	pca1 <- aloja_pca(m5p1$dataset,vin,vout,pngpca="pca");
+	pca1 <- aloja_pca(dataset,vin,vout,pngpca="pca");
 	pca1$loadings;
 
 	#######################################################################
 	## LinReg (with reduced dimension)
 
 	#pr3dim <- aloja_linreg(pca1$dataset,colnames(pca1$dataset)[-1],colnames(pca1$dataset)[1],ppoly=3,prange=c(1e-4,1e+4));
-	pr3dim <- aloja_linreg(pca1$dataset,colnames(pca1$dataset)[-1],colnames(pca1$dataset)[1],ppoly=3,prange=c(1e-4,1e+4),saveall=c("polynom3 redim","linreg"),pngval="linreg-polynom3-redim-app",pngtest="linreg-polynom3-redim-test");
+	pr3dim <- aloja_linreg(pca1$dataset,colnames(pca1$dataset)[-1],colnames(pca1$dataset)[1],ppoly=3,prange=c(1e-4,1e+4),saveall="polynom3 redim",pngval="linreg-polynom3-redim-app",pngtest="linreg-polynom3-redim-test");
 
 	par(mfrow=c(1,2));
 	plot(pr3dim$predval,pr3dim$validset[,varout],main=paste("Polynomial Regression power =",pr3dim$ppoly));
@@ -121,8 +115,8 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 	#######################################################################
 	## Training M5P (with reduced dimension)
 
-	#m5p1dim <- aloja_regtree(pca1$extended,colnames(pca1$dataset)[-1],colnames(pca1$dataset)[1],prange=c(1e-4,1e+4));
-	m5p1dim <- aloja_regtree(pca1$extended,colnames(pca1$dataset)[-1],colnames(pca1$dataset)[1],prange=c(1e-4,1e+4),saveall=c("simple redim","m5p"),pngval="m5p-simple-redim-app",pngtest="m5p-simple-redim-test");
+	#m5p1dim <- aloja_regtree(pca1$dataset,colnames(pca1$dataset)[-1],colnames(pca1$dataset)[1],prange=c(1e-4,1e+4));
+	m5p1dim <- aloja_regtree(pca1$dataset,colnames(pca1$dataset)[-1],colnames(pca1$dataset)[1],prange=c(1e-4,1e+4),saveall=c("simple redim","m5p"),pngval="m5p-simple-redim-app",pngtest="m5p-simple-redim-test");
 
 	par(mfrow=c(1,2));
 	plot(m5p1dim$predval,m5p1dim$validset[,varout],main=paste("Best Validation M5P (Red.Dim.) M = ",m5p1dim$mmin));
