@@ -30,7 +30,6 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 ###############################################################################
 
 	anova_1 <- aloja_anova(dataset);
-	print (c("Means are equal: ",anova_1$f < anova_1$critical));
 
 ###############################################################################
 # Learning from the variables                                                 #
@@ -101,14 +100,14 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 ###############################################################################
 # Principal Components Analysis
 
-	pca1 <- aloja_pca(dataset,vin,vout,pngpca="pca");
+	pca1 <- aloja_pca(dataset,vin=varin,vout=varout,pngpca="pca");
 	pca1$loadings;
 
 	#######################################################################
 	## LinReg (with reduced dimension)
 
-	#pr3dim <- aloja_linreg(pca1$dataset,colnames(pca1$dataset)[-1],colnames(pca1$dataset)[1],ppoly=3,prange=c(1e-4,1e+4));
-	pr3dim <- aloja_linreg(pca1$dataset,colnames(pca1$dataset)[-1],colnames(pca1$dataset)[1],ppoly=3,prange=c(1e-4,1e+4),saveall="polynom3 redim",pngval="linreg-polynom3-redim-app",pngtest="linreg-polynom3-redim-test");
+	#pr3dim <- aloja_linreg(pca1$pcaset,vin=colnames(pca1$pcaset)[3:22],vout=varout,ppoly=3,prange=c(1e-4,1e+4));
+	pr3dim <- aloja_linreg(pca1$pcaset,vin=colnames(pca1$pcaset)[3:22],vout=varout,ppoly=3,prange=c(1e-4,1e+4),saveall="polynom3 redim",pngval="linreg-polynom3-redim-app",pngtest="linreg-polynom3-redim-test");
 
 	par(mfrow=c(1,2));
 	plot(pr3dim$predval,pr3dim$validset[,varout],main=paste("Polynomial Regression power =",pr3dim$ppoly));
@@ -121,8 +120,8 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 	#######################################################################
 	## Training M5P (with reduced dimension)
 
-	#m5p1dim <- aloja_regtree(pca1$dataset,colnames(pca1$dataset)[-1],colnames(pca1$dataset)[1],prange=c(1e-4,1e+4));
-	m5p1dim <- aloja_regtree(pca1$dataset,colnames(pca1$dataset)[-1],colnames(pca1$dataset)[1],prange=c(1e-4,1e+4),saveall=c("simple redim","m5p"),pngval="m5p-simple-redim-app",pngtest="m5p-simple-redim-test");
+	#m5p1dim <- aloja_regtree(pca1$pcaset,vin=colnames(pca1$pcaset)[3:22],vout=varout,prange=c(1e-4,1e+4));
+	m5p1dim <- aloja_regtree(pca1$pcaset,vin=colnames(pca1$pcaset)[3:22],vout=varout,prange=c(1e-4,1e+4),saveall=c("simple redim","m5p"),pngval="m5p-simple-redim-app",pngtest="m5p-simple-redim-test");
 
 	par(mfrow=c(1,2));
 	plot(m5p1dim$predval,m5p1dim$validset[,varout],main=paste("Best Validation M5P (Red.Dim.) M = ",m5p1dim$mmin));

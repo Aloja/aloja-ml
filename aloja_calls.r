@@ -46,8 +46,6 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 	params[["ds"]] = dataset;
 
 	anova_1 <- do.call(aloja_anova,params);
-	print (c("Means are equal: ",anova_1$f < anova_1$critical));
-
 
 	# Training M5P without example selection
 	params <- list();

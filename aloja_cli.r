@@ -16,10 +16,11 @@ source("functions.r");
 	suppressPackageStartupMessages(require(optparse));
 
 	option_list = list(
-		make_option(c("-p", "--params"), action="store", default=NA, type='character', help="list of parameters, separated by coma and no spaces"),
-		make_option(c("-m", "--method"), action="store", default=NA, type='character', help="method to be executed"),
-		make_option(c("-d", "--dataset"), action="store", default=NA, type='character', help="dataset source of data")
-	) 
+		make_option(c("-p", "--params"), action="store", default=NULL, type='character', help="list of parameters, separated by coma and no spaces"),
+		make_option(c("-m", "--method"), action="store", default=NULL, type='character', help="method to be executed"),
+		make_option(c("-d", "--dataset"), action="store", default=NULL, type='character', help="dataset source of data"),
+		make_option(c("-a", "--allvars"), action="store_true", default=FALSE, help="all vars are input but first one (for reduced dimensions)")
+	);
 
 	opt = parse_args(OptionParser(option_list=option_list));
 
@@ -28,18 +29,18 @@ source("functions.r");
 
 	if (is.null(opt$dataset))
 	{
-		cat("Warning! No dataset introduced. Dataset could be incomplete if no Training, Validation and Test files are explicitly introduced");
+		cat("[WARN] No dataset introduced. Dataset could be incomplete if no Training, Validation and Test files are explicitly introduced\n");
 	}
 
 	if (is.null(opt$method))
 	{
-		cat("Error! No method selected. Aborting mission.");
+		cat("[ERROR] No method selected. Aborting mission.\n");
 		quit(save="no", status=-1);
 	}
 
 	if (is.null(opt$params))
 	{
-		cat("Info! No parameters introduced. Default configuration per method will be selected.");
+		cat("[INFO] No parameters introduced. Default configuration per method will be selected.\n");
 	}
 
 ###############################################################################
@@ -56,16 +57,23 @@ source("functions.r");
 		dataset <- do.call(aloja_get_data,params_1);
 	}
 
-	varout <- "Exe.Time";
-	varin <- c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster");
-
 ###############################################################################
 # Parse parameters
 
 	params <- list();
 	params[["ds"]] <- dataset;
-	params[["vin"]] = varin;
-	params[["vout"]] = varout;
+
+	if (opt$method %in% c("aloja_regtree","aloja_nneighbors","aloja_linreg","aloja_nnet","aloja_pca"))
+	{
+		if (opt$allvars)
+		{
+			params[["vin"]] = colnames(dataset)[-1];
+			params[["vout"]] = colnames(dataset)[1];
+		} else {
+			params[["vin"]] = c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster");
+			params[["vout"]] = "Exe.Time";
+		}
+	}
 
 	if (!is.null(opt$params))
 	{
@@ -76,6 +84,7 @@ source("functions.r");
 		{
 			params[[saux_2[[i]][1]]] <- saux_2[[i]][2];
 		}
+		rm(saux_1,saux_2);
 	}
 
 ###############################################################################

@@ -167,6 +167,8 @@ aloja_anova <- function (ds)
 	anova_1$f <- (anova_1$ssb / (anova_1$K - 1)) / anova_1$mse;
 	anova_1$critical <- qf(1-anova_1$alpha, anova_1$K-1, anova_1$N-1);
 
+	print (c("Means are equal: ",anova_1$f < anova_1$critical));
+
 	anova_1;
 }
 
@@ -183,14 +185,14 @@ aloja_split_dataset <- function (ds, vin, vout, tsplit, vsplit)
 
 	selected <- sample(1:length(aux[,1]),length(aux[,1])*tsplit);
 	ttaux <- aux[selected,];
-	ntaux <- aux[!(rownames(aux) %in% selected),];
+	ntaux <- aux[-selected,];
 
 	retval[["tselected"]] <- selected;
 	retval[["testset"]] <- ttaux;
 
 	selected <- sample(1:length(ntaux[,1]),length(ntaux[,1])*vsplit);
 	traux <- ntaux[selected,];
-	tvaux <- ntaux[!(rownames(ntaux) %in% selected),];
+	tvaux <- ntaux[-selected,];
 
 	retval[["rselected"]] <- selected;
 	retval[["trainset"]] <- traux;
@@ -230,7 +232,7 @@ aloja_testsplit_load <- function (ds, vin, vout, ttaux, vsplit)
 
 	selected <- sample(1:length(ntaux[,1]),length(ntaux[,1])*vsplit);
 	traux <- ntaux[selected,];
-	tvaux <- ntaux[!(rownames(ntaux) %in% selected),];
+	tvaux <- ntaux[-selected,];
 
 	retval[["rselected"]] <- selected;
 	retval[["trainset"]] <- traux;
@@ -257,7 +259,7 @@ aloja_datafile_load <- function (ds, vin, vout, ttfile, trfile = NULL, tvfile = 
 
 		selected <- sample(1:length(ntaux[,1]),length(ntaux[,1])*vsplit);
 		traux <- ntaux[selected,];
-		tvaux <- ntaux[!(rownames(ntaux) %in% selected),];
+		tvaux <- ntaux[-selected,];
 
 		retval[["rselected"]] <- selected;
 		retval[["trainset"]] <- traux;
@@ -704,13 +706,15 @@ aloja_m5p_select <- function (vout_1, vin_1, traux_1, tvaux_1, mintervals_1)
 # Principal Component Analysis methods                                        #
 ###############################################################################
 
-aloja_pca <- function (ds, vin, vout, pngpca = NULL)
+aloja_pca <- function (ds, vin, vout, pngpca = NULL, saveall = NULL)
 {
 	dsbin <- aloja_binarize_ds(ds[,c(vout,vin)]);
 	vin <- colnames(dsbin[,-1]);
 
 	pc <- princomp(dsbin[,vin]);
 	pc[["dataset"]] <- dsbin;
+	pc[["pcaset"]] <- cbind(dataset[,"ID"],dsbin[,vout],pc$scores);
+	colnames(pc$pcaset) <- c("ID",vout,colnames(pc$scores));
 
 	if (!is.null(pngpca))
 	{
@@ -728,6 +732,12 @@ aloja_pca <- function (ds, vin, vout, pngpca = NULL)
 				dev.off();
 			}
 		}
+	}
+
+	if (!is.null(saveall))
+	{
+		write.table(pc$dataset, file = paste(saveall,"-dataset.csv",sep=""), sep = ",", row.names=FALSE);
+		write.table(pc$pcaset, file = paste(saveall,"-transformed.csv",sep=""), sep = ",", row.names=FALSE);
 	}
 
 	pc;
