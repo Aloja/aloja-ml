@@ -1,3 +1,9 @@
+
+# Josep Ll. Berral-García
+# ALOJA-BSC-MRS hadoop.bsc.es
+# 2014-11-24
+# Function library for ALOJA-ML
+
 library(stringr);
 library(RWeka);
 library(devtools);

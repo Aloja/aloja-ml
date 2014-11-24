@@ -1,3 +1,9 @@
+#!/usr/bin/env Rscript
+
+# Josep Ll. Berral-García
+# ALOJA-BSC-MRS hadoop.bsc.es
+# 2014-11-24
+# Scripts and snippets for ALOJA-ML
 
 source("functions.r");
 options(width=as.integer(Sys.getenv("COLUMNS")));
