@@ -712,7 +712,8 @@ aloja_pca <- function (ds, vin, vout, pngpca = NULL, saveall = NULL)
 	vin <- colnames(dsbin[,-1]);
 
 	pc <- princomp(dsbin[,vin]);
-	pc[["dataset"]] <- dsbin;
+	pc[["dataset"]] <- cbind(dataset[,"ID"],dsbin);
+	colnames(pc$dataset) <- c("ID",colnames(dsbin));
 	pc[["pcaset"]] <- cbind(dataset[,"ID"],dsbin[,vout],pc$scores);
 	colnames(pc$pcaset) <- c("ID",vout,colnames(pc$scores));
 
