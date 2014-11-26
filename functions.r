@@ -406,17 +406,23 @@ aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TR
 	trauxnorm <- NULL;
 	tvauxnorm <- NULL;
 	ttauxnorm <- NULL;
+	rt[["maxout"]] <- NULL;
+	rt[["minout"]] <- NULL;
 	for (i in c(vout,vin))
 	{
 		trauxnorm <- cbind(trauxnorm, (rt$trainset[,i]-min(c(rt$trainset[,i],rt$validset[,i])))/max(c(rt$trainset[,i],rt$validset[,i])));
 		tvauxnorm <- cbind(tvauxnorm, (rt$validset[,i]-min(c(rt$trainset[,i],rt$validset[,i])))/max(c(rt$trainset[,i],rt$validset[,i])));
 		ttauxnorm <- cbind(ttauxnorm, (rt$testset[,i]-min(c(rt$trainset[,i],rt$validset[,i])))/max(c(rt$trainset[,i],rt$validset[,i]))); # Same Norm (tr,tv) as not seen before
+		rt[["maxout"]] <- c(rt[["maxout"]],max(c(rt$trainset[,i],rt$validset[,i])));
+		rt[["minout"]] <- c(rt[["minout"]],min(c(rt$trainset[,i],rt$validset[,i])));
 	}
 	rt[["normtrainset"]] <- trauxnorm;
 	rt[["normvalidset"]] <- tvauxnorm;
 	rt[["normtestset"]] <- ttauxnorm;
-	rt[["maxout"]] <- max(c(rt$trainset[,vout],rt$validset[,vout]));
-	rt[["minout"]] <- min(c(rt$trainset[,vout],rt$validset[,vout]));
+	rt[["maxout"]] <- matrix(rt[["maxout"]]);
+	rt[["minout"]] <- matrix(rt[["minout"]]);
+	rownames(rt[["maxout"]]) <- c(vout,vin);
+	rownames(rt[["minout"]]) <- c(vout,vin);
 
 	vout <- 1;
 	rt[["varin"]] <- vin;
@@ -718,7 +724,7 @@ aloja_predict_instance <- function (learned_model, vin, inst_predict)
 	colnames(inst_aux) <- vin;
 
 	datamodel <- ds[1,learned_model$varin];
-	if (class(model_aux)[1]=="lm" || class(model_aux)[1]=="nnet") #FIXME for nnet (normalization)
+	if (class(model_aux)[1]=="lm" || class(model_aux)[1]=="nnet")
 	{
 		for (name_1 in colnames(datamodel))
 		{
@@ -726,7 +732,13 @@ aloja_predict_instance <- function (learned_model, vin, inst_predict)
 			{
 				value_aux <- inst_aux[1,name_1];
 				class(value_aux) <- class(datamodel[1,name_1]);
+
+				if (class(model_aux)[1]=="nnet")
+				{
+					value_aux <- (value_aux - learned_model$minout[name_1,]) / learned_model$maxout[name_1,];
+				}
 				datamodel[1,name_1] <- value_aux;
+
 			} else {
 				datamodel[1,name_1] <- 0;
 				for (name_2 in colnames(inst_aux))
@@ -743,7 +755,13 @@ aloja_predict_instance <- function (learned_model, vin, inst_predict)
 	}
 
 	options(warn=-1);
-	as.vector(predict(model_aux,newdata=data.frame(datamodel)));
+
+	retval <- predict(model_aux,newdata=data.frame(datamodel));
+	if (class(model_aux)[1]=="nnet")
+	{
+		retval <- (retval * learned_model$maxout[learned_model$varout,]) + learned_model$minout[learned_model$varout,];
+	}
+	as.vector(retval);
 }
 
 ###############################################################################

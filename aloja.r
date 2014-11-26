@@ -180,6 +180,7 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 	m5p3 <- aloja_regtree(dataset,vin=varin,vout=varout); model_aux <- m5p3;
 	ibk1 <- aloja_nneighbors(dataset,vin=varin,vout=varout); model_aux <- ibk;
 	pr3 <- aloja_linreg(dataset,vin=varin,vout=varout,ppoly=3); model_aux <- pr3;
+	nn2 <- aloja_nnet(dataset,vin=varin,vout=varout); model_aux <- nn2;
 
 	maux3 <- maux;
 	for (i in 1:length(maux3))
@@ -197,4 +198,5 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 			maux3[i] <- aloja_predict_instance (model_aux,varin,inst_aux);
 		}
 	}
+	kc3 <- kmeans(maux3, 3);
 
