@@ -130,4 +130,71 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 	abline(0,1);
 	points(m5p1dim$predtest[rownames(m5p1dim$testset) %in% rownames(pca1$dataset[pca1$dataset[,"dfsioe_read"]==1,])],m5p1dim$testset[rownames(m5p1dim$testset) %in% rownames(pca1$dataset[pca1$dataset[,"dfsioe_read"]==1,]),1],col="red");
 
+###############################################################################
+# Dataset and Benchmark Caracterization                                       #
+###############################################################################
+
+###############################################################################
+# Benchmark - Configuration Matrix
+
+	#FIXME - Refactor following code:
+	ds <- dataset[c(varout,varin)];
+	dsaux <- cbind(ds[,c(varout,"Benchmark")],apply(ds[,3:11],1,paste,collapse="-"));
+	colnames(dsaux) <- c(varout,"Benchmark","Configuration");
+
+	maux <- matrix(NA,length(levels(dsaux[,"Benchmark"])),length(levels(dsaux[,"Configuration"])));
+	colnames(maux) <- levels(dsaux[,"Configuration"]);
+	rownames(maux) <- levels(dsaux[,"Benchmark"]);
+
+	midaux <- matrix(NA,length(levels(dsaux[,"Benchmark"])),length(levels(dsaux[,"Configuration"])));
+	colnames(midaux) <- levels(dsaux[,"Configuration"]);
+	rownames(midaux) <- levels(dsaux[,"Benchmark"]);
+
+	for (i in 1:length(dsaux[,1]))
+	{
+		bmk_aux <- dsaux[i,"Benchmark"];
+		cnf_aux <- dsaux[i,"Configuration"];
+		maux[bmk_aux,cnf_aux] <- dsaux[i,varout];
+		midaux[bmk_aux,cnf_aux] <- dataset[i,"ID"];
+	}
+
+	plot(maux["bayes",],ylim=c(0,10000));
+	points(maux["kmeans",],col="red");
+	points(maux["terasort",],col="green");
+	points(maux["sort",],col="blue");
+	points(maux["wordcount",],col="orange");
+	points(maux["pagerank",],col="yellow");
+	points(maux["dfsioe_write",],col="gray");
+
+###############################################################################
+# Clustering
+
+	#######################################################################
+	## Clustering with NA <- 0
+	maux2 <- maux;
+	maux2[is.na(maux2)] <- 0;
+	kc <- kmeans(maux2, 3);
+
+	#######################################################################
+	## Clustering with NA <- prediction
+	m5p3 <- aloja_regtree(dataset,vin=varin,vout=varout); model_aux <- m5p3;
+	ibk1 <- aloja_nneighbors(dataset,vin=varin,vout=varout); model_aux <- ibk;
+	pr3 <- aloja_linreg(dataset,vin=varin,vout=varout,ppoly=3); model_aux <- pr3;
+
+	maux3 <- maux;
+	for (i in 1:length(maux3))
+	{
+		if (is.na(maux3[i]))
+		{
+			row_aux <- ((i-1) %% length(maux3[,1])) + 1;
+			col_aux <- ((i-1) %/% length(maux3[,1])) + 1;
+
+			bmk_aux <- rownames(maux3)[row_aux];
+			cnf_aux <- colnames(maux3)[col_aux];
+
+			inst_aux <- c(bmk_aux,strsplit(cnf_aux,split="-")[[1]]);
+			
+			maux3[i] <- aloja_predict_instance (model_aux,varin,inst_aux);
+		}
+	}
 
