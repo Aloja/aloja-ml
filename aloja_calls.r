@@ -167,3 +167,29 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 
 	m5p1dim <- do.call(aloja_regtree,params);
 
+	# Training, saving, loading and using a model
+	params <- list();
+	params[["ds"]] = dataset;
+	params[["vin"]] = varin;
+	params[["vout"]] = varout;
+	params[["pngval"]] = "m5p-iotest-app";
+	params[["pngtest"]] = "m5p-iotest-test";
+	params[["saveall"]] = "m5p-iotest";
+
+	m5pio1 <- do.call(aloja_regtree,params);
+
+	params <- list();
+	params[["tagname"]] = "m5p-iotest";
+	params[["is.weka"]] = TRUE;
+
+	m5pio2 <- do.call(aloja_load_object,params);
+	if (!is.weka) identical(m5pio1, m5pio2, ignore.environment = TRUE);
+
+	params <- list();
+	params[["learned_model"]] = m5pio2;
+	params[["vin"]] = varin;
+	params[["inst_predict"]] = c("sort","ETH","RR3","8","10","1","65536","None","32","Azure L");
+
+	predict1 <- do.call(aloja_predict_instance,params);
+	
+

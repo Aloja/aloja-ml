@@ -16,10 +16,13 @@ source("functions.r");
 	suppressPackageStartupMessages(require(optparse));
 
 	option_list = list(
-		make_option(c("-p", "--params"), action="store", default=NULL, type='character', help="list of parameters, separated by coma and no spaces"),
-		make_option(c("-m", "--method"), action="store", default=NULL, type='character', help="method to be executed"),
-		make_option(c("-d", "--dataset"), action="store", default=NULL, type='character', help="dataset source of data"),
-		make_option(c("-a", "--allvars"), action="store_true", default=FALSE, help="all vars are input but first one (for reduced dimensions)")
+		make_option(c("-m", "--method"), action="store", default=NULL, type='character', help="Method to be executed"),
+		make_option(c("-p", "--params"), action="store", default=NULL, type='character', help="Generic list of parameters, separated by coma and no spaces"),
+		make_option(c("-v", "--verbose"), action="store_true", default=FALSE, help="Outputs the result of the method"),
+		make_option(c("-d", "--dataset"), action="store", default=NULL, type='character', help="For training methods: Dataset source of data"),
+		make_option(c("-a", "--allvars"), action="store_true", default=FALSE, help="For training methods: All vars are input but first one (for reduced dimensions)"),
+		make_option(c("-l", "--learned"), action="store", default=NULL, type='character', help="For prediction methods: Learned model for prediction"),
+		make_option(c("-i", "--instance"), action="store", default=NULL, type='character', help="For prediction methods: Instance to predict")
 	);
 
 	opt = parse_args(OptionParser(option_list=option_list));
@@ -27,20 +30,10 @@ source("functions.r");
 ###############################################################################
 # Error and Warning messages on arguments
 
-	if (is.null(opt$dataset))
-	{
-		cat("[WARN] No dataset introduced. Dataset could be incomplete if no Training, Validation and Test files are explicitly introduced\n");
-	}
-
 	if (is.null(opt$method))
 	{
 		cat("[ERROR] No method selected. Aborting mission.\n");
 		quit(save="no", status=-1);
-	}
-
-	if (is.null(opt$params))
-	{
-		cat("[INFO] No parameters introduced. Default configuration per method will be selected.\n");
 	}
 
 ###############################################################################
@@ -75,6 +68,27 @@ source("functions.r");
 		}
 	}
 
+	if (opt$method  == "aloja_predict_instance")
+	{
+		if (is.null(opt$instance) || is.null(opt$learned))
+		{
+			cat("[ERROR] No instances or model introduced. Aborting mission.\n");
+			quit(save="no", status=-1);
+		}
+
+		if (opt$allvars)
+		{
+			params[["vin"]] = colnames(dataset)[-1];
+		} else {
+			params[["vin"]] = c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster");
+		}
+
+		load_1 <- list();
+		load_1[["tagname"]] <- opt$learned;
+		params[["learned_model"]] <- do.call(aloja_load_object,load_1);
+		params[["inst_predict"]] <- strsplit(opt$instance,",")[[1]];
+	}
+
 	if (!is.null(opt$params))
 	{
 		saux_1 <- strsplit(opt$params, ",");
@@ -91,6 +105,8 @@ source("functions.r");
 # Execute call
 
 	result <- do.call(opt$method,params);
+
+	if (opt$verbose) result;
 
 ###############################################################################
 # C'est fini

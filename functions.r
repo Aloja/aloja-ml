@@ -469,6 +469,8 @@ aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TR
 
 	if (!is.null(saveall))
 	{
+		aloja_save_model(rt$model,tagname=saveall);
+		aloja_save_object(rt,tagname=saveall);
 		aloja_save_predictions(rt$dataset,rt$trainset,rt$predtrain,rt$validset,rt$predval,rt$testset,rt$predtest,testname=saveall);
 	}
 
@@ -542,6 +544,8 @@ aloja_linreg <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = T
 
 	if (!is.null(saveall))
 	{
+		aloja_save_model(rt$model,tagname=saveall);
+		aloja_save_object(rt,tagname=saveall);
 		aloja_save_predictions(rt$dataset,rt$trainset,rt$predtrain,rt$validset,rt$predval,rt$testset,rt$predtest,testname=saveall);
 	}
 
@@ -597,7 +601,8 @@ aloja_nneighbors <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols
 
 	if (!is.null(saveall))
 	{
-		aloja_save_wekamodel(rt$model$ml,testname=saveall);
+		aloja_save_model(rt$model,tagname=saveall,is.weka=TRUE);
+		aloja_save_object(rt,tagname=saveall);
 		aloja_save_predictions(rt$dataset,rt$trainset,rt$predtrain,rt$validset,rt$predval,rt$testset,rt$predtest,testname=saveall);
 	}
 
@@ -679,7 +684,8 @@ aloja_regtree <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = 
 
 	if (!is.null(saveall))
 	{
-		aloja_save_wekamodel(rt$model,testname=saveall);
+		aloja_save_model(rt$model,tagname=saveall,is.weka=TRUE);
+		aloja_save_object(rt,tagname=saveall);
 		aloja_save_predictions(rt$dataset,rt$trainset,rt$predtrain,rt$validset,rt$predval,rt$testset,rt$predtest,testname=saveall);
 	}
 
@@ -868,19 +874,30 @@ aloja_save_datasets <- function (traux_0, tvaux_0, ttaux_0, name_0, algor_0)
 	write.table(ttaux_0, file = paste(algor_0,"-",name_0,"-tt.csv",sep=""), sep = ",");
 }
 
-aloja_save_wekamodel <- function (model_0, testname = "default")
+aloja_save_model <- function (model_0, tagname = "default", is.weka = FALSE)
 {
-	if (!is.null(model_0))
-	{
-		rJava::.jcache(model_0$classifier);
-		save(model_0,file=paste(testname,"-model.dat",sep=""));
-	}
+	if (is.weka) rJava::.jcache(model_0$classifier);
+	saveRDS(model_0,file=paste(tagname,"-model.dat",sep=""));
 }
 
-aloja_load_model <- function (testname = "default")
+aloja_save_object <- function (object_1, tagname = "default", is.weka = FALSE)
 {
-	load(paste(testname,"-model.dat",sep=""));
-	##rJava::.jstrVal(ml1$classifier);
+	if (!is.null(object_1$model) && is.weka) rJava::.jcache(object_1$model$classifier);
+	saveRDS(object_1,file=paste(tagname,"-object.rds",sep=""));
+}
+
+aloja_load_model <- function (tagname = "default", is.weka = FALSE)
+{
+	model_1 <- readRDS(paste(tagname,"-model.dat",sep=""));
+	##if (is.weka) rJava::.jstrVal(model_1$classifier);
+	model_1;
+}
+
+aloja_load_object <- function (tagname = "default", is.weka = FALSE)
+{
+	object_1 <- readRDS(paste(tagname,"-object.rds",sep=""));
+	##if (!is.null(object_1$model) && is.weka) rJava::.jstrVal(object_1model$classifier);
+	object_1;
 }
 
 aloja_save_status <- function ()
