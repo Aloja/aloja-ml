@@ -7,6 +7,8 @@
  
 # usage: ./aloja_cli.r -d dataset.csv -m aloja_m5p -p param1=aaaa,param2=bbbb,param3=cccc,...
 #	 ./aloja_cli.r --dataset dataset.csv --method aloja_regtree --params param1=aaaa,param2=bbbb,param3=cccc,...
+#	 ./aloja_cli.r -m aloja_predict_instance -l m5p-iotest -i "sort,ETH,RR3,8,10,1,65536,None,32,Azure L" -v
+#	 ./aloja_cli.r -m aloja_predict_instance -l m5p-iotest -d dataset-to-predict.csv -v
 
 source("functions.r");
 
@@ -68,11 +70,11 @@ source("functions.r");
 		}
 	}
 
-	if (opt$method  == "aloja_predict_instance")
+	if (opt$method  == "aloja_predict_instance" || opt$method  == "aloja_predict_dataset")
 	{
-		if (is.null(opt$instance) || is.null(opt$learned))
+		if (is.null(opt$instance) && is.null(opt$learned) && is.null(opt$dataset))
 		{
-			cat("[ERROR] No instances or model introduced. Aborting mission.\n");
+			cat("[ERROR] No instances, model or data introduced. Aborting mission.\n");
 			quit(save="no", status=-1);
 		}
 
@@ -83,10 +85,13 @@ source("functions.r");
 			params[["vin"]] = c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster");
 		}
 
-		load_1 <- list();
-		load_1[["tagname"]] <- opt$learned;
-		params[["learned_model"]] <- do.call(aloja_load_object,load_1);
-		params[["inst_predict"]] <- strsplit(opt$instance,",")[[1]];
+		params_2 <- list();
+		params_2[["tagname"]] <- opt$learned;
+		params[["learned_model"]] <- do.call(aloja_load_object,params_2);
+		if (opt$method  == "aloja_predict_instance")
+		{
+			params[["inst_predict"]] <- strsplit(opt$instance,",")[[1]];
+		}
 	}
 
 	if (!is.null(opt$params))

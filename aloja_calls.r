@@ -191,5 +191,12 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 	params[["inst_predict"]] = c("sort","ETH","RR3","8","10","1","65536","None","32","Azure L");
 
 	predict1 <- do.call(aloja_predict_instance,params);
+
+	params <- list();
+	params[["learned_model"]] = m5pio2;
+	params[["vin"]] = varin;
+	params[["ds"]] = dataset;	
+
+	predict2 <- do.call(aloja_predict_dataset,params);
 	
 

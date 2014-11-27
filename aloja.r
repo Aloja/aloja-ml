@@ -178,8 +178,8 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 	#######################################################################
 	## Clustering with NA <- prediction
 	m5p3 <- aloja_regtree(dataset,vin=varin,vout=varout); model_aux <- m5p3;
-	ibk1 <- aloja_nneighbors(dataset,vin=varin,vout=varout); model_aux <- ibk;
-	pr3 <- aloja_linreg(dataset,vin=varin,vout=varout,ppoly=3); model_aux <- pr3;
+	ibk2 <- aloja_nneighbors(dataset,vin=varin,vout=varout); model_aux <- ibk2;
+	pr31 <- aloja_linreg(dataset,vin=varin,vout=varout,ppoly=3); model_aux <- pr31;
 	nn2 <- aloja_nnet(dataset,vin=varin,vout=varout); model_aux <- nn2;
 
 	maux3 <- maux;

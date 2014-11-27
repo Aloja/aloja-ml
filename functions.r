@@ -23,11 +23,23 @@ aloja_get_data <- function (fread, cds = FALSE, hds = FALSE, fproc = NULL)
 {
 	ds <- read.table(fread,header=T,sep=",");
 
-	aux <- strptime(ds[,"End.time"],format="%Y%m%d%H%M%S");
-	ds[,"End.time"] <- NULL;
+	if ("End.Time" %in% colnames(ds))
+	{
+		aux <- strptime(ds[,"End.time"],format="%Y%m%d%H%M%S");
+		ds[,"End.time"] <- NULL;
+	} else {
+		aux <- rep(0,nrow(ds));
+	}
 	names_temp <- colnames(ds);
 	ds <- cbind(ds,aux);
 	colnames(ds) <- c(names_temp,"End.time");
+
+	if (!("Running.Cost.." %in% colnames(ds)))
+	{
+		names_temp <- colnames(ds);
+		ds <- cbind(ds,rep(0,nrow(ds)));
+		colnames(ds) <- c(names_temp,"Running.Cost..");
+	}
 
 	if (cds)
 	{
@@ -53,10 +65,11 @@ aloja_get_data <- function (fread, cds = FALSE, hds = FALSE, fproc = NULL)
 	}
 
 	retval <- ds[,!(colnames(ds) %in% c("X","Exec.Conf","Histogram","PARAVER"))];
-	ds_sub <- ds[,c("Exe.Time","Running.Cost..","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster","End.time")];
 
 	if (!is.null(fproc))
 	{
+		ds_sub <- ds[,c("Exe.Time","Running.Cost..","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster","End.time")];
+
 		write.table(retval,file=paste(fproc,"-full.csv",sep=""),sep=",",row.names=F);
 		write.table(ds_sub,file=paste(fproc,"-sub.csv",sep=""),sep=",",row.names=F);
 	}
@@ -696,23 +709,22 @@ aloja_regtree <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = 
 # Predicting methods                                                          #
 ###############################################################################
 
-aloja_predict_dataset <- function (learned_model, vin, data_predict = NULL, data_file = NULL)
+aloja_predict_dataset <- function (learned_model, vin, ds = NULL, data_file = NULL)
 {
 	retval <- NULL;
-	if (is.null(data_predict) && is.null(data_file))
+	if (is.null(ds) && is.null(data_file))
 	{
 		retval;
 	}
 
-	ds <- data_predict;
+	ds <- ds[,vin];
 	if (!is.null(data_file))
 	{
 		fileset <- read.table(file=data_file,header=T,sep=",");
-		ds <- aloja_dbind(ds,fileset);
+		ds <- aloja_dbind(ds,fileset[,vin]);
 	}
 
-
-	for (i in 1:nrow(data_predict))
+	for (i in 1:nrow(ds))
 	{
 		pred_aux <- aloja_predict_instance (learned_model, vin, ds[i,]);
 		retval <- c(retval, pred_aux);
@@ -726,8 +738,12 @@ aloja_predict_instance <- function (learned_model, vin, inst_predict)
 	ds <- learned_model$dataset;
 	model_aux <- learned_model$model;
 
-	inst_aux <- t(as.matrix(inst_predict));
-	colnames(inst_aux) <- vin;
+	inst_aux <- inst_predict;
+	if (!is.data.frame(inst_aux))
+	{
+		inst_aux <- t(as.matrix(inst_aux));
+		colnames(inst_aux) <- vin;
+	}
 
 	datamodel <- ds[1,learned_model$varin];
 	if (class(model_aux)[1]=="lm" || class(model_aux)[1]=="nnet")
@@ -756,7 +772,14 @@ aloja_predict_instance <- function (learned_model, vin, inst_predict)
 	} else {
 		for (name_1 in colnames(datamodel))
 		{
-			datamodel[1,name_1] <- inst_aux[1,name_1];
+			if (class(datamodel[1,name_1]) == "factor")
+			{
+				datamodel[1,name_1] <- factor(inst_aux[1,name_1],levels=levels(datamodel[,name_1]));
+			} else {
+				var_aux <- inst_aux[1,name_1];
+				class(var_aux) <- class(datamodel[1,name_1]);
+				datamodel[1,name_1] <- var_aux;
+			}
 		}
 	}
 
