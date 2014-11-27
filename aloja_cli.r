@@ -5,8 +5,8 @@
 # 2014-11-24
 # Launcher of ALOJA-ML
  
-# usage: ./aloja_cli.r -d dataset.csv -m aloja_regtree -p param1=aaaa;param2=bbbb;param3=cccc,...
-#	 ./aloja_cli.r --dataset dataset.csv --method aloja_regtree --params param1=aaaa;param2=bbbb;param3=cccc,...
+# usage: ./aloja_cli.r -d dataset.csv -m aloja_regtree -p param1=aaaa:param2=bbbb:param3=cccc:...
+#	 ./aloja_cli.r --dataset dataset.csv --method aloja_regtree --params param1=aaaa:param2=bbbb:param3=cccc:...
 #	 ./aloja_cli.r -m aloja_predict_instance -l m5p-model -p inst_predict="sort,ETH,RR3,8,10,1,65536,None,32,Azure L" -v
 #	 ./aloja_cli.r -m aloja_predict_instance -l m5p-model -d dataset-to-predict.csv -v
 
@@ -19,7 +19,7 @@ source("functions.r");
 
 	option_list = list(
 		make_option(c("-m", "--method"), action="store", default=NULL, type='character', help="Method to be executed"),
-		make_option(c("-p", "--params"), action="store", default=NULL, type='character', help="Generic list of parameters, separated by semicolon and no spaces"),
+		make_option(c("-p", "--params"), action="store", default=NULL, type='character', help="Generic list of parameters, separated by two points and no spaces"),
 		make_option(c("-v", "--verbose"), action="store_true", default=FALSE, help="Outputs the result of the method"),
 		make_option(c("-d", "--dataset"), action="store", default=NULL, type='character', help="For training methods: Dataset source of data"),
 		make_option(c("-a", "--allvars"), action="store_true", default=FALSE, help="For training methods: All vars are input but first one (for reduced dimensions)"),
@@ -78,9 +78,16 @@ source("functions.r");
 		params[["learned_model"]] <- do.call(aloja_load_object,params_2);
 	}
 
+	if (opt$method == "aloja_dataset_clustering")
+	{
+		params_3 <- list();
+		params_3[["tagname"]] <- opt$learned;
+		params[["na.predict"]] <- do.call(aloja_load_object,params_3);
+	}
+
 	if (!is.null(opt$params))
 	{
-		saux_1 <- strsplit(opt$params, ";");
+		saux_1 <- strsplit(opt$params, ":");
 		saux_2 <- strsplit(saux_1[[1]],"=");
 
 		for (i in 1:length(saux_2))

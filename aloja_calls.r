@@ -211,3 +211,12 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 
 	dsc1 <- do.call(aloja_dataset_collapse,params);
 
+	# Clustering Datasets
+	params <- list();
+	params[["datamatrix"]] = dsc1$matrix;
+	params[["k"]] = 3;
+	params[["na.predict"]] = m5pio2;
+
+	kc1 <- do.call(aloja_dataset_clustering,params);
+
+

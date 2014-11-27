@@ -137,7 +137,7 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 ###############################################################################
 # Benchmark - Configuration Matrix
 
-	dsc1 <- aloja_dataset_collapse (dataset,varin,varout,dimension1="Benchmark",dimension2=c(3:11),dimname1="Benchmark",dimname2="Configuration");
+	dsc1 <- aloja_dataset_collapse (dataset,varin,varout,dimension1="Benchmark",dimension2=c(3:11),dimname1="Benchmark",dimname2="Configuration",saveall="dsc1");
 
 	plot(dsc1$matrix["bayes",],ylim=c(0,10000));
 	points(dsc1$matrix["kmeans",],col="red");
@@ -152,32 +152,18 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 
 	#######################################################################
 	## Clustering with NA <- 0
-	maux2 <- maux;
-	maux2[is.na(maux2)] <- 0;
-	kc <- kmeans(maux2, 3);
+
+	#kc1 <- aloja_dataset_clustering(datamatrix=dsc1$matrix,k=3);
+	kc1 <- aloja_dataset_clustering(datamatrix="dsc1-matrix.csv",k=3);
 
 	#######################################################################
 	## Clustering with NA <- prediction
+
 	m5p3 <- aloja_regtree(dataset,vin=varin,vout=varout); model_aux <- m5p3;
 	ibk2 <- aloja_nneighbors(dataset,vin=varin,vout=varout); model_aux <- ibk2;
 	pr31 <- aloja_linreg(dataset,vin=varin,vout=varout,ppoly=3); model_aux <- pr31;
 	nn2 <- aloja_nnet(dataset,vin=varin,vout=varout); model_aux <- nn2;
 
-	maux3 <- maux;
-	for (i in 1:length(maux3))
-	{
-		if (is.na(maux3[i]))
-		{
-			row_aux <- ((i-1) %% length(maux3[,1])) + 1;
-			col_aux <- ((i-1) %/% length(maux3[,1])) + 1;
+	kc2 <- aloja_dataset_clustering(datamatrix=dsc1$matrix,k=3,na.predict=model_aux);
 
-			bmk_aux <- rownames(maux3)[row_aux];
-			cnf_aux <- colnames(maux3)[col_aux];
-
-			inst_aux <- c(bmk_aux,strsplit(cnf_aux,split="-")[[1]]);
-			
-			maux3[i] <- aloja_predict_instance (model_aux,varin,inst_aux);
-		}
-	}
-	kc3 <- kmeans(maux3, 3);
 

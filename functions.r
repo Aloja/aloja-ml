@@ -869,13 +869,13 @@ aloja_pca <- function (ds, vin, vout, pngpca = NULL, saveall = NULL)
 	pc;
 }
 
-aloja_dataset_collapse <- function (ds, vin, vout, dimension1, dimension2, dimname1, dimname2)
+aloja_dataset_collapse <- function (ds, vin, vout, dimension1, dimension2, dimname1, dimname2, saveall = NULL)
 {
 	retval <- list();
 
 	dsid <- ds[,"ID"];
 	ds <- ds[,c(vout,vin)];
-	dsaux <- cbind(ds[,c(vout,dimension1)],apply(ds[,dimension2],1,paste,collapse="-"));
+	dsaux <- cbind(ds[,c(vout,dimension1)],apply(ds[,dimension2],1,paste,collapse=":"));
 	colnames(dsaux) <- c(vout,dimname1,dimname2);
 
 	maux <- matrix(NA,length(levels(dsaux[,dimname1])),length(levels(dsaux[,dimname2])));
@@ -896,6 +896,46 @@ aloja_dataset_collapse <- function (ds, vin, vout, dimension1, dimension2, dimna
 
 	retval[["matrix"]] <- maux;
 	retval[["IDs"]] <- midaux;
+
+	if (!is.null(saveall))
+	{
+		write.table(retval$matrix,file=paste(saveall,"-matrix.csv",sep=""),sep=",",row.names=TRUE);
+		write.table(retval$IDs,file=paste(saveall,"-ids.csv",sep=""),sep=",",row.names=TRUE);
+	}
+
+	retval;
+}
+
+aloja_dataset_clustering <- function (datamatrix, k = 3, na.predict = NULL)
+{
+	if (class(datamatrix) == "character")
+	{
+		maux <- as.matrix(read.csv(file=datamatrix, header=TRUE, sep=",", check.names=FALSE));
+	} else {
+		maux <- datamatrix;
+	}
+
+	if (!is.null(na.predict))
+	{
+		for (i in 1:length(maux))
+		{
+			if (is.na(maux[i]))
+			{
+				row_aux <- ((i-1) %% length(maux[,1])) + 1;
+				col_aux <- ((i-1) %/% length(maux[,1])) + 1;
+
+				dim1_aux <- rownames(maux)[row_aux];
+				dim2_aux <- colnames(maux)[col_aux];
+
+				inst_aux <- c(dim1_aux,strsplit(dim2_aux,split=":")[[1]]);
+			
+				maux[i] <- aloja_predict_instance (na.predict,na.predict$varin,inst_aux);
+			}
+		}
+	} else {
+		maux[is.na(maux)] <- 0;
+	}
+	retval <- kmeans(maux, k);
 
 	retval;
 }
