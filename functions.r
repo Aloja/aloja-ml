@@ -869,6 +869,37 @@ aloja_pca <- function (ds, vin, vout, pngpca = NULL, saveall = NULL)
 	pc;
 }
 
+aloja_dataset_collapse <- function (ds, vin, vout, dimension1, dimension2, dimname1, dimname2)
+{
+	retval <- list();
+
+	dsid <- ds[,"ID"];
+	ds <- ds[,c(vout,vin)];
+	dsaux <- cbind(ds[,c(vout,dimension1)],apply(ds[,dimension2],1,paste,collapse="-"));
+	colnames(dsaux) <- c(vout,dimname1,dimname2);
+
+	maux <- matrix(NA,length(levels(dsaux[,dimname1])),length(levels(dsaux[,dimname2])));
+	colnames(maux) <- levels(dsaux[,dimname2]);
+	rownames(maux) <- levels(dsaux[,dimname1]);
+
+	midaux <- matrix(NA,length(levels(dsaux[,dimname1])),length(levels(dsaux[,dimname2])));
+	colnames(midaux) <- levels(dsaux[,dimname2]);
+	rownames(midaux) <- levels(dsaux[,dimname1]);
+
+	for (i in 1:nrow(dsaux))
+	{
+		dim1_aux <- dsaux[i,dimname1];
+		dim2_aux <- dsaux[i,dimname2];
+		maux[dim1_aux,dim2_aux] <- dsaux[i,varout];
+		midaux[dim1_aux,dim2_aux] <- dsid[i];
+	}
+
+	retval[["matrix"]] <- maux;
+	retval[["IDs"]] <- midaux;
+
+	retval;
+}
+
 ###############################################################################
 # Save the datasets and created models                                        #
 ###############################################################################

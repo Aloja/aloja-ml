@@ -137,34 +137,15 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 ###############################################################################
 # Benchmark - Configuration Matrix
 
-	#FIXME - Refactor following code:
-	ds <- dataset[c(varout,varin)];
-	dsaux <- cbind(ds[,c(varout,"Benchmark")],apply(ds[,3:11],1,paste,collapse="-"));
-	colnames(dsaux) <- c(varout,"Benchmark","Configuration");
+	dsc1 <- aloja_dataset_collapse (dataset,varin,varout,dimension1="Benchmark",dimension2=c(3:11),dimname1="Benchmark",dimname2="Configuration");
 
-	maux <- matrix(NA,length(levels(dsaux[,"Benchmark"])),length(levels(dsaux[,"Configuration"])));
-	colnames(maux) <- levels(dsaux[,"Configuration"]);
-	rownames(maux) <- levels(dsaux[,"Benchmark"]);
-
-	midaux <- matrix(NA,length(levels(dsaux[,"Benchmark"])),length(levels(dsaux[,"Configuration"])));
-	colnames(midaux) <- levels(dsaux[,"Configuration"]);
-	rownames(midaux) <- levels(dsaux[,"Benchmark"]);
-
-	for (i in 1:length(dsaux[,1]))
-	{
-		bmk_aux <- dsaux[i,"Benchmark"];
-		cnf_aux <- dsaux[i,"Configuration"];
-		maux[bmk_aux,cnf_aux] <- dsaux[i,varout];
-		midaux[bmk_aux,cnf_aux] <- dataset[i,"ID"];
-	}
-
-	plot(maux["bayes",],ylim=c(0,10000));
-	points(maux["kmeans",],col="red");
-	points(maux["terasort",],col="green");
-	points(maux["sort",],col="blue");
-	points(maux["wordcount",],col="orange");
-	points(maux["pagerank",],col="yellow");
-	points(maux["dfsioe_write",],col="gray");
+	plot(dsc1$matrix["bayes",],ylim=c(0,10000));
+	points(dsc1$matrix["kmeans",],col="red");
+	points(dsc1$matrix["terasort",],col="green");
+	points(dsc1$matrix["sort",],col="blue");
+	points(dsc1$matrix["wordcount",],col="orange");
+	points(dsc1$matrix["pagerank",],col="yellow");
+	points(dsc1$matrix["dfsioe_write",],col="gray");
 
 ###############################################################################
 # Clustering
