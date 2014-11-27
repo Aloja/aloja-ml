@@ -199,4 +199,15 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 
 	predict2 <- do.call(aloja_predict_dataset,params);
 	
+	# Collapsing Datasets
+	params <- list();
+	params[["ds"]] = dataset;
+	params[["vin"]] = varin;
+	params[["vout"]] = varout;
+	params[["dimension1"]] = "Benchmark";
+	params[["dimension2"]] = c("Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster");
+	params[["dimname1"]] = "Benchmark";
+	params[["dimname2"]] = "Configuration";
+
+	dsc1 <- do.call(aloja_dataset_collapse,params);
 
