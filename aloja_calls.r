@@ -30,6 +30,7 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 	params[["ds_sub"]] = dataset[,c(varout,varin)];
 	params[["fwidth"]] = 1000;
 	params[["ms"]] <- 10;
+	params[["sname"]] <- "Benchmark";
 
 	do.call(aloja_print_summaries,params);
 

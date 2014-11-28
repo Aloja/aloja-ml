@@ -9,8 +9,10 @@ library(RWeka);
 library(devtools);
 library(scales);
 library(reshape);
-library(nnet); set.seed(1234567890);
+library(nnet);
 library(session);
+
+set.seed(1234567890);
 
 source("nnet_plot_update.r");
 #source_url('https://gist.githubusercontent.com/fawda123/7471137/raw/466c1474d0a505ff044412703516c34f1a4684a5/nnet_plot_update.r')
@@ -23,7 +25,7 @@ aloja_get_data <- function (fread, cds = FALSE, hds = FALSE, fproc = NULL)
 {
 	ds <- read.table(fread,header=T,sep=",");
 
-	if ("End.Time" %in% colnames(ds))
+	if ("End.time" %in% colnames(ds))
 	{
 		aux <- strptime(ds[,"End.time"],format="%Y%m%d%H%M%S");
 		ds[,"End.time"] <- NULL;
@@ -81,24 +83,32 @@ aloja_get_data <- function (fread, cds = FALSE, hds = FALSE, fproc = NULL)
 # Print summaries for each benchmark                                          #
 ###############################################################################
 
-aloja_print_summaries <- function (fprint, ds, ds_sub, fwidth = 1000, ms = 10)
+aloja_print_summaries <- function (fprint = NULL, ds, ds_sub, fwidth = 1000, ms = 10, sname = NULL)
 {
-	sink(file=fprint,append=FALSE,type="output");
-
-	aux_tmp <- getOption("width");
-	options(width=fwidth);
+	if (!is.null(fprint))
+	{
+		sink(file=fprint,append=FALSE,type="output");
+		aux_tmp <- getOption("width");
+		options(width=fwidth);
+	}
 
 	cat("Summary for General Data","\n");
 	print(summary(ds,maxsum=ms));
 
-	for (name in levels(ds[,"Benchmark"]))
+	if (!is.null(sname))
 	{
-		cat("\n","Summary per Benchmark",name,"\n");
-		print(summary(ds_sub[ds[,"Benchmark"]==name,],maxsum=ms));
+		for (name in levels(ds[,sname]))
+		{
+			cat("\n","Summary per",sname,name,"\n");
+			print(summary(ds_sub[ds[,sname]==name,],maxsum=ms));
+		}
 	}
 
-	sink(NULL);
-	options(width=aux_tmp);
+	if (!is.null(fprint))
+	{
+		sink(NULL);
+		options(width=aux_tmp);
+	}
 }
 
 aloja_crossvariables <- function (ds, pnglabel = "cross", jfactor = 0)
