@@ -42,38 +42,40 @@ aloja_get_data <- function (fread, cds = FALSE, hds = FALSE, fproc = NULL)
 		ds <- cbind(ds,rep(0,nrow(ds)));
 		colnames(ds) <- c(names_temp,"Running.Cost..");
 	}
-
-	if (cds)
-	{
-		split <- str_split_fixed(ds[,"Exec.Conf"], "/", 2);
-		exec_conf <- str_split_fixed(split[,1], "_", 13);
-		aux <- strptime(paste(exec_conf[,1],exec_conf[,2],sep=""),format="%Y%m%d%H%M%S");
-		exec_conf <- exec_conf[,-c(1,2)];
-		exec_conf <- cbind(matrix(as.character(aux)),exec_conf);
-		colnames(exec_conf) <- paste("Conf.",c("Time","Conf","Net","Disk","B","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster"),sep="")
-		bench_conf <- str_split_fixed(split[,2], "_", 2);
-		colnames(bench_conf) <- c("Conf.Benchmark","Conf.Options");
-		ds <- cbind(ds,exec_conf,bench_conf);
-	}
-
-	if (hds)
-	{
-		split <- str_split_fixed(ds[,"Histogram"], "/", 2);
-		histogram <- str_split_fixed(split[,1], "_", 13);
-		colnames(histogram) <- paste("Hist.",c("Date","Time","Conf","Net","Disk","B","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster"),sep="")
-		bench_hist <- str_split_fixed(split[,2], "_", 2);
-		colnames(bench_conf) <- c("Hist.Benchmark","Hist.Options");
-		ds <- cbind(ds,histogram,bench_hist);
-	}
-
+	
 	retval <- ds[,!(colnames(ds) %in% c("X","Exec.Conf","Histogram","PARAVER"))];
 
 	if (!is.null(fproc))
 	{
 		ds_sub <- ds[,c("Exe.Time","Running.Cost..","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster","End.time")];
 
-		write.table(retval,file=paste(fproc,"-full.csv",sep=""),sep=",",row.names=F);
+		ds_ext <- ds;
+		if (cds)
+		{
+			split <- str_split_fixed(ds[,"Exec.Conf"], "/", 2);
+			exec_conf <- str_split_fixed(split[,1], "_", 13);
+			aux <- strptime(paste(exec_conf[,1],exec_conf[,2],sep=""),format="%Y%m%d%H%M%S");
+			exec_conf <- exec_conf[,-c(1,2)];
+			exec_conf <- cbind(matrix(as.character(aux)),exec_conf);
+			colnames(exec_conf) <- paste("Conf.",c("Time","Conf","Net","Disk","B","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster"),sep="")
+			bench_conf <- str_split_fixed(split[,2], "_", 2);
+			colnames(bench_conf) <- c("Conf.Benchmark","Conf.Options");
+			ds_ext <- cbind(ds_ext,exec_conf,bench_conf);
+		}
+
+		if (hds)
+		{
+			split <- str_split_fixed(ds[,"Histogram"], "/", 2);
+			histogram <- str_split_fixed(split[,1], "_", 13);
+			colnames(histogram) <- paste("Hist.",c("Date","Time","Conf","Net","Disk","B","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster"),sep="")
+			bench_hist <- str_split_fixed(split[,2], "_", 2);
+			colnames(bench_conf) <- c("Hist.Benchmark","Hist.Options");
+			ds_ext <- cbind(ds_ext,histogram,bench_hist);
+		}
+
+		write.table(retval,file=paste(fproc,"-pro.csv",sep=""),sep=",",row.names=F);
 		write.table(ds_sub,file=paste(fproc,"-sub.csv",sep=""),sep=",",row.names=F);
+		if (cds || hds) write.table(ds_ext,file=paste(fproc,"-ext.csv",sep=""),sep=",",row.names=F);
 	}
 
 	retval;
