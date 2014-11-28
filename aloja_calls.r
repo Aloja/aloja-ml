@@ -139,14 +139,19 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 	params[["vin"]] = varin;
 	params[["vout"]] = varout;
 	params[["pngpca"]] = "pca";
+	params[["saveall"]] = "pca1";
 
 	pca1 <- do.call(aloja_pca,params);
 
 	# LinReg (with reduced dimension)
 	params <- list();
-	params[["ds"]] = pca1$dataset;
-	params[["vin"]] = colnames(pca1$dataset)[-1];
-	params[["vout"]] = colnames(pca1$dataset)[1];
+	params[["fread"]] = "pca1-transformed.csv";
+	pca1ds <- do.call(aloja_get_data,params);
+
+	params <- list();
+	params[["ds"]] = pca1ds;
+	params[["vin"]] = (colnames(pca1ds)[!(colnames(pca1ds) %in% c("ID",varout,"End.tme","Running.Cost.."))])[1:20]
+	params[["vout"]] = varout;
 	params[["pngval"]] = "linreg-polynom3-redim-app";
 	params[["pngtest"]] = "linreg-polynom3-redim-test";
 	params[["saveall"]] = "linreg-polynom3-redim";
@@ -157,9 +162,13 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 
 	# Training M5P (with reduced dimension)
 	params <- list();
-	params[["ds"]] = pca1$dataset;
-	params[["vin"]] = colnames(pca1$dataset)[-1];
-	params[["vout"]] = colnames(pca1$dataset)[1];
+	params[["fread"]] = "pca1-transformed.csv";
+	pca1ds <- do.call(aloja_get_data,params);
+
+	params <- list();
+	params[["ds"]] = pca1ds;
+	params[["vin"]] = (colnames(pca1ds)[!(colnames(pca1ds) %in% c("ID",varout,"End.tme","Running.Cost.."))])[1:20]
+	params[["vout"]] = varout;
 	params[["pngval"]] = "m5p-simple-redim-app";
 	params[["pngtest"]] = "m5p-simple-redim-test";
 	params[["saveall"]] = "m5p-simple-redim";

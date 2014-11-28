@@ -395,6 +395,15 @@ aloja_binarize_mixsets <- function (vin, vout, traux = NULL, ntaux = NULL, tvaux
 
 aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE, pngval = NULL, pngtest = NULL, saveall = NULL, ttaux = NULL, ntaux = NULL, traux = NULL, tvaux = NULL, sigma = 3, ttfile = NULL, trfile = NULL, tvfile = NULL, decay = 5e-4, hlayers = 3, maxit = 1000, prange = NULL)
 {
+	# Fix parameter class in case of CLI string input
+	if (!is.null(prange)) prange <- as.numeric(prange);
+	if (!is.numeric(tsplit)) tsplit <- as.numeric(tsplit);
+	if (!is.numeric(vsplit)) vsplit <- as.numeric(vsplit);
+	if (!is.integer(sigma)) sigma <- as.integer(sigma);
+	if (!is.null(decay)) decay <- as.numeric(decay);
+	if (!is.integer(hlayers)) hlayers <- as.integer(hlayers);
+	if (!is.integer(maxit)) maxit <- as.integer(maxit);
+
 	# Binarization of variables
 	dsbaux <- aloja_binarize_ds(ds[,c(vout,vin)]);
 	auxset <- aloja_binarize_mixsets(vin,vout,traux=traux,ntaux=ntaux,tvaux=tvaux,ttaux=ttaux);
@@ -480,6 +489,9 @@ aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TR
 	#plot.nnet(rt$model);
 	#plot.nnet(rt$model$wts,rt$model$n);
 
+	print(c(rt$maeval,rt$raeval));
+	print(c(rt$maetest,rt$raetest));
+
 	if (!is.null(saveall))
 	{
 		aloja_save_model(rt$model,tagname=saveall);
@@ -492,6 +504,16 @@ aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TR
 
 aloja_linreg <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE, pngval = NULL, pngtest = NULL, saveall = NULL, ttaux = NULL, ntaux = NULL, traux = NULL, tvaux = NULL, sigma = 3, ttfile = NULL, trfile = NULL, tvfile = NULL, ppoly = 1, prange = NULL)
 {
+	# Fix parameter class in case of CLI string input
+	if (!is.null(prange)) prange <- as.numeric(prange);
+	if (!is.numeric(tsplit)) tsplit <- as.numeric(tsplit);
+	if (!is.numeric(vsplit)) vsplit <- as.numeric(vsplit);
+	if (!is.integer(sigma)) sigma <- as.integer(sigma);
+	if (!is.integer(ppoly)) ppoly <- as.integer(ppoly);
+
+	# Prevent prediction startle because of singularities
+	options(warn=-1);
+
 	# Binarization of variables
 	dsbaux <- aloja_binarize_ds(ds[,c(vout,vin)]);
 	auxset <- aloja_binarize_mixsets(vin,vout,traux=traux,ntaux=ntaux,tvaux=tvaux,ttaux=ttaux);
@@ -555,6 +577,9 @@ aloja_linreg <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = T
 		abline(0,1);
 	if (!is.null(pngtest)) dev.off();
 
+	print(c(rt$maeval,rt$raeval));
+	print(c(rt$maetest,rt$raetest));
+
 	if (!is.null(saveall))
 	{
 		aloja_save_model(rt$model,tagname=saveall);
@@ -567,6 +592,12 @@ aloja_linreg <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = T
 
 aloja_nneighbors <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE, pngval = NULL, pngtest = NULL, saveall = NULL, ttaux = NULL, ntaux = NULL, traux = NULL, tvaux = NULL, sigma = 3, ttfile = NULL, trfile = NULL, tvfile = NULL, kparam = 1, iparam = TRUE)
 {
+	# Fix parameter class in case of CLI string input
+	if (!is.numeric(tsplit)) tsplit <- as.numeric(tsplit);
+	if (!is.numeric(vsplit)) vsplit <- as.numeric(vsplit);
+	if (!is.integer(sigma)) sigma <- as.integer(sigma);
+	if (!is.integer(kparam)) kparam <- as.integer(kparam);
+
 	# Load and split datasets
 	rt <- aloja_load_datasets (ds,vin,vout,tsplit,vsplit,ttaux,ntaux,traux,tvaux,ttfile,trfile,tvfile);
 	rt[["varin"]] <- vin;
@@ -612,6 +643,9 @@ aloja_nneighbors <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols
 		abline(0,1);
 	if (!is.null(pngtest)) dev.off();
 
+	print(c(rt$maeval,rt$raeval));
+	print(c(rt$maetest,rt$raetest));
+
 	if (!is.null(saveall))
 	{
 		aloja_save_model(rt$model,tagname=saveall,is.weka=TRUE);
@@ -624,6 +658,12 @@ aloja_nneighbors <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols
 
 aloja_regtree <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE, pngval = NULL, pngtest = NULL, saveall = NULL, ttaux = NULL, ntaux = NULL, traux = NULL, tvaux = NULL, sigma = 3, ttfile = NULL, trfile = NULL, tvfile = NULL, exsel = NULL, prange = NULL)
 {
+	# Fix parameter class in case of CLI string input
+	if (!is.null(prange)) prange <- as.numeric(prange);
+	if (!is.numeric(tsplit)) tsplit <- as.numeric(tsplit);
+	if (!is.numeric(vsplit)) vsplit <- as.numeric(vsplit);
+	if (!is.integer(sigma)) sigma <- as.integer(sigma);
+
 	# Load and split datasets
 	rt <- aloja_load_datasets (ds,vin,vout,tsplit,vsplit,ttaux,ntaux,traux,tvaux,ttfile,trfile,tvfile);
 	rt[["varin"]] <- vin;
@@ -694,6 +734,9 @@ aloja_regtree <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = 
 		plot(rt$predtest,rt$testset[,vout],main=paste("Test M5P M = ",rt$selected_model$mmin));
 		abline(0,1);
 	if (!is.null(pngtest)) dev.off();
+
+	print(c(rt$maeval,rt$raeval));
+	print(c(rt$maetest,rt$raetest));
 
 	if (!is.null(saveall))
 	{

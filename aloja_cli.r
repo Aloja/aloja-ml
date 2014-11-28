@@ -7,6 +7,9 @@
  
 # usage: ./aloja_cli.r -d dataset.csv -m aloja_regtree -p param1=aaaa:param2=bbbb:param3=cccc:...
 #	 ./aloja_cli.r --dataset dataset.csv --method aloja_regtree --params param1=aaaa:param2=bbbb:param3=cccc:...
+#	 ./aloja_cli.r -d dataset.csv -m aloja_pca -p saveall="pca1"
+#	 ./aloja_cli.r -d pca1-dataset.csv -m aloja_regtree -p prange=1e-4,1e+4 -a
+#	 ./aloja_cli.r -d pca1-transformed.csv -m aloja_regtree -p prange=1e-4,1e+4 -n 20
 #	 ./aloja_cli.r -m aloja_predict_instance -l m5p-model -p inst_predict="sort,ETH,RR3,8,10,1,65536,None,32,Azure L" -v
 #	 ./aloja_cli.r -m aloja_predict_instance -l m5p-model -d dataset-to-predict.csv -v
 
@@ -22,7 +25,8 @@ source("functions.r");
 		make_option(c("-p", "--params"), action="store", default=NULL, type='character', help="Generic list of parameters, separated by two points and no spaces"),
 		make_option(c("-v", "--verbose"), action="store_true", default=FALSE, help="Outputs the result of the method"),
 		make_option(c("-d", "--dataset"), action="store", default=NULL, type='character', help="For training methods: Dataset source of data"),
-		make_option(c("-a", "--allvars"), action="store_true", default=FALSE, help="For training methods: All vars are input but first one (for reduced dimensions)"),
+		make_option(c("-a", "--allvars"), action="store_true", default=FALSE, help="All vars are input but first one (for reduced dimensions)"),
+		make_option(c("-n", "--numvars"), action="store", default=NULL, type='integer', help="All n vars after first one are input (for reduced dimensions)"),
 		make_option(c("-l", "--learned"), action="store", default=NULL, type='character', help="For prediction methods: Learned model for prediction")
 	);
 
@@ -61,12 +65,13 @@ source("functions.r");
 	{
 		if (opt$allvars)
 		{
-			params[["vin"]] = colnames(dataset)[-1];
-			params[["vout"]] = colnames(dataset)[1];
+			params[["vin"]] = colnames(dataset)[!(colnames(dataset) %in% c("ID","Exe.Time"))];
+		} else if (!is.null(opt$numvars)) {
+			params[["vin"]] = (colnames(dataset)[!(colnames(dataset) %in% c("ID","Exe.Time"))])[1:opt$numvars];
 		} else {
 			params[["vin"]] = c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster");
-			params[["vout"]] = "Exe.Time";
 		}
+		params[["vout"]] = "Exe.Time";
 	}
 
 	if (opt$method  == "aloja_predict_instance" || opt$method  == "aloja_predict_dataset")
