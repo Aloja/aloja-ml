@@ -181,7 +181,6 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 	m5p4 <- aloja_regtree(dsaux_other,vin=varin,vout=varout,saveall="m5p-dummy-cluster");
 	kc4 <- aloja_dataset_clustering(datamatrix=dsc2$matrix,k=8,na.predict=m5p4);
 
-	caux <- kc4$centers;
 	nb_name <- "sort";
 	cluster_pred <- TRUE;
 
@@ -217,26 +216,35 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 		###############################################################
 		## Use clustering/categorization to check which "existing 
 		## benchmark" is more alike
+
 		if (cluster_pred == FALSE)
 		{
-			## For each existing benchmark
+			distances <- NULL;
+			gen_distances <- NULL;
+			for (i in 1:nrow(kc4$centers))
+			{
+				distances <- c(distances,(sum((kc4$centers[i,] - dsc21$matrix[1,])^2))^(1/2));
 
-				## Match configurations and calculate dstance
+				for (j in i:nrow(kc4$centers))
+				{
+					if (j == i) next;
+					gen_distances <- c(gen_distances,(sum((kc4$centers[i,] - kc4$centers[j,])^2))^(1/2));
+				}
+			}
 
-				## If lower distance, keep as candidate benchmark
+			if (max(gen_distances) > min(distances))
+			{
+				selected_cluster <- which(kc4$cluster == which.min(distances));
+				# TODO - Join the two benchmarks
 
-			## Check distance to candidate
-
-				## If higher that maximum distance among clusters -> New cluster
-
-				## Else new benchmark -> belongs to candidate cluster
-
-
-			## If new benchmark -> Update Model
+			} else {
+				# TODO - Create new cluster (and learn about it)
+			}
 		}
 
 		###############################################################
 		## Test it with prediction model as each "existing benchmark"
+
 		if (cluster_pred == TRUE)
 		{
 			anova1 <- list();
@@ -261,7 +269,7 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 			maxsig_aux <- max(result);
 
 			alpha <- 0.05;
-			if (max_clu > alpha)
+			if (maxclu_aux > alpha)
 			{
 				# TODO - Join the two benchmarks
 			} else {
@@ -270,3 +278,7 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 		}
 	}
 
+	#######################################################################
+	## General method to Classify new Benchmark
+
+	
