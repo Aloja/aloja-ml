@@ -996,6 +996,94 @@ aloja_dataset_clustering <- function (datamatrix, k = 3, na.predict = NULL)
 }
 
 ###############################################################################
+# Characterization methods                                                    #
+###############################################################################
+
+aloja_check_similarity <- function (ds_new, ds_gral, vin, vout, var.base, gmodel = NULL, lmodel = NULL, alpha = 0.05)
+{
+	retval <- list();
+
+	anova1 <- list();
+	for (i in levels(ds_gral[,var.base]))
+	{
+		if (!is.null(gmodel)) model_aux <- gmodel;
+		if (!is.null(lmodel[[i]])) model_aux <- lmodel[[i]];
+		if (is.null(model_aux))
+		{
+			print(paste("[ERROR] No suitable model found"));
+			NULL;
+		}
+
+		ds_aux <- ds_new;
+		ds_aux[,var.base] <- i;
+		paux1 <- aloja_predict_dataset(learned_model=model_aux,vin=varin,ds=ds_aux[,vin]);
+		paux2 <- aloja_predict_dataset(learned_model=model_aux,vin=varin,ds=ds_gral[ds_gral[,var.base]==i,vin]);
+
+		perr1 <- paux1 - ds_aux[,vout];
+		perr2 <- paux2 - ds_gral[ds_gral[,var.base]==i,vout];
+	
+		perry <- c(perr1,perr2);
+		group <- rep(1:2,c(length(perr1),length(perr2)));
+		daux = data.frame(y = perry, group = factor(group));
+		anova1[[i]] <- anova(lm(perry~group,daux));
+	}
+
+	result <- t(sapply(lapply(anova1,function(x) x$"Pr(>F)"[1]),unlist));
+	retval[["kind"]] <- "Prediction";
+	retval[["anova"]] <- anova1;
+	retval[["result"]] <- result;
+
+	if (max(result) > alpha)
+	{
+		retval[["cluster"]] <- colnames(result)[which.max(result)];
+		retval[["significance"]] <- max(result);
+	}
+	retval;
+}
+
+aloja_check_cluster <- function (kcluster, bmk.vector) # FIXME - Problema de distàncies amb 2 bmks només
+{
+	retval <- list();
+
+	distances <- NULL;
+	gen_distances <- NULL;
+	for (i in 1:nrow(kcluster$centers))
+	{
+		distances <- c(distances,(sum((kcluster$centers[i,] - bmk.vector$matrix[1,])^2))^(1/2));
+
+		for (j in i:nrow(kcluster$centers))
+		{
+			if (j == i) next;
+			gen_distances <- c(gen_distances,(sum((kcluster$centers[i,] - kcluster$centers[j,])^2))^(1/2));
+		}
+	}
+
+	retval[["kind"]] <- "Cluster";
+	retval[["full.distances"]] <- gen_distances;
+	retval[["distances"]] <- distances;
+
+	if (max(gen_distances) > min(distances))
+	{
+		retval[["cluster"]] <- colnames(result)[which(kcluster$cluster == which.min(distances))];
+		retval[["min.distance"]] <- min(distances);
+	}
+	retval;
+}
+
+aloja_best_configurations <- function (bvectors) # bvectors = dsc2
+{
+	result <- data.frame(Config=character(),Variance=numeric(),Benchmarks=integer(),stringsAsFactors=FALSE);
+	for(i in 1:ncol(bvectors$matrix))
+	{
+		vaux <- var(bvectors$matrix[,i],na.rm=TRUE);
+		raux <- is.na(bvectors$matrix[,i]);
+		result <- rbind(result,data.frame(Config=colnames(bvectors$matrix)[i],Variance=vaux,Benchmarks=length(raux[raux==FALSE])));
+	}
+
+	result[order(-result[,2], -result[,3]),];
+}
+
+###############################################################################
 # Save the datasets and created models                                        #
 ###############################################################################
 
