@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 
 # Josep Ll. Berral-García
-# ALOJA-BSC-MRS hadoop.bsc.es
+# ALOJA-BSC-MSR hadoop.bsc.es
 # 2014-11-24
 # Scripts and snippets for ALOJA-ML
 
@@ -154,7 +154,7 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 	## Clustering with NA <- 0
 
 	#kc1 <- aloja_dataset_clustering(datamatrix=dsc1$matrix,k=3);
-	kc1 <- aloja_dataset_clustering(datamatrix="dsc1-matrix.csv",k=3);
+	kc1 <- aloja_dataset_clustering(datamatrix="dsc1-matrix.csv",k=8);
 
 	#######################################################################
 	## Clustering with NA <- prediction
@@ -166,4 +166,107 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 
 	kc2 <- aloja_dataset_clustering(datamatrix=dsc1$matrix,k=3,na.predict=model_aux);
 
+###############################################################################
+# Classification of New Benchmarks
+
+# TODO FIXME - Refactor the following code:
+
+	# Preparing dummy scenario
+	dsaux_sort <- dataset[dataset[,"Benchmark"]=="sort",];
+	dsaux_sort$Benchmark <- dsaux_sort$Benchmark[,drop=TRUE];
+	dsaux_other <- dataset[dataset[,"Benchmark"]!="sort",];
+	dsaux_other$Benchmark <- dsaux_other$Benchmark[,drop=TRUE];
+
+	dsc2 <- aloja_dataset_collapse (dsaux_other,varin,varout,dimension1="Benchmark",dimension2=c(3:11),dimname1="Benchmark",dimname2="Configuration",saveall="dsc2");
+	m5p4 <- aloja_regtree(dsaux_other,vin=varin,vout=varout,saveall="m5p-dummy-cluster");
+	kc4 <- aloja_dataset_clustering(datamatrix=dsc2$matrix,k=8,na.predict=m5p4);
+
+	caux <- kc4$centers;
+	nb_name <- "sort";
+	cluster_pred <- TRUE;
+
+	#######################################################################
+	## Recomend experiments to run
+
+	if (!(nb_name %in% rownames(dsc2$matrix)))
+	{
+		# Select best configurations to compare with existing benchmarks
+		result <- data.frame(Config=character(),Variance=numeric(),Benchmarks=integer(),stringsAsFactors=FALSE);
+		for(i in 1:ncol(dsc2$matrix))
+		{
+			vaux <- var(dsc2$matrix[,i],na.rm=TRUE);
+			raux <- is.na(dsc2$matrix[,i]);
+			result <- rbind(result,data.frame(Config=colnames(dsc2$matrix)[i],Variance=vaux,Benchmarks=length(raux[raux==FALSE])));
+		}
+		sresult <- result[order(-result[,2], -result[,3]),];
+
+		# Show the best configurations to test the new
+		nbests <- 10;
+		sresult[1:nbests,];
+	}
+	# DO THE HADOOP EXPERIMENTS NOW
+
+	#######################################################################
+	## Classify new Benchmark
+
+	if (!(nb_name %in% rownames(dsc2$matrix)))
+	{
+		# Get characterization vector on new benchmark
+		dsc21 <- aloja_dataset_collapse (dsaux_sort,varin,varout,dimension1="Benchmark",dimension2=c(3:11),dimname1="Benchmark",dimname2="Configuration",saveall="dsc21");
+		
+		###############################################################
+		## Use clustering/categorization to check which "existing 
+		## benchmark" is more alike
+		if (cluster_pred == FALSE)
+		{
+			## For each existing benchmark
+
+				## Match configurations and calculate dstance
+
+				## If lower distance, keep as candidate benchmark
+
+			## Check distance to candidate
+
+				## If higher that maximum distance among clusters -> New cluster
+
+				## Else new benchmark -> belongs to candidate cluster
+
+
+			## If new benchmark -> Update Model
+		}
+
+		###############################################################
+		## Test it with prediction model as each "existing benchmark"
+		if (cluster_pred == TRUE)
+		{
+			anova1 <- list();
+			for (i in levels(dsaux_other$Benchmark))
+			{
+				dsaux_aux <- dsaux_sort;
+				dsaux_aux$Benchmark <- i;
+				paux1 <- aloja_predict_dataset(learned_model=m5p4,vin=varin,ds=dsaux_aux[,varin]);
+				paux2 <- aloja_predict_dataset(learned_model=m5p4,vin=varin,ds=dsaux_other[dsaux_other$Benchmark==i,varin]);
+
+				perr1 <- paux1 - dsaux_aux[,varout];
+				perr2 <- paux2 - dsaux_other[dsaux_other$Benchmark==i,varout];
+			
+				perry <- c(perr1,perr2);
+				group <- rep(1:2,c(length(perr1),length(perr2)));
+				daux = data.frame(y = perry, group = factor(group));
+				anova1[[i]] <- anova(lm(perry~group,daux));
+			}
+
+			result <- t(sapply(lapply(anova1,function(x) x$"Pr(>F)"[1]),unlist));
+			maxclu_aux <- colnames(result)[which.max(result)];
+			maxsig_aux <- max(result);
+
+			alpha <- 0.05;
+			if (max_clu > alpha)
+			{
+				# TODO - Join the two benchmarks
+			} else {
+				# TODO - Create new cluster (and learn about it)
+			}
+		}
+	}
 

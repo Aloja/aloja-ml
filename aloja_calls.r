@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 
 # Josep Ll. Berral-García
-# ALOJA-BSC-MRS hadoop.bsc.es
+# ALOJA-BSC-MSR hadoop.bsc.es
 # 2014-11-24
 # Example of calling prodecures from ALOJA-ML
 

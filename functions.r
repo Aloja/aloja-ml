@@ -1,6 +1,6 @@
 
 # Josep Ll. Berral-García
-# ALOJA-BSC-MRS hadoop.bsc.es
+# ALOJA-BSC-MSR hadoop.bsc.es
 # 2014-11-24
 # Function library for ALOJA-ML
 
@@ -1106,5 +1106,12 @@ aloja_dbind <- function (dataframe_1, dataframe_2)
 	retval <- retval[,-1];
 	colnames(retval) <- cnames;
 	retval;
+}
+
+shannon.entropy <- function(p)
+{
+	if (min(p) < 0 || sum(p) <= 0) return(NA);
+	p.norm <- p[p > 0]/sum(p);
+	-sum(log2(p.norm)*p.norm);
 }
 
