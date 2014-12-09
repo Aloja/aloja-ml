@@ -14,7 +14,7 @@ library(session);
 
 set.seed(1234567890);
 
-source("nnet_plot_update.r");
+#source("nnet_plot_update.r");
 #source_url('https://gist.githubusercontent.com/fawda123/7471137/raw/466c1474d0a505ff044412703516c34f1a4684a5/nnet_plot_update.r')
 
 ###############################################################################
@@ -476,10 +476,13 @@ aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TR
 	rt[["maeval"]] <- mean(abs(rt$predval - rt$validset[,vout]));
 	rt[["raeval"]] <- mean(abs((rt$predval - rt$validset[,vout])/rt$validset[,vout]));
 
-	if (!is.null(pngval)) png(paste(pngval,".png",sep=""),width=500,height=500);
+	if (!is.null(pngval))
+	{
+		png(paste(pngval,".png",sep=""),width=500,height=500);
 		plot(rt$predval,rt$normvalidset[,vout],main=paste("NN 32-5-1, decay",decay,"maxit",maxit));
 		abline(0,1);
-	if (!is.null(pngval)) dev.off();
+		dev.off();
+	}
 
 	# Testing and evaluation
 	rt[["predtest"]] <- predict(rt$model,newdata=rt$normtestset[,-c(vout,8,26)]);
@@ -491,13 +494,16 @@ aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TR
 	rt[["maetest"]] <- mean(abs(rt$predtest - rt$testset[,vout]));
 	rt[["raetest"]] <- mean(abs((rt$predtest - rt$testset[,vout])/rt$testset[,vout]));
 
-	if (!is.null(pngtest)) png(paste(pngtest,".png",sep=""),width=1000,height=500);
+	if (!is.null(pngtest))
+	{
+		png(paste(pngtest,".png",sep=""),width=1000,height=500);
 		par(mfrow=c(1,2));
 		plot(rt$predval,rt$normvalidset[,vout],main=paste("NN 32-5-1, decay",decay,"maxit",maxit));
 		abline(0,1);
 		plot(rt$predtest,rt$normtestset[,vout],main=paste("NN 32-5-1, decay",decay,"maxit",maxit));
 		abline(0,1);
-	if (!is.null(pngtest)) dev.off();
+		dev.off();
+	}
 	#plot.nnet(rt$model);
 	#plot.nnet(rt$model$wts,rt$model$n);
 
@@ -566,10 +572,13 @@ aloja_linreg <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = T
 	rt[["maeval"]] <- mean(abs(rt$predval - rt$validset[,vout]));
 	rt[["raeval"]] <- mean(abs((rt$predval - rt$validset[,vout])/rt$validset[,vout]));
 
-	if (!is.null(pngval)) png(paste(pngval,".png",sep=""),width=500,height=500);
+	if (!is.null(pngval))
+	{
+		png(paste(pngval,".png",sep=""),width=500,height=500);
 		plot(rt$predval,rt$validset[,vout],main=paste("Polynomial Regression power =",ppoly));
 		abline(0,1);
-	if (!is.null(pngval)) dev.off();
+		dev.off();
+	}
 
 	# Testing and evaluation
 	rt[["predtest"]] <- predict(rt$model,newdata=data.frame(rt$testset));
@@ -581,13 +590,16 @@ aloja_linreg <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = T
 	rt[["maetest"]] <- mean(abs(rt$predtest - rt$testset[,vout]));
 	rt[["raetest"]] <- mean(abs((rt$predtest - rt$testset[,vout])/rt$testset[,vout]));
 
-	if (!is.null(pngtest)) png(paste(pngtest,".png",sep=""),width=1000,height=500);
+	if (!is.null(pngtest))
+	{
+		png(paste(pngtest,".png",sep=""),width=1000,height=500);
 		par(mfrow=c(1,2));
 		plot(rt$predval,rt$validset[,vout],main=paste("Polynomial Regression power =",ppoly));
 		abline(0,1);
 		plot(rt$predtest,rt$testset[,vout],main=paste("Test Polynomial Regression power =",ppoly));
 		abline(0,1);
-	if (!is.null(pngtest)) dev.off();
+		dev.off();
+	}
 
 	print(c(rt$maeval,rt$raeval));
 	print(c(rt$maetest,rt$raetest));
@@ -636,24 +648,30 @@ aloja_nneighbors <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols
 	rt[["maeval"]] <- mean(abs(rt$predval - rt$validset[,vout]));
 	rt[["raeval"]] <- mean(abs((rt$predval - rt$validset[,vout])/rt$validset[,vout]));
 
-	if (!is.null(pngval)) png(paste(pngval,".png",sep=""),width=500,height=500);
+	if (!is.null(pngval))
+	{
+		png(paste(pngval,".png",sep=""),width=500,height=500);
 		par(mfrow=c(1,2));
 		plot(rt$predval,rt$validset[,vout],main=paste("K-NN K =",kparam,ifelse(iparam,"Weight = Inv.Dist.","")));
 		abline(0,1);
-	if (!is.null(pngval)) dev.off();
+		dev.off();
+	}
 
 	# Testing and evaluation
 	rt[["predtest"]] <- predict(rt$model,newdata=rt$testset);
 	rt[["maetest"]] <- mean(abs(rt$predtest - rt$testset[,vout]));
 	rt[["raetest"]] <- mean(abs((rt$predtest - rt$testset[,vout])/rt$testset[,vout]));
 
-	if (!is.null(pngtest)) png(paste(pngtest,".png",sep=""),width=1000,height=500);
+	if (!is.null(pngtest))
+	{
+		png(paste(pngtest,".png",sep=""),width=1000,height=500);
 		par(mfrow=c(1,2));
 		plot(rt$predval,rt$validset[,vout],main=paste("Best Validation k-NN K =",kparam));
 		abline(0,1);
 		plot(rt$predtest,rt$testset[,vout],main=paste("Test k-NN K =",kparam));
 		abline(0,1);
-	if (!is.null(pngtest)) dev.off();
+		dev.off();
+	}
 
 	print(c(rt$maeval,rt$raeval));
 	print(c(rt$maetest,rt$raetest));
@@ -720,14 +738,17 @@ aloja_regtree <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = 
 	rt[["maeval"]] <- mean(abs(rt$predval - rt$validset[,vout]));
 	rt[["raeval"]] <- mean(abs((rt$predval - rt$validset[,vout])/rt$validset[,vout]));
 
-	if (!is.null(pngval)) png(paste(pngval,".png",sep=""),width=1000,height=500);
+	if (!is.null(pngval))
+	{
+		png(paste(pngval,".png",sep=""),width=1000,height=500);
 		par(mfrow=c(1,2));
 		plot(rt$predval,rt$validset[,vout],main=paste("Best Validation M5P M = ",rt$selected_model$mmin));
 		abline(0,1);
 		plot(rt$selected_model$trmae,ylim=c(min(c(rt$selected_model$trmae,rt$selected_model$tvmae)),max(rt$selected_model$trmae,rt$selected_model$tvmae)),main="Error vs M");
 		points(rt$selected_model$tvmae,col="red");
 		legend("topleft",pch=1,c("trmae","tvmae"),col=c("black","red"));
-	if (!is.null(pngval)) dev.off();
+		dev.off();
+	}
 
 	# Testing and evaluation
 	rt[["predtest"]] <- predict(rt$model,newdata=data.frame(rt$testset));
@@ -739,13 +760,16 @@ aloja_regtree <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = 
 	rt[["maetest"]] <- mean(abs(rt$predtest - rt$testset[,vout]));
 	rt[["raetest"]] <- mean(abs((rt$predtest - rt$testset[,vout])/rt$testset[,vout]));
 
-	if (!is.null(pngtest)) png(paste(pngtest,".png",sep=""),width=1000,height=500);
+	if (!is.null(pngtest))
+	{
+		png(paste(pngtest,".png",sep=""),width=1000,height=500);
 		par(mfrow=c(1,2));
 		plot(rt$predval,rt$validset[,vout],main=paste("Best Validation M5P M = ",rt$selected_model$mmin));
 		abline(0,1);
 		plot(rt$predtest,rt$testset[,vout],main=paste("Test M5P M = ",rt$selected_model$mmin));
 		abline(0,1);
-	if (!is.null(pngtest)) dev.off();
+		dev.off();
+	}
 
 	print(c(rt$maeval,rt$raeval));
 	print(c(rt$maetest,rt$raetest));
