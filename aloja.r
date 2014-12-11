@@ -234,7 +234,7 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 				benchmark$vector[[benchmark$map[[nb_name]]]] <- aloja_dataset_collapse (new_bmk,vin=varin,vout=varout,dimension1="Benchmark",dimension2=c(3:11),dimname1="Benchmark",dimname2="Configuration",saveall=paste("vector-",new_bmk,sep=""));
 				benchmark$dataset <- new_bmk;
 			} else {
-				pt_aux <- aloja_check_similarity(new_bmk,ds_gral=benchmark$dataset,varin,varout,"Benchmark",lmodel=benchmark$model,alpha=0.05); # FIXME - ds_gral
+				pt_aux <- aloja_check_similarity(new_bmk,ds_gral=benchmark$dataset,varin,varout,"Benchmark",lmodel=benchmark$model,alpha=0.05);
 				if (is.null(pt_aux$cluster))
 				{
 					print("Benchmark:",nb_new,"-> New Cluster");
