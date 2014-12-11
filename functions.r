@@ -1,7 +1,7 @@
 
 # Josep Ll. Berral-García
 # ALOJA-BSC-MSR hadoop.bsc.es
-# 2014-11-24
+# 2014-12-11
 # Function library for ALOJA-ML
 
 library(stringr);
@@ -469,9 +469,9 @@ aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TR
 	rt[["varout"]] <- vout;
 	
 	# Training and Validation
-	rt[["model"]] <- nnet(y=rt$normtrainset[,vout],x=rt$normtrainset[,vin],size=hlayers,decay=decay,maxit=maxit);	# FIXME - Remember why x had out "8 and 26"
+	rt[["model"]] <- nnet(y=rt$normtrainset[,vout],x=rt$normtrainset[,vin],size=hlayers,decay=decay,maxit=maxit);
 	rt[["predtrain"]] <- rt$model$fitted.values;
-	rt[["predval"]] <- predict(rt$model,newdata=rt$normvalidset[,vin]);						# FIXME - Same as above (x out 8 and 26)
+	rt[["predval"]] <- predict(rt$model,newdata=rt$normvalidset[,vin]);
 	if (!is.null(prange))
 	{
 		rt$predtrain[rt$predtrain < prange[1]] <- prange[1];
@@ -491,7 +491,7 @@ aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TR
 	}
 
 	# Testing and evaluation
-	rt[["predtest"]] <- predict(rt$model,newdata=rt$normtestset[,vin]);						# FIXME - Same as above (x out 8 and 26)
+	rt[["predtest"]] <- predict(rt$model,newdata=rt$normtestset[,vin]);
 	if (!is.null(prange))
 	{
 		rt$predtest[rt$predtest < prange[1]] <- prange[1];
@@ -1005,9 +1005,40 @@ aloja_pca <- function (ds, vin, vout, pngpca = NULL, saveall = NULL)
 	{
 		write.table(pc$dataset, file = paste(saveall,"-dataset.csv",sep=""), sep = ",", row.names=FALSE);
 		write.table(pc$pcaset, file = paste(saveall,"-transformed.csv",sep=""), sep = ",", row.names=FALSE);
+		aloja_save_object(pc,tagname=saveall);
 	}
 
 	pc;
+}
+
+aloja_transform_data <- function (ds, vin, pcaobj = NULL, pcaname = NULL, saveall = NULL)
+{
+	retval <- NULL;
+	
+	if (is.null(pcaname) && is.null(pcaobj))
+	{
+		print("[WARNING] No PCA object or file introduced");
+		retval;
+	}
+
+	if (!is.null(pcaname)) pcaobj <- aloja_load_object(pcaname);
+
+	dsbaux <- aloja_binarize_ds(ds[,vin]);
+	vin <- colnames(dsbaux);
+
+	retval[["dataset"]] <- dsbaux;
+	retval[["vin"]] <- vin;
+	retval[["pca"]] <- pcaobj;
+
+	dspca <- predict(pcaobj,dsbaux);
+	retval[["pcaset"]] <- dspca;	
+
+	if (!is.null(saveall))
+	{
+		write.table(dspca, file = paste(saveall,"-transformed.csv",sep=""), sep = ",", row.names=FALSE);
+	}
+
+	retval;
 }
 
 aloja_dataset_collapse <- function (ds, vin, vout, dimension1, dimension2, dimname1, dimname2, saveall = NULL)

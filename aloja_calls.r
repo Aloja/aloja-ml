@@ -2,7 +2,7 @@
 
 # Josep Ll. Berral-García
 # ALOJA-BSC-MSR hadoop.bsc.es
-# 2014-11-24
+# 2014-12-11
 # Example of calling prodecures from ALOJA-ML
 
 source("functions.r");
@@ -193,7 +193,7 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 	params[["is.weka"]] = TRUE;
 
 	m5pio2 <- do.call(aloja_load_object,params);
-	if (!is.weka) identical(m5pio1, m5pio2, ignore.environment = TRUE);
+	if (!params$is.weka) identical(m5pio1, m5pio2, ignore.environment = TRUE);
 
 	params <- list();
 	params[["learned_model"]] = m5pio2;
@@ -208,6 +208,23 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 	params[["ds"]] = dataset;	
 
 	predict2 <- do.call(aloja_predict_dataset,params);
+
+	# PCA, convert new data, load and using a model
+	params <- list();
+	params[["ds"]] = dataset;
+	params[["vin"]] = varin;
+	params[["vout"]] = varout;
+	params[["saveall"]] = "pca2";
+
+	pca2 <- do.call(aloja_pca,params);
+
+	params <- list();
+	params[["ds"]] = dataset;
+	params[["vin"]] = varin;
+	params[["pcaname"]] = "pca2"
+	params[["saveall"]] = "newdataset";
+
+	newdata <- do.call(aloja_transform_data,params);
 	
 	# Collapsing Datasets
 	params <- list();
