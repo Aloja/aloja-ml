@@ -560,6 +560,12 @@ aloja_linreg <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = T
 		rt$validset <- rt$validset[rt$validset[,vout] <= mean(rt$validset[,vout]) + sigma * sd(rt$validset[,vout]),];
 	}
 
+	if (ppoly > 3 || ppoly < 1)
+	{
+		if (ppoly > 3) ppoly <- 3;
+		if (ppoly < 1) ppoly <- 1;
+		print(paste("[WARNING] Parameter ppoly not in [1,3]. ppoly=",ppoly," will be used instead",sep=""));
+	}
 	rt[["ppoly"]] <- ppoly;
 
 	# Training and Validation
