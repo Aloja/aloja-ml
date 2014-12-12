@@ -1117,7 +1117,7 @@ aloja_dataset_collapse <- function (ds, vin, vout, dimension1, dimension2, dimna
 	{
 		dim1_aux <- dsaux[i,dimname1];
 		dim2_aux <- dsaux[i,dimname2];
-		maux[dim1_aux,dim2_aux] <- dsaux[i,varout];
+		maux[dim1_aux,dim2_aux] <- dsaux[i,vout];
 		midaux[dim1_aux,dim2_aux] <- dsid[i];
 	}
 
@@ -1128,6 +1128,7 @@ aloja_dataset_collapse <- function (ds, vin, vout, dimension1, dimension2, dimna
 	{
 		write.table(retval$matrix,file=paste(saveall,"-matrix.csv",sep=""),sep=",",row.names=TRUE);
 		write.table(retval$IDs,file=paste(saveall,"-ids.csv",sep=""),sep=",",row.names=TRUE);
+		aloja_save_object(retval,tagname=saveall);
 	}
 
 	retval;
@@ -1242,8 +1243,16 @@ aloja_check_cluster <- function (kcluster, bmk.vector) # FIXME - Problema de dis
 	retval;
 }
 
-aloja_best_configurations <- function (bvectors) # bvectors = dsc2
+aloja_best_configurations <- function (bvectors = NULL, bvec_name = NULL) # bvectors = dsc2
 {
+	if (is.null(bvectors) && is.null(bvec_name))
+	{
+		print("[WARNING] No Vector Matrix object or file introduced");
+		NULL;
+	}
+
+	if (!is.null(bvec_name)) bvectors <- aloja_load_object(bvec_name);
+
 	result <- data.frame(Config=character(),Variance=numeric(),Benchmarks=integer(),stringsAsFactors=FALSE);
 	for(i in 1:ncol(bvectors$matrix))
 	{

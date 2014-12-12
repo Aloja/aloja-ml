@@ -18,6 +18,9 @@
 #	 ./aloja_cli.r -m aloja_predict_dataset -l m5p-simple-redim -d m5p-simple-redim-tt.csv -v
 #	 ./aloja_cli.r -m aloja_transform_data -d newdataset.csv -p pca_name=pca1:saveall=newdataset
 #	 ./aloja_cli.r -m aloja_transform_instance -p pca_name=pca1:inst_transform="sort,ETH,RR3,8,10,1,65536,None,32,Azure L" -v
+#
+#	 ./aloja_cli.r -m aloja_dataset_collapse -d dataset.csv -p dimension1="Benchmark":dimension2="Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Cluster":dimname1="Benchmark":dimname2="Configuration":saveall=dsc1
+#	 ./aloja_cli.r -m aloja_best_configurations -p bvec_name=dsc1 -v
 
 source("functions.r");
 

@@ -240,8 +240,15 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 	params[["dimension2"]] = c("Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster");
 	params[["dimname1"]] = "Benchmark";
 	params[["dimname2"]] = "Configuration";
+	params[["saveall"]] = "dsc1"
 
 	dsc1 <- do.call(aloja_dataset_collapse,params);
+
+	# Selecting most informative configurations
+	params <- list();
+	params[["bvec_name"]] = "dsc1"
+
+	sresult1 <- do.call(aloja_best_configurations,params);
 
 	# Clustering Datasets
 	params <- list();
