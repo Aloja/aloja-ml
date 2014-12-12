@@ -974,6 +974,8 @@ aloja_knn_select <- function (vout, vin, traux, tvaux, kintervals, iparam)
 
 aloja_pca <- function (ds, vin, vout, pngpca = NULL, saveall = NULL)
 {
+	vinaux <- vin;
+
 	dsbin <- aloja_binarize_ds(ds[,c(vout,vin)]);
 	vin <- colnames(dsbin[,-1]);
 
@@ -982,6 +984,10 @@ aloja_pca <- function (ds, vin, vout, pngpca = NULL, saveall = NULL)
 	colnames(pc$dataset) <- c("ID",colnames(dsbin));
 	pc[["pcaset"]] <- cbind(dataset[,"ID"],dsbin[,vout],pc$scores);
 	colnames(pc$pcaset) <- c("ID",vout,colnames(pc$scores));
+
+	pc[["vin_orig"]] <- vinaux;
+	pc[["vin"]] <- vin;
+	pc[["vout"]] <- vout;
 
 	if (!is.null(pngpca))
 	{
@@ -1011,26 +1017,26 @@ aloja_pca <- function (ds, vin, vout, pngpca = NULL, saveall = NULL)
 	pc;
 }
 
-aloja_transform_data <- function (ds, vin, pcaobj = NULL, pcaname = NULL, saveall = NULL)
+aloja_transform_data <- function (ds, pca_obj = NULL, pca_name = NULL, saveall = NULL)
 {
 	retval <- NULL;
 	
-	if (is.null(pcaname) && is.null(pcaobj))
+	if (is.null(pca_name) && is.null(pca_obj))
 	{
 		print("[WARNING] No PCA object or file introduced");
 		retval;
 	}
 
-	if (!is.null(pcaname)) pcaobj <- aloja_load_object(pcaname);
+	if (!is.null(pca_name))	pca_obj <- aloja_load_object(pca_name);
 
-	dsbaux <- aloja_binarize_ds(ds[,vin]);
+	dsbaux <- aloja_binarize_ds(ds[,pca_obj$vin_orig]);
 	vin <- colnames(dsbaux);
 
 	retval[["dataset"]] <- dsbaux;
 	retval[["vin"]] <- vin;
-	retval[["pca"]] <- pcaobj;
+	retval[["pca"]] <- pca_obj;
 
-	dspca <- predict(pcaobj,dsbaux);
+	dspca <- predict(pca_obj,dsbaux);
 	retval[["pcaset"]] <- dspca;	
 
 	if (!is.null(saveall))
@@ -1040,6 +1046,55 @@ aloja_transform_data <- function (ds, vin, pcaobj = NULL, pcaname = NULL, saveal
 
 	retval;
 }
+
+aloja_transform_instance <- function (inst_transform, pca_obj = NULL, pca_name = NULL, verbose = 0)
+{
+	retval <- NULL;
+	
+	if (is.null(pca_name) && is.null(pca_obj))
+	{
+		print("[WARNING] No PCA object or file introduced");
+		retval;
+	}
+
+	if (!is.null(pca_name)) pca_obj <- aloja_load_object(pca_name);
+
+	datamodel <- pca_obj$dataset[1,pca_obj$vin];
+	for (name_1 in colnames(datamodel))
+	{
+		if (name_1 %in% pca_obj$vin_orig)
+		{
+			var_aux <- inst_transform[which(pca_obj$vin_orig==name_1)];
+			class(var_aux) <- class(datamodel[1,name_1]);
+			datamodel[1,name_1] <- var_aux;
+		} else {
+			if (length(which(inst_transform==name_1)) >= 1)
+			{
+				datamodel[1,name_1] <- 1;
+			} else {
+				datamodel[1,name_1] <- 0;
+			}
+		}
+	}
+	vin <- colnames(datamodel);
+
+	retval[["instance"]] <- datamodel;
+	retval[["vin"]] <- vin;
+	retval[["pca"]] <- pca_obj;
+
+	dspca <- predict(pca_obj,datamodel);
+	retval[["pcainst"]] <- dspca;
+
+	if (verbose == 2)
+	{
+		retval;
+	} else if (verbose == 1) {
+		retval$pcainst;
+	} else {
+		paste(retval$pcainst,collapse=",");
+	}
+}
+
 
 aloja_dataset_collapse <- function (ds, vin, vout, dimension1, dimension2, dimname1, dimname2, saveall = NULL)
 {

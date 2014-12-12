@@ -220,11 +220,16 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 
 	params <- list();
 	params[["ds"]] = dataset;
-	params[["vin"]] = varin;
-	params[["pcaname"]] = "pca2"
+	params[["pca_name"]] = "pca2"
 	params[["saveall"]] = "newdataset";
 
 	newdata <- do.call(aloja_transform_data,params);
+
+	params <- list();
+	params[["inst_transform"]] = c("sort","ETH","RR3","8","10","1","65536","None","32","Azure L");
+	params[["pca_name"]] = "pca1"
+
+	newinstance <- do.call(aloja_transform_instance,params);
 	
 	# Collapsing Datasets
 	params <- list();
