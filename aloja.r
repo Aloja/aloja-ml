@@ -174,9 +174,20 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 	#######################################################################
 	## Rank Configurations
 
-	dsc1 <- aloja_dataset_collapse (dataset,varin,varout,dimension1="Benchmark",dimension2=c(3:11),dimname1="Benchmark",dimname2="Configuration",saveall="dsc1");
-	sresult <- aloja_best_configurations (dsc1);
-	write.table(x=sresult,file="ranking.data",sep=",",row.names=FALSE);
+	dsc1 <- aloja_dataset_collapse (dataset,varin,varout,dimension1="Benchmark",dimension2=varin[!(varin %in% "Benchmark")],dimname1="Benchmark",dimname2="Configuration",saveall="dsc1");
+	sresult1 <- aloja_best_configurations (dsc1);
+	write.table(x=sresult1,file="ranking.data",sep=",",row.names=FALSE);
+
+	dsc11 <- aloja_dataset_collapse (dataset,varin,varout,dimension1="Benchmark",dimension2=varin[!(varin %in% c("Benchmark","Net","Disk","Cluster"))],dimname1="Benchmark",dimname2="Configuration");
+	sresult11 <- aloja_best_configurations (dsc11);
+	write.table(x=sresult11,file="ranking11.data",sep=",",row.names=FALSE);
+
+	dsc12 <- aloja_dataset_collapse (dataset[dataset[,"Cluster"]=="Local 1",],varin,varout,dimension1="Benchmark",dimension2=varin[!(varin %in% c("Benchmark","Net","Disk","Cluster"))],dimname1="Benchmark",dimname2="Configuration");
+	dsc13 <- aloja_dataset_collapse (dataset[dataset[,"Cluster"]=="Azure L",],varin,varout,dimension1="Benchmark",dimension2=varin[!(varin %in% c("Benchmark","Net","Disk","Cluster"))],dimname1="Benchmark",dimname2="Configuration");
+	sresult12 <- aloja_best_configurations (dsc12);
+	sresult13 <- aloja_best_configurations (dsc13);
+	write.table(x=sresult12,file="Ranking of Configurations (SW) Local 1.data",sep=",",row.names=FALSE);
+	write.table(x=sresult13,file="Ranking of Configurations (SW) Azure L.data",sep=",",row.names=FALSE);
 
 	#######################################################################
 	## Classify new Benchmark

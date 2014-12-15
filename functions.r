@@ -1116,12 +1116,17 @@ aloja_dataset_collapse <- function (ds, vin, vout, dimension1, dimension2, dimna
 	{
 		dim1_aux <- dsaux[i,dimname1];
 		dim2_aux <- dsaux[i,dimname2];
-		maux[dim1_aux,dim2_aux] <- dsaux[i,vout];
-		midaux[dim1_aux,dim2_aux] <- dsid[i];
+
+		midaux[dim1_aux,dim2_aux] <- ifelse(!is.na(midaux[dim1_aux,dim2_aux]),c(midaux[dim1_aux,dim2_aux], dsid[i]),dsid[i]);
+		len_aux <- length(midaux[dim1_aux,dim2_aux]);
+
+		prev_val <- ifelse(!is.na(maux[dim1_aux,dim2_aux]),maux[dim1_aux,dim2_aux],0);
+		maux[dim1_aux,dim2_aux] <- (prev_val * (len_aux-1) + dsaux[i,vout]) / len_aux;
 	}
 
 	retval[["matrix"]] <- maux;
 	retval[["IDs"]] <- midaux;
+	retval[["collapsed"]] <- dimension2;
 
 	if (!is.null(saveall))
 	{
@@ -1242,7 +1247,7 @@ aloja_check_cluster <- function (kcluster, bmk.vector) # FIXME - Problema de dis
 	retval;
 }
 
-aloja_best_configurations <- function (bvectors = NULL, bvec_name = NULL) # bvectors = dsc2
+aloja_best_configurations <- function (bvectors = NULL, bvec_name = NULL)
 {
 	if (is.null(bvectors) && is.null(bvec_name))
 	{
@@ -1260,7 +1265,28 @@ aloja_best_configurations <- function (bvectors = NULL, bvec_name = NULL) # bvec
 		result <- rbind(result,data.frame(Config=colnames(bvectors$matrix)[i],Variance=vaux,Benchmarks=length(raux[raux==FALSE]),Missing=paste(names(raux[raux==TRUE]),collapse=",")));
 	}
 
+	colnames(result)[1] <- paste(bvectors$collapsed,collapse=":");
 	result[order(-result[,2], -result[,3]),];
+}
+
+###############################################################################
+# Processing instance input with wildcards                                    #
+###############################################################################
+
+aloja_predict_instance_set <- function (learned_model, vin, expression) # TODO
+{
+# vin = "Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster"
+# expression 1 = "sort,ETH,RR3,8,10,1,65536,None,32,Azure L"
+# expression 2 = "sort,ETH,RR3,*,10,1,65536,None,32,Azure L"
+# expression 3 = "sort,ETH,RR3,{8,10},10,1,65536,None,32,Azure L"
+
+	# Parse Input
+
+	# Compile Input
+
+	# Generate Instances
+
+	# Run Predictor
 }
 
 ###############################################################################
