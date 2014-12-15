@@ -172,6 +172,13 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 # TODO FIXME - Refactor the following code:
 
 	#######################################################################
+	## Rank Configurations
+
+	dsc1 <- aloja_dataset_collapse (dataset,varin,varout,dimension1="Benchmark",dimension2=c(3:11),dimname1="Benchmark",dimname2="Configuration",saveall="dsc1");
+	sresult <- aloja_best_configurations (dsc1);
+	write.table(x=sresult,file="ranking.data",sep=",",row.names=FALSE);
+
+	#######################################################################
 	## Classify new Benchmark
 
 	# Preparing dummy scenario

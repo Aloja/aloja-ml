@@ -14,8 +14,7 @@ library(session);
 
 set.seed(1234567890);
 
-#source("nnet_plot_update.r");
-#source_url('https://gist.githubusercontent.com/fawda123/7471137/raw/466c1474d0a505ff044412703516c34f1a4684a5/nnet_plot_update.r')
+source_url('https://gist.githubusercontent.com/fawda123/7471137/raw/466c1474d0a505ff044412703516c34f1a4684a5/nnet_plot_update.r')
 
 ###############################################################################
 # Read datasets and prepare them for usage                                    #
@@ -1253,12 +1252,12 @@ aloja_best_configurations <- function (bvectors = NULL, bvec_name = NULL) # bvec
 
 	if (!is.null(bvec_name)) bvectors <- aloja_load_object(bvec_name);
 
-	result <- data.frame(Config=character(),Variance=numeric(),Benchmarks=integer(),stringsAsFactors=FALSE);
+	result <- data.frame(Config=character(),Variance=numeric(),Benchmarks=integer(),Missing=character(),stringsAsFactors=FALSE);
 	for(i in 1:ncol(bvectors$matrix))
 	{
 		vaux <- var(bvectors$matrix[,i],na.rm=TRUE);
 		raux <- is.na(bvectors$matrix[,i]);
-		result <- rbind(result,data.frame(Config=colnames(bvectors$matrix)[i],Variance=vaux,Benchmarks=length(raux[raux==FALSE])));
+		result <- rbind(result,data.frame(Config=colnames(bvectors$matrix)[i],Variance=vaux,Benchmarks=length(raux[raux==FALSE]),Missing=paste(names(raux[raux==TRUE]),collapse=",")));
 	}
 
 	result[order(-result[,2], -result[,3]),];
