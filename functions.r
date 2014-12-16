@@ -14,7 +14,7 @@ library(session);
 
 set.seed(1234567890);
 
-source_url('https://gist.githubusercontent.com/fawda123/7471137/raw/466c1474d0a505ff044412703516c34f1a4684a5/nnet_plot_update.r')
+#source_url('https://gist.githubusercontent.com/fawda123/7471137/raw/466c1474d0a505ff044412703516c34f1a4684a5/nnet_plot_update.r')
 
 ###############################################################################
 # Read datasets and prepare them for usage                                    #
@@ -835,7 +835,7 @@ aloja_predict_dataset <- function (learned_model, vin, ds = NULL, data_file = NU
 
 	for (i in 1:nrow(ds))
 	{
-		pred_aux <- aloja_predict_instance (learned_model, vin, ds[i,]);
+		pred_aux <- aloja_predict_individual_instance (learned_model, vin, ds[i,]);
 		retval <- c(retval, pred_aux);
 	}
 
@@ -843,6 +843,55 @@ aloja_predict_dataset <- function (learned_model, vin, ds = NULL, data_file = NU
 }
 
 aloja_predict_instance <- function (learned_model, vin, inst_predict)
+{
+	retval <- NULL;
+
+	if (length(grep(pattern="\\||\\*",inst_predict)) > 0)
+	{
+
+		expression <- inst_predict;
+		plist <- list();
+		for (i in 1:length(expression))
+		{
+			if (expression[i]=="*")
+			{
+				caux <- learned_model$dataset[,vin[i]];
+				if (class(caux)=="factor") plist[[i]] <- levels(caux);
+				if (class(caux)=="integer")
+				{
+					print(paste("[WARNING] * in",i,"is integer. Unique values from learned_model dataset will be used.",sep=" "));
+					plist[[i]] <- unique(caux);
+				}
+
+			} else if (grepl('[|]',expression[i]) == TRUE)
+			{
+				plist[[i]] <- strsplit(expression[i],split='\\|')[[1]];
+			} else
+			{
+				plist[[i]] <- expression[i];
+			}
+		}
+		instances <- expand.grid(plist);
+		colnames(instances) <- vin;
+	
+		for(cname in vin)
+		{
+			if (class(learned_model$dataset[,cname])=="integer") instances[,cname] <- as.integer(as.character(instances[,cname]));
+			if (class(learned_model$dataset[,cname])=="factor") instances[,cname] <- factor(instances[,cname],levels=levels(learned_model$dataset[,cname]));
+		}
+
+		for (i in 1:nrow(instances))
+		{
+			pred_aux <- aloja_predict_individual_instance (learned_model, vin, instances[i,]);
+			retval <- c(retval, paste(sapply(instances[i,],function(x) as.character(x)),collapse=","), pred_aux);
+		}
+	} else {
+		retval <- aloja_predict_individual_instance (learned_model, vin, inst_predict);
+	}
+	retval;
+}
+
+aloja_predict_individual_instance <- function (learned_model, vin, inst_predict)
 {
 	ds <- learned_model$dataset;
 	model_aux <- learned_model$model;
@@ -1267,26 +1316,6 @@ aloja_best_configurations <- function (bvectors = NULL, bvec_name = NULL)
 
 	colnames(result)[1] <- paste(bvectors$collapsed,collapse=":");
 	result[order(-result[,2], -result[,3]),];
-}
-
-###############################################################################
-# Processing instance input with wildcards                                    #
-###############################################################################
-
-aloja_predict_instance_set <- function (learned_model, vin, expression) # TODO
-{
-# vin = "Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster"
-# expression 1 = "sort,ETH,RR3,8,10,1,65536,None,32,Azure L"
-# expression 2 = "sort,ETH,RR3,*,10,1,65536,None,32,Azure L"
-# expression 3 = "sort,ETH,RR3,{8,10},10,1,65536,None,32,Azure L"
-
-	# Parse Input
-
-	# Compile Input
-
-	# Generate Instances
-
-	# Run Predictor
 }
 
 ###############################################################################
