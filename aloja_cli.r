@@ -11,7 +11,7 @@
 #	 ./aloja_cli.r -m aloja_regtree -d aloja-dataset.csv -p saveall=m5p1
 #	 ./aloja_cli.r -m aloja_predict_dataset -l m5p1 -d m5p1-tt.csv -v
 #	 ./aloja_cli.r -m aloja_predict_instance -l m5p1 -p inst_predict="sort,ETH,RR3,8,10,1,65536,None,32,Azure L" -v
-#	 ./aloja_cli.r -m aloja_predict_instance -l m5p1 -p inst_predict="sort,ETH,RR3,8|10,10,1,65536,*,32,Azure L" -v
+#	 ./aloja_cli.r -m aloja_predict_instance -l m5p1 -p inst_predict="sort,ETH,RR3,8|10,10,1,65536,*,32,Azure L":sorted=asc -v
 #
 #	 ./aloja_cli.r -m aloja_pca -d dataset.csv -p saveall=pca1
 #	 ./aloja_cli.r -m aloja_regtree -d pca1-transformed.csv -p prange=1e-4,1e+4:saveall=m5p-simple-redim -n 20

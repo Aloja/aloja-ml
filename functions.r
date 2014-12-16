@@ -842,7 +842,7 @@ aloja_predict_dataset <- function (learned_model, vin, ds = NULL, data_file = NU
 	retval;
 }
 
-aloja_predict_instance <- function (learned_model, vin, inst_predict)
+aloja_predict_instance <- function (learned_model, vin, inst_predict, sorted = NULL)
 {
 	retval <- NULL;
 
@@ -880,11 +880,21 @@ aloja_predict_instance <- function (learned_model, vin, inst_predict)
 			if (class(learned_model$dataset[,cname])=="factor") instances[,cname] <- factor(instances[,cname],levels=levels(learned_model$dataset[,cname]));
 		}
 
+		laux <- list();
 		for (i in 1:nrow(instances))
 		{
 			pred_aux <- aloja_predict_individual_instance (learned_model, vin, instances[i,]);
-			retval <- c(retval, paste(sapply(instances[i,],function(x) as.character(x)),collapse=","), pred_aux);
+			laux[[i]] <- c(paste(sapply(instances[i,],function(x) as.character(x)),collapse=","),pred_aux);
 		}
+		daux <- t(as.data.frame(laux));
+		daux <- data.frame(Instance=as.character(daux[,1]),Prediction=as.numeric(daux[,2]),stringsAsFactors=FALSE);
+		if (is.null(sorted) || !(sorted %in% c("asc","desc")))
+		{
+			retval <- daux;
+		} else {
+			retval <- daux[order(daux[,"Prediction"],decreasing=(sorted=="desc")),];
+		}
+
 	} else {
 		retval <- aloja_predict_individual_instance (learned_model, vin, inst_predict);
 	}
