@@ -1160,7 +1160,7 @@ aloja_dataset_collapse <- function (ds, vin, vout, dimension1, dimension2, dimna
 
 	dsid <- ds[,"ID"];
 	ds <- ds[,c(vout,vin)];
-	dsaux <- cbind(ds[,vout],apply(ds[,dimension1],1,paste,collapse=":"),apply(ds[,dimension2],1,paste,collapse=":"));
+	dsaux <- cbind(ds[,vout],apply(as.matrix(ds[,dimension1]),1,paste,collapse=":"),apply(as.matrix(ds[,dimension2]),1,paste,collapse=":"));
 	colnames(dsaux) <- c(vout,dimname1,dimname2);
 
 	maux <- matrix(NA,length(levels(as.factor(dsaux[,dimname1]))),length(levels(as.factor(dsaux[,dimname2]))));
