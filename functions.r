@@ -1154,7 +1154,7 @@ aloja_transform_instance <- function (inst_transform, pca_obj = NULL, pca_name =
 }
 
 
-aloja_dataset_collapse <- function (ds, vin, vout, dimension1, dimension2, dimname1, dimname2, saveall = NULL)
+aloja_dataset_collapse <- function (ds, vin, vout, dimension1, dimension2, dimname1, dimname2, model_obj = NULL, model_name = NULL, saveall = NULL)
 {
 	retval <- list();
 
@@ -1181,6 +1181,29 @@ aloja_dataset_collapse <- function (ds, vin, vout, dimension1, dimension2, dimna
 
 		prev_val <- ifelse(!is.na(maux[dim1_aux,dim2_aux]),as.numeric(maux[dim1_aux,dim2_aux]),0);
 		maux[dim1_aux,dim2_aux] <- (prev_val * (len_aux-1) + as.numeric(dsaux[i,vout])) / len_aux;
+	}
+
+	# IMPORTANT - NA filling is done AFTER aggregation, so estimated values DO NOT affect aggregation
+	# also, model filling only works when all represented dimensions are in the original learning dataset
+	if (!is.null(model_name)) model_obj <- aloja_load_object(model_name);
+
+	if (!is.null(model_obj))
+	{
+		for (i in 1:length(maux))
+		{
+			if (is.na(maux[i]))
+			{
+				row_aux <- ((i-1) %% nrow(maux)) + 1;
+				col_aux <- ((i-1) %/% nrow(maux)) + 1;
+
+				dim1_aux <- rownames(maux)[row_aux];
+				dim2_aux <- colnames(maux)[col_aux];
+
+				inst_aux <- c(strsplit(dim1_aux,split=":")[[1]],strsplit(dim2_aux,split=":")[[1]]);
+
+				maux[i] <- aloja_predict_instance (model_obj,model_obj$varin,inst_aux);
+			}
+		}
 	}
 
 	retval[["matrix"]] <- maux;
