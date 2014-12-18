@@ -1187,7 +1187,7 @@ aloja_dataset_collapse <- function (ds, vin, vout, dimension1, dimension2, dimna
 	# also, model filling only works when all represented dimensions are in the original learning dataset
 	if (!is.null(model_name)) model_obj <- aloja_load_object(model_name);
 
-	if (!is.null(model_obj))
+	if (!is.null(model_obj) && all(c(model_obj$varin %in% c(dimension1,dimension2),c(dimension1,dimension2) %in% model_obj$varin)))
 	{
 		for (i in 1:length(maux))
 		{
@@ -1201,7 +1201,7 @@ aloja_dataset_collapse <- function (ds, vin, vout, dimension1, dimension2, dimna
 
 				inst_aux <- c(strsplit(dim1_aux,split=":")[[1]],strsplit(dim2_aux,split=":")[[1]]);
 
-				maux[i] <- aloja_predict_instance (model_obj,model_obj$varin,inst_aux);
+				maux[i] <- aloja_predict_instance (model_obj,c(dimension1,dimension2),inst_aux);
 			}
 		}
 	}
@@ -1229,7 +1229,7 @@ aloja_dataset_clustering <- function (datamatrix, k = 3, na.predict = NULL)
 		maux <- datamatrix;
 	}
 
-	if (!is.null(na.predict))
+	if (!is.null(na.predict) && all(c(na.predict$varin %in% c(dimension1,dimension2),c(dimension1,dimension2) %in% na.predict$varin)))
 	{
 		for (i in 1:length(maux))
 		{
@@ -1242,8 +1242,8 @@ aloja_dataset_clustering <- function (datamatrix, k = 3, na.predict = NULL)
 				dim2_aux <- colnames(maux)[col_aux];
 
 				inst_aux <- c(dim1_aux,strsplit(dim2_aux,split=":")[[1]]);
-			
-				maux[i] <- aloja_predict_instance (na.predict,na.predict$varin,inst_aux);
+
+				maux[i] <- aloja_predict_instance (na.predict,c(dimension1,dimension2),inst_aux);
 			}
 		}
 	} else {
