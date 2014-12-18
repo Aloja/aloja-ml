@@ -1160,16 +1160,16 @@ aloja_dataset_collapse <- function (ds, vin, vout, dimension1, dimension2, dimna
 
 	dsid <- ds[,"ID"];
 	ds <- ds[,c(vout,vin)];
-	dsaux <- cbind(ds[,c(vout,dimension1)],apply(ds[,dimension2],1,paste,collapse=":"));
+	dsaux <- cbind(ds[,vout],apply(ds[,dimension1],1,paste,collapse=":"),apply(ds[,dimension2],1,paste,collapse=":"));
 	colnames(dsaux) <- c(vout,dimname1,dimname2);
 
-	maux <- matrix(NA,length(levels(dsaux[,dimname1])),length(levels(dsaux[,dimname2])));
-	colnames(maux) <- levels(dsaux[,dimname2]);
-	rownames(maux) <- levels(dsaux[,dimname1]);
+	maux <- matrix(NA,length(levels(as.factor(dsaux[,dimname1]))),length(levels(as.factor(dsaux[,dimname2]))));
+	colnames(maux) <- levels(as.factor(dsaux[,dimname2]));
+	rownames(maux) <- levels(as.factor(dsaux[,dimname1]));
 
-	midaux <- matrix(NA,length(levels(dsaux[,dimname1])),length(levels(dsaux[,dimname2])));
-	colnames(midaux) <- levels(dsaux[,dimname2]);
-	rownames(midaux) <- levels(dsaux[,dimname1]);
+	midaux <- matrix(NA,length(levels(as.factor(dsaux[,dimname1]))),length(levels(as.factor(dsaux[,dimname2]))));
+	colnames(midaux) <- levels(as.factor(dsaux[,dimname2]));
+	rownames(midaux) <- levels(as.factor(dsaux[,dimname1]));
 
 	for (i in 1:nrow(dsaux))
 	{
@@ -1179,8 +1179,8 @@ aloja_dataset_collapse <- function (ds, vin, vout, dimension1, dimension2, dimna
 		midaux[dim1_aux,dim2_aux] <- ifelse(!is.na(midaux[dim1_aux,dim2_aux]),c(midaux[dim1_aux,dim2_aux], dsid[i]),dsid[i]);
 		len_aux <- length(midaux[dim1_aux,dim2_aux]);
 
-		prev_val <- ifelse(!is.na(maux[dim1_aux,dim2_aux]),maux[dim1_aux,dim2_aux],0);
-		maux[dim1_aux,dim2_aux] <- (prev_val * (len_aux-1) + dsaux[i,vout]) / len_aux;
+		prev_val <- ifelse(!is.na(maux[dim1_aux,dim2_aux]),as.numeric(maux[dim1_aux,dim2_aux]),0);
+		maux[dim1_aux,dim2_aux] <- (prev_val * (len_aux-1) + as.numeric(dsaux[i,vout])) / len_aux;
 	}
 
 	retval[["matrix"]] <- maux;
