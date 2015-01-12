@@ -1154,12 +1154,13 @@ aloja_transform_instance <- function (inst_transform, pca_obj = NULL, pca_name =
 }
 
 
-aloja_dataset_collapse <- function (ds, vin, vout, dimension1, dimension2, dimname1, dimname2, model_obj = NULL, model_name = NULL, saveall = NULL)
+aloja_dataset_collapse <- function (ds, vin, vout, dimension1, dimension2, dimname1, dimname2, model_obj = NULL, model_name = NULL, saveall = NULL, preds = "after")
 {
 	retval <- list();
 
 	dsid <- ds[,"ID"];
 	ds <- ds[,c(vout,vin)];
+
 	dsaux <- cbind(ds[,vout],apply(as.matrix(ds[,dimension1]),1,paste,collapse=":"),apply(as.matrix(ds[,dimension2]),1,paste,collapse=":"));
 	colnames(dsaux) <- c(vout,dimname1,dimname2);
 
@@ -1183,11 +1184,11 @@ aloja_dataset_collapse <- function (ds, vin, vout, dimension1, dimension2, dimna
 		maux[dim1_aux,dim2_aux] <- (prev_val * (len_aux-1) + as.numeric(dsaux[i,vout])) / len_aux;
 	}
 
-	# IMPORTANT - NA filling is done AFTER aggregation, so estimated values DO NOT affect aggregation
-	# also, model filling only works when all represented dimensions are in the original learning dataset
 	if (!is.null(model_name)) model_obj <- aloja_load_object(model_name);
 
-	if (!is.null(model_obj) && all(c(model_obj$varin %in% c(dimension1,dimension2),c(dimension1,dimension2) %in% model_obj$varin)))
+	# IMPORTANT - NA filling is done AFTER aggregation, so estimated values DO NOT affect aggregation
+	# also, model filling only works when all represented dimensions are in the original learning dataset
+	if ((preds == "after") && !is.null(model_obj) && all(c(model_obj$varin %in% c(dimension1,dimension2),c(dimension1,dimension2) %in% model_obj$varin)))
 	{
 		for (i in 1:length(maux))
 		{
@@ -1202,6 +1203,37 @@ aloja_dataset_collapse <- function (ds, vin, vout, dimension1, dimension2, dimna
 				inst_aux <- c(strsplit(dim1_aux,split=":")[[1]],strsplit(dim2_aux,split=":")[[1]]);
 
 				maux[i] <- aloja_predict_instance (model_obj,c(dimension1,dimension2),inst_aux);
+			}
+		}
+	}
+
+	# IMPORTANT - NA filling is done simulating values BEFORE aggregation, so estimated values DO affect aggregation
+	# also, the model will fulfill with * all variables not in dimension1 or dimension2
+	if ((preds != "after") && !is.null(model_obj))
+	{
+		for (i in 1:length(maux))
+		{
+			if (is.na(maux[i]))
+			{
+				row_aux <- ((i-1) %% nrow(maux)) + 1;
+				col_aux <- ((i-1) %/% nrow(maux)) + 1;
+
+				dim1_aux <- rownames(maux)[row_aux];
+				dim2_aux <- colnames(maux)[col_aux];
+
+				split1 <- strsplit(dim1_aux,split=":")[[1]];
+				split2 <- strsplit(dim2_aux,split=":")[[1]];
+
+				inst_aux <- NULL;
+				for (j in 1:length(model_obj$varin))
+				{
+					if (model_obj$varin[j] %in% dimension1) inst_aux <- c(inst_aux,sub("^\\s+",'',split1[which(dimension1 == model_obj$varin[j])]));
+					if (model_obj$varin[j] %in% dimension2) inst_aux <- c(inst_aux,sub("^\\s+",'',split2[which(dimension2 == model_obj$varin[j])]));
+					if (!(model_obj$varin[j] %in% c(dimension1,dimension2))) inst_aux <- c(inst_aux,'*');
+				}
+
+				piaux <- aloja_predict_instance (model_obj,vin,inst_aux);
+				maux[i] <- mean(piaux[,"Prediction"]);
 			}
 		}
 	}
