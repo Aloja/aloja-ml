@@ -1187,7 +1187,6 @@ aloja_dataset_collapse <- function (ds, vin, vout, dimension1, dimension2, dimna
 	if (!is.null(model_name)) model_obj <- aloja_load_object(model_name);
 
 	# IMPORTANT - NA filling is done AFTER aggregation, so estimated values DO NOT affect aggregation
-	# also, model filling only works when all represented dimensions are in the original learning dataset
 	if ((preds == "after") && !is.null(model_obj) && all(c(model_obj$varin %in% c(dimension1,dimension2),c(dimension1,dimension2) %in% model_obj$varin)))
 	{
 		for (i in 1:length(maux))
@@ -1208,7 +1207,6 @@ aloja_dataset_collapse <- function (ds, vin, vout, dimension1, dimension2, dimna
 	}
 
 	# IMPORTANT - NA filling is done simulating values BEFORE aggregation, so estimated values DO affect aggregation
-	# also, the model will fulfill with * all variables not in dimension1 or dimension2
 	if ((preds != "after") && !is.null(model_obj))
 	{
 		for (i in 1:length(maux))
@@ -1246,6 +1244,87 @@ aloja_dataset_collapse <- function (ds, vin, vout, dimension1, dimension2, dimna
 	{
 		write.table(retval$matrix,file=paste(saveall,"-matrix.csv",sep=""),sep=",",row.names=TRUE);
 		write.table(retval$IDs,file=paste(saveall,"-ids.csv",sep=""),sep=",",row.names=TRUE);
+		aloja_save_object(retval,tagname=saveall);
+	}
+
+	retval;
+}
+
+aloja_dataset_collapse_expand <- function (ds, vin, vout, dimension1, dimension2, dimname1, dimname2, inst_general, model_obj = NULL, model_name = NULL, saveall = NULL)
+{
+	retval <- list();
+
+	datacol_obj <- aloja_dataset_collapse (ds,vin,vout,dimension1,dimension2,dimname1,dimname2);
+
+	if (!is.null(model_name)) model_obj <- aloja_load_object(model_name);
+	predicted_obj <- aloja_predict_instance(model_obj,vin,inst_general,sorted=TRUE);
+
+	pmat <- cbind(predicted_obj[,"Prediction"],str_split_fixed(predicted_obj[,"Instance"], ",",length(vin)));
+	colnames(pmat) <- c(vout,vin);
+
+	dsaux <- cbind(pmat[,vout],apply(as.matrix(pmat[,dimension1]),1,paste,collapse=":"),apply(as.matrix(pmat[,dimension2]),1,paste,collapse=":"));
+	colnames(dsaux) <- c(vout,dimname1,dimname2);
+
+	maux <- matrix(NA,length(levels(as.factor(dsaux[,dimname1]))),length(levels(as.factor(dsaux[,dimname2]))));
+	colnames(maux) <- levels(as.factor(dsaux[,dimname2]));
+	rownames(maux) <- levels(as.factor(dsaux[,dimname1]));
+
+	midaux <- matrix(NA,length(levels(as.factor(dsaux[,dimname1]))),length(levels(as.factor(dsaux[,dimname2]))));
+	colnames(midaux) <- levels(as.factor(dsaux[,dimname2]));
+	rownames(midaux) <- levels(as.factor(dsaux[,dimname1]));
+
+	for (i in 1:nrow(dsaux))
+	{
+		dim1_aux <- dsaux[i,dimname1];
+		dim2_aux <- dsaux[i,dimname2];
+
+		midaux[dim1_aux,dim2_aux] <- ifelse(!is.na(midaux[dim1_aux,dim2_aux]),c(midaux[dim1_aux,dim2_aux], i),i);
+		len_aux <- length(midaux[dim1_aux,dim2_aux]);
+
+		prev_val <- ifelse(!is.na(maux[dim1_aux,dim2_aux]),as.numeric(maux[dim1_aux,dim2_aux]),0);
+		maux[dim1_aux,dim2_aux] <- (prev_val * (len_aux-1) + as.numeric(dsaux[i,vout])) / len_aux;
+	}
+
+	cmaux <- matrix(NA,length(levels(as.factor(dsaux[,dimname1]))),length(levels(as.factor(dsaux[,dimname2]))));
+	colnames(cmaux) <- levels(as.factor(dsaux[,dimname2]));
+	rownames(cmaux) <- levels(as.factor(dsaux[,dimname1]));
+
+	cmidaux <- matrix(NA,length(levels(as.factor(dsaux[,dimname1]))),length(levels(as.factor(dsaux[,dimname2]))));
+	colnames(cmidaux) <- levels(as.factor(dsaux[,dimname2]));
+	rownames(cmidaux) <- levels(as.factor(dsaux[,dimname1]));
+
+	for (i in 1:nrow(dsaux))
+	{
+		dim1_aux <- dsaux[i,dimname1];
+		dim2_aux <- dsaux[i,dimname2];
+
+		cmaux[dim1_aux,dim2_aux] <- maux[dim1_aux,dim2_aux];
+		cmidaux[dim1_aux,dim2_aux] <- 'NA';
+
+		if (dim1_aux %in% rownames(datacol_obj$matrix) && dim2_aux %in% colnames(datacol_obj$matrix))
+		{
+			if (!is.na(datacol_obj$matrix[dim1_aux,dim2_aux]))
+			{
+				cmaux[dim1_aux,dim2_aux] <- datacol_obj$matrix[dim1_aux,dim2_aux];
+				cmidaux[dim1_aux,dim2_aux] <- datacol_obj$IDs[dim1_aux,dim2_aux];
+			}
+		} 
+	}
+
+	retval[["matrix"]] <- datacol_obj$matrix;
+	retval[["pmatrix"]] <- maux;
+	retval[["cmatrix"]] <- cmaux;
+	retval[["IDs"]] <- datacol_obj$IDs;
+	retval[["cIDs"]] <- cmidaux;
+	retval[["collapsed"]] <- dimension2;
+
+	if (!is.null(saveall))
+	{
+		write.table(retval$matrix,file=paste(saveall,"-matrix.csv",sep=""),sep=",",row.names=TRUE);
+		write.table(retval$IDs,file=paste(saveall,"-ids.csv",sep=""),sep=",",row.names=TRUE);
+		write.table(retval$pmatrix,file=paste(saveall,"-pmatrix.csv",sep=""),sep=",",row.names=TRUE);
+		write.table(retval$cmatrix,file=paste(saveall,"-cmatrix.csv",sep=""),sep=",",row.names=TRUE);
+		write.table(retval$cIDs,file=paste(saveall,"-cids.csv",sep=""),sep=",",row.names=TRUE);
 		aloja_save_object(retval,tagname=saveall);
 	}
 
