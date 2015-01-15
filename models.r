@@ -5,8 +5,8 @@
 # Implementation of M5-Prediction-like method with Quadratic Regression
 
 # Usage:
-#	mtree <- m5pq_tree(formula = target ~ .,dataset = dataframe);
-#	prediction <- m5pq.predict(mtree = mtree, newdata = dataframe);
+#	mtree <- m5pq.tree(formula = target ~ .,dataset = dataframe);
+#	prediction <- m5pq.predict(model = mtree, newdata = dataframe);
 #	m5pq.plot.tree(mtree);
 
 library(rpart);
@@ -15,17 +15,17 @@ library(rpart);
 # Regression Tree M5-Prediction-like with Quadratic Regression                #
 ###############################################################################
 
-m5pq.tree <- function (formula, dataset)
+m5pq.tree <- function (formula, dataset, m = 30, cp = 0.001)
 {
 	colnames(dataset) <- gsub(" ",".",colnames(dataset));
 
-	vout <- get(as.character(formula[[2]]));
+	vout <- get(as.character(formula[[2]]),envir=parent.frame());
 	vin <- if (as.character(formula[[3]]) == ".") colnames(dataset)[(!colnames(dataset) %in% vout)] else as.character(formula[[3]]);
 
 	dataset <- dataset[,c(vout,vin)];
 
-	fit <- rpart(formula=dataset[,vout]~.,data=dataset[,vin],method="anova");
-	nodes <- as.numeric(rownames(mtree$rpart$frame));
+	fit <- rpart(formula=dataset[,vout]~.,data=dataset[,vin],method="anova",control=rpart.control(minsplit=as.integer(m),cp=as.numeric(cp)));
+	nodes <- as.numeric(rownames(fit$frame));
 
 	err_branch <- regs <- preds <- list();
 	indexes <- NULL;
@@ -44,9 +44,9 @@ m5pq.tree <- function (formula, dataset)
 		mae <- mae + sum(abs(preds[[j]] - daux[,vout]));
 		rae <- rae + sum(abs((preds[[j]] - daux[,vout])/daux[,vout]));
 	}
-	mae <- mae / nrow(dsbaux);
-	rae <- rae / nrow(dsbaux);
-	print(c(nrow(dsbaux),mae,rae));
+	mae <- mae / nrow(dataset);
+	rae <- rae / nrow(dataset);
+	#print(paste("[INFO]", m , nrow(dataset),mae,rae,sep=" "));
 
 	retval <- list();
 	retval[["rpart"]] <- fit;
@@ -56,9 +56,10 @@ m5pq.tree <- function (formula, dataset)
 	retval[["rae"]] <- rae;
 
 	err_data <- t(data.frame(strsplit(unlist(err_branch)," ")));
-	rownames(err_data) <- err_data[,1];
-	err_data <- data.frame(err_data[,-2]);
+	auxid <- err_data[,1];
+	err_data <- if (nrow(err_data)==1) t(data.frame(err_data[,-1])) else data.frame(err_data[,-1]);
 	colnames(err_data) <- c("Instances","MAE","MAPE");
+	rownames(err_data) <- auxid;
 
 	retval[["error_branch"]] <- err_data;	
 
