@@ -15,6 +15,7 @@ library(session);
 set.seed(1234567890);
 
 #source_url('https://gist.githubusercontent.com/fawda123/7471137/raw/466c1474d0a505ff044412703516c34f1a4684a5/nnet_plot_update.r')
+source_url('https://raw.githubusercontent.com/Aloja/aloja-ml/master/models.r');
 
 ###############################################################################
 # Read datasets and prepare them for usage                                    #
@@ -717,8 +718,18 @@ aloja_regtree <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = 
 	if (!is.integer(sigma)) sigma <- as.integer(sigma);
 	if (!is.integer(mparam) && !is.null(mparam)) mparam <- as.integer(mparam);
 
+	# Prevent prediction startle because of singularities
+	options(warn=-1);
+
+	# Binarization of variables
+	dsbaux <- aloja_binarize_ds(ds[,c(vout,vin)]);
+	auxset <- aloja_binarize_mixsets(vin,vout,traux=traux,ntaux=ntaux,tvaux=tvaux,ttaux=ttaux);
+	vin <- colnames(dsbaux[!(colnames(dsbaux) %in% vout)]);
+
 	# Load and split datasets
-	rt <- aloja_load_datasets (ds,vin,vout,tsplit,vsplit,ttaux,ntaux,traux,tvaux,ttfile,trfile,tvfile);
+	dsid <- cbind(ds[,"ID"],dsbaux);
+	colnames(dsid) <- c("ID",vout,vin);
+	rt <- aloja_load_datasets (dsid,vin,vout,tsplit,vsplit,auxset$ttaux,auxset$ntaux,auxset$traux,auxset$tvaux,ttfile,trfile,tvfile);
 	rt[["varin"]] <- vin;
 	rt[["varout"]] <- vout;
 
@@ -751,10 +762,10 @@ aloja_regtree <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = 
 	{
 		rt[["selected_model"]] <- aloja_m5p_select(vout, vin, rt$trainset, rt$validset, c("1","2","5","10","25","50","75","100","150","200"));
 		mparam <- rt$selected_model$mmin;
-	}
-	rt[["model"]] <- M5P(formula=rt$trainset[,vout] ~ .,data=data.frame(rt$trainset[,vin]), control = Weka_control(M = mparam));
-	rt[["predtrain"]] <- rt$model$predictions;
-	rt[["predval"]] <- predict(rt$model,newdata=data.frame(rt$validset));
+	} 
+	rt[["model"]] <- m5pq.tree(formula=vout~.,dataset=data.frame(rt$trainset[,c(vout,vin)]),m=mparam)
+	rt[["predtrain"]] <- rt$model$fitted.values;
+	rt[["predval"]] <- m5pq.predict(model=rt$model,newdata=data.frame(rt$validset[,c(vout,vin)]));
 	if (!is.null(prange))
 	{
 		rt$predtrain[rt$predtrain < prange[1]] <- prange[1];
@@ -781,7 +792,7 @@ aloja_regtree <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = 
 	}
 
 	# Testing and evaluation
-	rt[["predtest"]] <- predict(rt$model,newdata=data.frame(rt$testset));
+	rt[["predtest"]] <-  m5pq.predict(model=rt$model,newdata=data.frame(rt$testset[,c(vout,vin)]));
 	if (!is.null(prange))
 	{
 		rt$predtest[rt$predtest < prange[1]] <- prange[1];
@@ -806,7 +817,7 @@ aloja_regtree <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = 
 
 	if (!is.null(saveall))
 	{
-		aloja_save_model(rt$model,tagname=saveall,is.weka=TRUE);
+		aloja_save_model(rt$model,tagname=saveall);
 		aloja_save_object(rt,tagname=saveall);
 		aloja_save_predictions(rt$dataset,rt$trainset,rt$predtrain,rt$validset,rt$predval,rt$testset,rt$predtest,testname=saveall);
 	}
@@ -974,15 +985,15 @@ aloja_m5p_select <- function (vout, vin, traux, tvaux, mintervals)
 	off_threshold <- 1e-4;
 	for (i in mintervals)
 	{
-		ml <- M5P(formula=traux[,vout] ~ .,data=data.frame(traux[,vin]), control = Weka_control(M = i));
-		mae <- mean(abs(ml$predictions - traux[,vout]));
-		trmae <- c(trmae,mae);
+		ml <- m5pq.tree(formula=vout~.,dataset=data.frame(traux[,c(vout,vin)]),m=i);
+		trmae <- c(trmae, ml$mae);
 
-		prediction <- predict(ml,newdata=data.frame(tvaux));
+		prediction <- m5pq.predict(model=ml,newdata=data.frame(tvaux[,c(vout,vin)]));
 		mae <- mean(abs(prediction - tvaux[,vout]));
 		tvmae <- c(tvmae,mae);
 
-		if (mae < mminmae - off_threshold) { mmin <- i; mminmae <- mae;	}
+		if (mae < mminmae - off_threshold) { mmin <- i; mminmae <- mae; }
+		print(paste("[INFO]",i,mae,mmin,mminmae));
 	}
 	print (paste("Selected M:",mmin));	
 
