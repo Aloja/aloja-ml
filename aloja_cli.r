@@ -13,6 +13,7 @@
 #	 ./aloja_cli.r -m aloja_predict_dataset -l m5p1 -d m5p1-tt.csv -v
 #	 ./aloja_cli.r -m aloja_predict_instance -l m5p1 -p inst_predict="sort,ETH,RR3,8,10,1,65536,None,32,Azure L" -v
 #	 ./aloja_cli.r -m aloja_predict_instance -l m5p1 -p inst_predict="sort,ETH,RR3,8|10,10,1,65536,*,32,Azure L":sorted=asc -v
+#	 ./aloja_cli.r -m aloja_predict_instance -l m5p1 -p inst_predict="sort,ETH,RR3,8|10,10,1,65536,*,32,Azure L":vin="Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Cluster":sorted=asc -v
 #
 #	 ./aloja_cli.r -m aloja_pca -d aloja-dataset.csv -p saveall=pca1
 #	 ./aloja_cli.r -m aloja_regtree -d pca1-transformed.csv -p prange=1e-4,1e+4:saveall=m5p-simple-redim -n 20
@@ -96,7 +97,6 @@ source("functions.r");
 		params_2 <- list();
 		params_2[["tagname"]] <- opt$learned;
 		params[["learned_model"]] <- do.call(aloja_load_object,params_2);
-		params[["vin"]] <- params$learned_model$varin;
 	}
 
 	if (opt$method == "aloja_dataset_clustering")
@@ -116,6 +116,25 @@ source("functions.r");
 			params[[saux_2[[i]][1]]] <- strsplit(saux_2[[i]][2],",")[[1]];
 		}
 		rm(saux_1,saux_2);
+	}
+
+	if (is.null(params$vin) && opt$method  == "aloja_predict_instance")
+	{
+		if (length(params$inst_predict) == length(params$learned_model$varin))
+		{
+			params[["vin"]] <- params$learned_model$varin;
+		} else {
+			params[["vin"]] <- c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster");
+		}
+	}
+	if (is.null(params$vin) && opt$method  == "aloja_predict_dataset")
+	{
+		if (all(colnames(params$ds) %in% params$learned_model$varin))
+		{
+			params[["vin"]] <- params$learned_model$varin;
+		} else {
+			params[["vin"]] <- c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster");
+		}
 	}
 
 ###############################################################################

@@ -465,6 +465,7 @@ aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TR
 	rownames(rt[["maxout"]]) <- c(vout,vin);
 	rownames(rt[["minout"]]) <- c(vout,vin);
 
+	rt[["ds_original"]] <- ds;
 	rt[["varin"]] <- vin;
 	rt[["varout"]] <- vout;
 	
@@ -547,6 +548,7 @@ aloja_linreg <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = T
 	dsid <- cbind(ds[,"ID"],dsbaux);
 	colnames(dsid) <- c("ID",vout,vin);
 	rt <- aloja_load_datasets (dsid,vin,vout,tsplit,vsplit,auxset$ttaux,auxset$ntaux,auxset$traux,auxset$tvaux,ttfile,trfile,tvfile);
+	rt[["ds_original"]] <- ds;
 	rt[["varin"]] <- vin;
 	rt[["varout"]] <- vout;
 
@@ -636,6 +638,7 @@ aloja_nneighbors <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols
 
 	# Load and split datasets
 	rt <- aloja_load_datasets (ds,vin,vout,tsplit,vsplit,ttaux,ntaux,traux,tvaux,ttfile,trfile,tvfile);
+	rt[["ds_original"]] <- ds;
 	rt[["varin"]] <- vin;
 	rt[["varout"]] <- vout;
 
@@ -730,6 +733,7 @@ aloja_regtree <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = 
 	dsid <- cbind(ds[,"ID"],dsbaux);
 	colnames(dsid) <- c("ID",vout,vin);
 	rt <- aloja_load_datasets (dsid,vin,vout,tsplit,vsplit,auxset$ttaux,auxset$ntaux,auxset$traux,auxset$tvaux,ttfile,trfile,tvfile);
+	rt[["ds_original"]] <- ds;	
 	rt[["varin"]] <- vin;
 	rt[["varout"]] <- vout;
 
@@ -837,11 +841,14 @@ aloja_predict_dataset <- function (learned_model, vin, ds = NULL, data_file = NU
 		retval;
 	}
 
-	ds <- ds[,vin];
+	vin <- sub(' ','.',vin);
+
 	if (!is.null(data_file))
 	{
 		fileset <- read.table(file=data_file,header=T,sep=",");
 		ds <- aloja_dbind(ds,fileset[,vin]);
+	} else {
+		ds <- ds[,vin];
 	}
 
 	for (i in 1:nrow(ds))
@@ -859,14 +866,18 @@ aloja_predict_instance <- function (learned_model, vin, inst_predict, sorted = N
 
 	if (length(grep(pattern="\\||\\*",inst_predict)) > 0)
 	{
-
 		expression <- inst_predict;
 		plist <- list();
 		for (i in 1:length(expression))
 		{
 			if (expression[i]=="*")
 			{
-				caux <- learned_model$dataset[,vin[i]];
+				if (vin[i] %in% colnames(learned_model$dataset))
+				{
+					caux <- learned_model$dataset[,vin[i]];
+				} else {
+					caux <- learned_model$ds_original[,vin[i]]; # When Vars are binarized but instance is not.
+				}
 				if (class(caux)=="factor") plist[[i]] <- levels(caux);
 				if (class(caux)=="integer")
 				{
@@ -887,8 +898,8 @@ aloja_predict_instance <- function (learned_model, vin, inst_predict, sorted = N
 	
 		for(cname in vin)
 		{
-			if (class(learned_model$dataset[,cname])=="integer") instances[,cname] <- as.integer(as.character(instances[,cname]));
-			if (class(learned_model$dataset[,cname])=="factor") instances[,cname] <- factor(instances[,cname],levels=levels(learned_model$dataset[,cname]));
+			if (class(learned_model$ds_original[,cname])=="integer") instances[,cname] <- as.integer(as.character(instances[,cname]));
+			if (class(learned_model$ds_original[,cname])=="factor") instances[,cname] <- factor(instances[,cname],levels=levels(learned_model$ds_original[,cname]));
 		}
 
 		laux <- list();
@@ -925,7 +936,7 @@ aloja_predict_individual_instance <- function (learned_model, vin, inst_predict)
 	}
 
 	datamodel <- ds[1,learned_model$varin];
-	if (class(model_aux)[1]=="lm" || class(model_aux)[1]=="nnet")
+	if (class(model_aux)[1]=="list" || class(model_aux)[1]=="lm" || class(model_aux)[1]=="nnet")
 	{
 		for (name_1 in colnames(datamodel))
 		{
@@ -964,7 +975,12 @@ aloja_predict_individual_instance <- function (learned_model, vin, inst_predict)
 
 	options(warn=-1);
 
-	retval <- predict(model_aux,newdata=data.frame(datamodel));
+	if (class(model_aux)[1]=="list")
+	{
+		retval <- m5pq.predict(model=model_aux,newdata=data.frame(datamodel));
+	} else {
+		retval <- predict(model_aux,newdata=data.frame(datamodel));
+	}
 	if (class(model_aux)[1]=="nnet")
 	{
 		retval <- (retval * learned_model$maxout[learned_model$varout,]) + learned_model$minout[learned_model$varout,];
