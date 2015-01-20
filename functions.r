@@ -895,7 +895,7 @@ aloja_predict_instance <- function (learned_model, vin, inst_predict, sorted = N
 		}
 		instances <- expand.grid(plist);
 		colnames(instances) <- vin;
-	
+
 		for(cname in vin)
 		{
 			if (class(learned_model$ds_original[,cname])=="integer") instances[,cname] <- as.integer(as.character(instances[,cname]));
@@ -955,7 +955,7 @@ aloja_predict_individual_instance <- function (learned_model, vin, inst_predict)
 				datamodel[1,name_1] <- 0;
 				for (name_2 in colnames(inst_aux))
 				{
-					if (inst_aux[,name_2] == name_1) datamodel[1,name_1] <- 1;
+					if (!is.na(inst_aux[,name_2]) && inst_aux[,name_2] == name_1) datamodel[1,name_1] <- 1;
 				}
 			}
 		}
