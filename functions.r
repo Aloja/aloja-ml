@@ -850,47 +850,53 @@ aloja_predict_dataset <- function (learned_model, vin, ds = NULL, data_file = NU
 	retval;
 }
 
+aloja_unfold_expression <- function (expression, vin, reference_model)
+{
+	plist <- list();
+	for (i in 1:length(expression))
+	{
+		if (expression[i]=="*")
+		{
+			if (vin[i] %in% colnames(reference_model$dataset))
+			{
+				caux <- reference_model$dataset[,vin[i]];
+			} else {
+				caux <- reference_model$ds_original[,vin[i]]; # When Vars are binarized but instance is not.
+			}
+			if (class(caux)=="factor") plist[[i]] <- levels(caux);
+			if (class(caux)=="integer")
+			{
+				print(paste("[WARNING] * in",i,"is integer. Unique values from learned_model dataset will be used.",sep=" "));
+				plist[[i]] <- unique(caux);
+			}
+
+		} else if (grepl('[|]',expression[i]) == TRUE)
+		{
+			plist[[i]] <- strsplit(expression[i],split='\\|')[[1]];
+		} else
+		{
+			plist[[i]] <- expression[i];
+		}
+	}
+	instances <- expand.grid(plist);
+	colnames(instances) <- vin;
+
+	for(cname in vin)
+	{
+		if (class(reference_model$ds_original[,cname])=="integer") instances[,cname] <- as.integer(as.character(instances[,cname]));
+		if (class(reference_model$ds_original[,cname])=="factor") instances[,cname] <- factor(instances[,cname],levels=levels(reference_model$ds_original[,cname]));
+	}
+
+	instances;
+}
+
 aloja_predict_instance <- function (learned_model, vin, inst_predict, sorted = NULL)
 {
 	retval <- NULL;
 
 	if (length(grep(pattern="\\||\\*",inst_predict)) > 0)
 	{
-		expression <- inst_predict;
-		plist <- list();
-		for (i in 1:length(expression))
-		{
-			if (expression[i]=="*")
-			{
-				if (vin[i] %in% colnames(learned_model$dataset))
-				{
-					caux <- learned_model$dataset[,vin[i]];
-				} else {
-					caux <- learned_model$ds_original[,vin[i]]; # When Vars are binarized but instance is not.
-				}
-				if (class(caux)=="factor") plist[[i]] <- levels(caux);
-				if (class(caux)=="integer")
-				{
-					print(paste("[WARNING] * in",i,"is integer. Unique values from learned_model dataset will be used.",sep=" "));
-					plist[[i]] <- unique(caux);
-				}
-
-			} else if (grepl('[|]',expression[i]) == TRUE)
-			{
-				plist[[i]] <- strsplit(expression[i],split='\\|')[[1]];
-			} else
-			{
-				plist[[i]] <- expression[i];
-			}
-		}
-		instances <- expand.grid(plist);
-		colnames(instances) <- vin;
-
-		for(cname in vin)
-		{
-			if (class(learned_model$ds_original[,cname])=="integer") instances[,cname] <- as.integer(as.character(instances[,cname]));
-			if (class(learned_model$ds_original[,cname])=="factor") instances[,cname] <- factor(instances[,cname],levels=levels(learned_model$ds_original[,cname]));
-		}
+		instances <- aloja_unfold_expression(inst_predict,vin,learned_model);
 
 		laux <- list();
 		for (i in 1:nrow(instances))
@@ -908,7 +914,10 @@ aloja_predict_instance <- function (learned_model, vin, inst_predict, sorted = N
 		}
 
 	} else {
-		retval <- aloja_predict_individual_instance (learned_model, vin, inst_predict);
+		pred_aux <- aloja_predict_individual_instance (learned_model, vin, inst_predict);
+		laux <- c(paste(sapply(inst_predict,function(x) as.character(x)),collapse=","),pred_aux);
+		daux <- t(as.data.frame(laux));
+		retval <- data.frame(Instance=as.character(daux[,1]),Prediction=as.numeric(daux[,2]),stringsAsFactors=FALSE);
 	}
 	retval;
 }
@@ -1042,6 +1051,96 @@ aloja_knn_select <- function (vout, vin, traux, tvaux, kintervals, iparam)
 	retval[["inverse"]] <- iparam;
 	
 	retval;
+}
+
+###############################################################################
+# Outlier Detection Mechanisms                                                #
+###############################################################################
+
+aloja_outlier_dataset <- function (learned_model, vin, vout, ds_predict = NULL, sigma = 3, hdistance = 3)
+{
+	retval <- list();
+	retval[["resolutions"]] <- NULL;
+	retval[["cause"]] <- NULL;
+	retval[["learned_model"]] <- learned_model;
+	retval[["vin"]] <- vin;
+	retval[["vout"]] <- vout;
+	retval[["sigma"]] <- sigma;
+	retval[["hdistance"]] <- hdistance;
+
+	if (is.null(ds_predict)) ds_predict <- learned_model$ds_original;
+
+	retval[["dataset"]] <- ds_predict;
+	retval[["predictions"]] <- aloja_predict_dataset(learned_model, vin, ds = ds_predict);
+
+	# Compilation of datasets
+	id_pred <- rbind(learned_model$trainset,learned_model$validset,learned_model$testset);
+	id_pred <- cbind(id_pred,c(learned_model$predtrain,learned_model$predval,learned_model$predtest));
+	colnames(id_pred) <- c(colnames(learned_model$trainset),"Pred");
+	auxjoin <- id_pred;
+
+	# Compilation of errors (learning)
+	trerr <- learned_model$trainset[,vout] - learned_model$predtrain;
+	tverr <- learned_model$validset[,vout] - learned_model$predval;
+	tterr <- learned_model$testset[,vout] - learned_model$predtest;
+	stdev_err <- sd(c(trerr,tverr,tterr));
+	mean_err <- mean(c(trerr,tverr,tterr));
+
+	for (i in 1:length(retval$predictions))
+	{
+		paux <- retval$predictions[i];
+		raux <- ds_predict[i,vout];
+
+		auxout <- 0;	# 0 = Legit; 1 = Warning; 2 = Outlier
+		auxcause <- NULL; 
+
+		if (abs(paux-raux) > mean_err + (stdev_err * sigma))
+		{
+			auxout <- 1;
+
+			# Check for identical configurations
+			idconfs <- which(apply(auxjoin[,vin],1,function(x) all(sub("^\\s+","",x)==ds_predict[i,vin]))); # APPLY and its f*****g character coercion...
+			if (length(idconfs) > 0)
+			{
+				auxerrs <- c(auxjoin[idconfs,vout] - auxjoin[idconfs,"Pred"]);
+				if (length(auxerrs[auxerrs <= mean_err + stdev_err * sigma]) > length(auxerrs)/2)
+				{
+					auxout <- 2;
+					auxcause <- paste("Resolution:",i,length(auxerrs[auxerrs <= stdev_err * sigma]),length(auxerrs),auxout,"by Identical",sep=" ");
+				}
+			}
+			# Check for similar configurations (Hamming distance 'hdistance')
+			idconfs <- which(apply(auxjoin[,vin],1,function(x) length(which(sub("^\\s+","",x)==ds_predict[i,vin])))>=length(vin)-hdistance);
+			if (length(idconfs) > 0)
+			{
+				auxerrs <- c(auxjoin[idconfs,vout] - auxjoin[idconfs,"Pred"]);
+				if (length(auxerrs[auxerrs <= mean_err + stdev_err * sigma]) > length(auxerrs)/2)
+				{
+					auxout <- 2;
+					auxcause <- paste("Resolution:",i,length(auxerrs[auxerrs <= stdev_err * sigma]),length(auxerrs),auxout,"by Neighbours",sep=" ");
+				}
+			}
+
+			if (auxout < 2) auxcause <- paste("Resolution:",i,"-","-",auxout,sep=" ");
+		}
+		retval$resolutions <- c(retval$resolutions,auxout);
+		retval$cause <- c(retval$cause,auxcause);
+	}
+	retval;
+}
+
+aloja_outlier_instance <- function (learned_model, vin, vout, instance, result)
+{
+	if (length(grep(pattern="\\||\\*",inst_predict)) > 0)
+	{
+		instances <- aloja_unfold_expression(instance,vin,learned_model);
+		comp_dataset <- cbind(instances,result);
+	} else {
+		comp_dataset <- data.frame(cbind(t(instance),result),stringsAsFactors=FALSE);
+	}
+	colnames(comp_dataset) <- c(vin,vout);
+	
+	aloja_outlier_dataset (learned_model,vin,vout,ds_predict=comp_dataset);
 }
 
 ###############################################################################
