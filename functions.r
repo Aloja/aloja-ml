@@ -1126,15 +1126,16 @@ aloja_outlier_dataset <- function (learned_model, vin, vout, ds = NULL, sigma = 
 
 			if (auxout < 2) auxcause <- paste("Resolution:",i,"-","-",auxout,sep=" ");
 		}
-		retval$resolutions <- c(retval$resolutions,auxout);
+		retval$resolutions <- rbind(retval$resolutions,c(auxout,paux,raux,paste(apply(ds[i,vin],2,function(x) as.character(x)),collapse=":")));
 		retval$cause <- c(retval$cause,auxcause);
 	}
+	colnames(retval$resolutions) <- c("Resolution","Model","Observed","Configuration");
 
 	if (!is.null(saveall))
 	{
 		aloja_save_object(retval,tagname=saveall);
 		write.table(x=retval$cause,file=paste(saveall,"-cause.csv",sep=""),row.names=FALSE,col.names=FALSE);
-		write.table(x=retval$resolutions,file=paste(saveall,"-resolutions.csv",sep=""),row.names=FALSE,col.names=FALSE);
+		write.table(x=retval$resolutions,file=paste(saveall,"-resolutions.csv",sep=""),row.names=FALSE,sep=",");
 	}
 
 	retval;
