@@ -1057,8 +1057,11 @@ aloja_knn_select <- function (vout, vin, traux, tvaux, kintervals, iparam)
 # Outlier Detection Mechanisms                                                #
 ###############################################################################
 
-aloja_outlier_dataset <- function (learned_model, vin, vout, ds_predict = NULL, sigma = 3, hdistance = 3)
+aloja_outlier_dataset <- function (learned_model, vin, vout, ds = NULL, sigma = 3, hdistance = 3, saveall = NULL)
 {
+	if (!is.integer(sigma)) sigma <- as.integer(sigma);
+	if (!is.integer(hdistance)) hdistance <- as.integer(hdistance);
+
 	retval <- list();
 	retval[["resolutions"]] <- NULL;
 	retval[["cause"]] <- NULL;
@@ -1068,10 +1071,10 @@ aloja_outlier_dataset <- function (learned_model, vin, vout, ds_predict = NULL, 
 	retval[["sigma"]] <- sigma;
 	retval[["hdistance"]] <- hdistance;
 
-	if (is.null(ds_predict)) ds_predict <- learned_model$ds_original;
+	if (is.null(ds)) ds <- learned_model$ds_original;
 
-	retval[["dataset"]] <- ds_predict;
-	retval[["predictions"]] <- aloja_predict_dataset(learned_model, vin, ds = ds_predict);
+	retval[["dataset"]] <- ds;
+	retval[["predictions"]] <- aloja_predict_dataset(learned_model,vin,ds=ds);
 
 	# Compilation of datasets
 	id_pred <- rbind(learned_model$trainset,learned_model$validset,learned_model$testset);
@@ -1089,7 +1092,7 @@ aloja_outlier_dataset <- function (learned_model, vin, vout, ds_predict = NULL, 
 	for (i in 1:length(retval$predictions))
 	{
 		paux <- retval$predictions[i];
-		raux <- ds_predict[i,vout];
+		raux <- ds[i,vout];
 
 		auxout <- 0;	# 0 = Legit; 1 = Warning; 2 = Outlier
 		auxcause <- NULL; 
@@ -1099,7 +1102,7 @@ aloja_outlier_dataset <- function (learned_model, vin, vout, ds_predict = NULL, 
 			auxout <- 1;
 
 			# Check for identical configurations
-			idconfs <- which(apply(auxjoin[,vin],1,function(x) all(sub("^\\s+","",x)==ds_predict[i,vin]))); # APPLY and its f*****g character coercion...
+			idconfs <- which(apply(auxjoin[,vin],1,function(x) all(sub("^\\s+","",x)==ds[i,vin]))); # APPLY and its f*****g character coercion...
 			if (length(idconfs) > 0)
 			{
 				auxerrs <- c(auxjoin[idconfs,vout] - auxjoin[idconfs,"Pred"]);
@@ -1110,7 +1113,7 @@ aloja_outlier_dataset <- function (learned_model, vin, vout, ds_predict = NULL, 
 				}
 			}
 			# Check for similar configurations (Hamming distance 'hdistance')
-			idconfs <- which(apply(auxjoin[,vin],1,function(x) length(which(sub("^\\s+","",x)==ds_predict[i,vin])))>=length(vin)-hdistance);
+			idconfs <- which(apply(auxjoin[,vin],1,function(x) length(which(sub("^\\s+","",x)==ds[i,vin])))>=length(vin)-hdistance);
 			if (length(idconfs) > 0)
 			{
 				auxerrs <- c(auxjoin[idconfs,vout] - auxjoin[idconfs,"Pred"]);
@@ -1126,6 +1129,14 @@ aloja_outlier_dataset <- function (learned_model, vin, vout, ds_predict = NULL, 
 		retval$resolutions <- c(retval$resolutions,auxout);
 		retval$cause <- c(retval$cause,auxcause);
 	}
+
+	if (!is.null(saveall))
+	{
+		aloja_save_object(retval,tagname=saveall);
+		write.table(x=retval$cause,file=paste(saveall,"-cause.csv",sep=""),row.names=FALSE,col.names=FALSE);
+		write.table(x=retval$resolutions,file=paste(saveall,"-resolutions.csv",sep=""),row.names=FALSE,col.names=FALSE);
+	}
+
 	retval;
 }
 
@@ -1140,7 +1151,7 @@ aloja_outlier_instance <- function (learned_model, vin, vout, instance, result)
 	}
 	colnames(comp_dataset) <- c(vin,vout);
 	
-	aloja_outlier_dataset (learned_model,vin,vout,ds_predict=comp_dataset);
+	aloja_outlier_dataset (learned_model,vin,vout,ds=comp_dataset);
 }
 
 ###############################################################################
