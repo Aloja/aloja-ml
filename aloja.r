@@ -17,7 +17,7 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 	varout <- "Exe.Time";
 	varin <- c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster");
 
-	aloja_print_summaries(fprint="output.txt", ds=dataset, ds=dataset[,c(varout,"Running.Cost..",varin)], fwidth = 1000, ms = 10, sname = "Benchmark");
+	aloja_print_summaries(fprint="output", ds=dataset, fwidth = 1000, ms = 10, sname = "Benchmark");
 
 ###############################################################################
 # Relation among input ~ output variables                                     #

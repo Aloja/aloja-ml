@@ -84,24 +84,65 @@ aloja_get_data <- function (fread, cds = FALSE, hds = FALSE, fproc = NULL)
 # Print summaries for each benchmark                                          #
 ###############################################################################
 
-aloja_print_summaries <- function (fprint = NULL, ds, ds_sub, fwidth = 1000, ms = 10, sname = NULL)
+aloja_print_summaries <- function (ds, sname = NULL, vin = NULL, ms = 10, fprint = NULL, fwidth = 1000)
 {
 	if (!is.null(fprint))
 	{
-		sink(file=fprint,append=FALSE,type="output");
+		sink(file=paste(fprint,'-summary.data',sep=""),append=FALSE,type="output");
 		aux_tmp <- getOption("width");
 		options(width=fwidth);
 	}
 
-	cat("Summary for General Data","\n");
-	print(summary(ds,maxsum=ms));
+	if (is.null(vin)) vin <- colnames(ds);
 
-	if (!is.null(sname))
+	if (is.null(sname))
 	{
+		cat("Summary for Selected Data","\n");
+		print(summary(ds[,vin],maxsum=ms));
+	} else	{
 		for (name in levels(ds[,sname]))
 		{
 			cat("\n","Summary per",sname,name,"\n");
-			print(summary(ds_sub[ds[,sname]==name,],maxsum=ms));
+			print(summary(ds[ds[,sname]==name,vin],maxsum=ms));
+		}
+	}
+
+	if (!is.null(fprint))
+	{
+		sink(NULL);
+		options(width=aux_tmp);
+	}
+}
+
+aloja_print_individual_summaries <- function (ds, rval = NULL, cval = NULL, joined = 1, vin = NULL, ms = 10, fprint = NULL, fwidth = 1000)
+{
+	if (!is.null(fprint))
+	{
+		sink(file=paste(fprint,'-summary.data',sep=""),append=FALSE,type="output");
+		aux_tmp <- getOption("width");
+		options(width=fwidth);
+	}
+
+	if (is.null(vin)) vin <- colnames(ds);
+
+	if (!is.null(rval))
+	{
+		if (joined == 1)
+		{
+			cat("\n","Summary for",cval,rval,"\n");
+			print(summary(ds[ds[,cval] %in% rval,vin],maxsum=ms))
+		} else {
+			for(i in rval)
+			{
+				cat("\n","Summary for",cval,i,"\n");
+				print(summary(ds[ds[,cval]==i,vin],maxsum=ms))
+			}
+		}
+	} else {
+		for(i in levels(ds[,cval]))
+		{
+			cat("\n","Summary for",cval,i,"\n");
+			print(summary(ds[ds[,cval]==i,vin],maxsum=ms))
 		}
 	}
 
