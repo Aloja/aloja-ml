@@ -5,10 +5,12 @@ This repo contains the scripts and tests done for the Machine Learning part of A
 
 ### Files
 
-* **aloja.r** Contains the main scripting R snippets for running experiments. A scrapboard for experimentation.
-* **aloja\_calls.r** Contains the main scripting R snippets, in a more "procedure call" formatting. Used for testing functions before including them in aloja_cli.r.
-* **aloja_cli.r** A wrapper to call functions and run experiments from command line.
-* **functions.r** The library with all the ALOJA functions, like learning methods and data-set treatments, called from aloja.r, aloja\_calls.r, aloja\_cli.r
+* **functions.r** The library with all the ALOJA functions, like learning methods and data-set treatments, called from the diverse scripts and interfaces. You can call this file directly using "devtools" package and "source\_url()".
+* **functions-azml.r** The library with all the ALOJA functions, adapted for be called from Microsoft AzureML.
+* **models.r** Some implemented models (e.g. RPart+PolyReg Trees) to be tested in ALOJA-ML.
+* **aloja_cli.r** The wrapper/interface to call functions and run experiments from command line.
+* **aloja.r** Scrapboard file for experimenting with functions.r. Contains R scripting and snippets for running experiments.
+* **aloja\_calls.r** Contains example commands for calling functions.r, in a more "procedure call" formatting \[Function\_name, Params\]
 * **aloja-dataset.csv** Contains the example dataset
 * **Directories** Contain the dataset partitions, recodifications and plots for each specific experiment or test
 
@@ -17,7 +19,7 @@ This repo contains the scripts and tests done for the Machine Learning part of A
 * Rcran
 * Java
 * build-essential
-* R required packages: base, devtools, nnet, scales, session, stringr, reshape, RWeka, bitops, colorspace, digest, grid, httr, munshell, plyr, Rcpp, RCurl, rJava, RWekajars, tools (and their related dependencies)
+* R required packages: base, rpart, devtools, nnet, scales, session, stringr, reshape, RWeka, bitops, colorspace, digest, grid, httr, munshell, plyr, Rcpp, RCurl, rJava, RWekajars, tools (and their related dependencies)
 
 ### R Installation
 
@@ -61,16 +63,25 @@ This repo contains the scripts and tests done for the Machine Learning part of A
 #### Examples of Training and Prediction:
 >./aloja\_cli.r -m aloja\_regtree -d aloja-dataset.csv -p saveall=m5p1
 >
->./aloja\_cli.r -m aloja\_predict\_instance -l m5p1 -p inst\_predict="sort,ETH,RR3,8,10,1,65536,None,32,Azure L" -v
+>./aloja\_cli.r -m aloja\_regtree -d aloja-dataset.csv -p saveall=m5p1:vin="Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size"
 >
 >./aloja\_cli.r -m aloja\_predict\_dataset -l m5p1 -d m5p1-tt.csv -v
+>
+>./aloja\_cli.r -m aloja\_predict\_instance -l m5p1 -p inst\_predict="sort,ETH,RR3,8,10,1,65536,None,32,Azure L" -v
+>
+>./aloja\_cli.r -m aloja\_predict\_instance -l m5p1 -p inst\_predict="sort,ETH,RR3,8|10,10,1,65536,*,32,Azure L":sorted=asc -v
+>
+>./aloja\_cli.r -m aloja\_predict\_instance -l m5p1 -p inst\_predict="sort,ETH,RR3,8|10,10,1,65536,*,32,Azure L":vin="Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp, \ Blk.size,Cluster":sorted=asc -v
+
+#### Examples of Detecting Outliers in the Dataset:
+>./aloja\_cli.r -m aloja\_outlier\_dataset -d m5p1-tt.csv -l m5p1 -p sigma=3:hdistance=3:saveall=m5p1test
 
 #### Examples of Dimensionality Reduction:
 >./aloja\_cli.r -m aloja\_pca -d dataset.csv -p saveall=pca1
 >
 >./aloja\_cli.r -m aloja\_regtree -d pca1-transformed.csv -p prange=1e-4,1e+4:saveall=m5p-simple-redim -n 20
 >
->./aloja\_cli.r -m aloja\_predict\_instance -l m5p-simple-redim -p inst\_predict="1922.904354752,70.1570440421649,2.9694955079494,-3.64259027685954,-0.748746678239734,0.161321484374316,0.617610510007444,-0.459044093400257,0.251211132013151,0.251937462205716,-0.142007748147355,-0.0324862729758309,0.406308900544488,0.13593705166432,0.397452596451088,-0.731635384355167,-0.318297127484775,-0.0876192175148721,-0.0504762335523307,-0.0146283091875174" -v
+>./aloja\_cli.r -m aloja\_predict\_instance -l m5p-simple-redim -p inst\_predict="1922.904354752,70.1570440421649,2.9694955079494,-3.64259027685954, \ -0.748746678239734,0.161321484374316,0.617610510007444,-0.459044093400257,0.251211132013151,0.251937462205716,-0.142007748147355,-0.0324862729758309, \ 0.406308900544488,0.13593705166432,0.397452596451088,-0.731635384355167,-0.318297127484775,-0.0876192175148721,-0.0504762335523307,-0.0146283091875174" -v
 >
 >./aloja\_cli.r -m aloja\_predict\_dataset -l m5p-simple-redim -d m5p-simple-redim-tt.csv -v
 >
@@ -78,8 +89,15 @@ This repo contains the scripts and tests done for the Machine Learning part of A
 >
 >./aloja\_cli.r -m aloja\_transform\_instance -p pca\_name=pca1:inst\_transform="sort,ETH,RR3,8,10,1,65536,None,32,Azure L" -v
 
-#### Examples of Benchmark Selection:
+#### Examples of Dataset Collapse (+Complete with prediction):
 >./aloja\_cli.r -m aloja\_dataset\_collapse -d dataset.csv -p dimension1="Benchmark":dimension2="Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size, \ Cluster":dimname1="Benchmark":dimname2="Configuration":saveall=dsc1
 >
+>./aloja\_cli.r -m aloja\_dataset\_collapse -d dataset.csv -p dimension1="Benchmark":dimension2="Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size, \ Cluster":dimname1="Benchmark":dimname2="Configuration":saveall=dsc1:model\_name=m5p1
+>
+>./aloja\_cli.r -m aloja\_dataset\_collapse\_expand -d aloja-dataset.csv -p dimension1="Benchmark":dimension2="Net,Disk,Maps,IO.SFac,Rep,IO.FBuf, \ Comp,Blk.size,Cluster":dimname1="Benchmark":dimname2="Configuration":saveall=dsc1:model\_name=m5p1:inst\_general="sort,ETH,RR3,8|10,10,1,65536,*,32,Azure L"
+>
 >./aloja\_cli.r -m aloja\_best\_configurations -p bvec\_name=dsc1 -v
+
+
+
 
