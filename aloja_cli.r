@@ -92,9 +92,16 @@ source("functions.r");
 			}
 		}
 	}
+
 	if (opt$method  == "aloja_print_individual_summaries" || opt$method  == "aloja_print_summaries")
 	{
 		params[["vin"]] = c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster","Exe.Time"); 
+	}
+
+	if (opt$method  == "aloja_binarize_instance")
+	{
+		params[["vbin"]] = c("Maps","IO.SFac","Rep","IO.FBuf","Blk.size","sort","terasort","wordcount","ETH","IB","HDD","RL1","RL2","RL3","RR1","RR3","SSD","Cmp0","Cmp1","Cmp2","Cmp3","Cl1","Cl2");
+		params[["vin"]] = c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster"); 
 	}
 
 	if (opt$method  == "aloja_predict_instance" || opt$method  == "aloja_predict_dataset" || opt$method == "aloja_outlier_dataset")

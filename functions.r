@@ -441,6 +441,32 @@ aloja_binarize_mixsets <- function (vin, vout, traux = NULL, ntaux = NULL, tvaux
 	retval;
 }
 
+aloja_binarize_instance <- function (instance, vbin, vin, datamodel = NULL, datamodel_file = NULL, as.string = 0)
+{
+	if (is.null(datamodel)) datamodel <- aloja_get_data(datamodel_file);
+
+	datamodel <- datamodel[,vbin];
+
+	datainst <- t(as.data.frame(instance));
+	colnames(datainst) <- vin;
+
+	for (name_1 in colnames(datamodel))
+	{
+		if (name_1 %in% colnames(datainst))
+		{
+			datamodel[1,name_1] <-datainst[1,name_1];
+		} else {
+			datamodel[1,name_1] <- 0;
+			for (name_2 in colnames(datainst))
+			{
+				if (!is.na(datainst[,name_2]) && datainst[,name_2] == name_1) datamodel[1,name_1] <- 1;
+			}
+		}
+	}
+
+	if (as.string != 0) { paste(datamodel[1,],collapse=","); } else { datamodel[1,]; }
+}
+
 ###############################################################################
 # Learning methods                                                            #
 ###############################################################################
