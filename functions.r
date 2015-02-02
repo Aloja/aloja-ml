@@ -441,11 +441,11 @@ aloja_binarize_mixsets <- function (vin, vout, traux = NULL, ntaux = NULL, tvaux
 	retval;
 }
 
-aloja_binarize_instance <- function (instance, vbin, vin, datamodel = NULL, datamodel_file = NULL, as.string = 0)
+aloja_binarize_instance <- function (instance, vin, vout, datamodel = NULL, datamodel_file = NULL, as.string = 0)
 {
 	if (is.null(datamodel)) datamodel <- aloja_get_data(datamodel_file);
 
-	datamodel <- datamodel[,vbin];
+	datamodel <- datamodel[,!(colnames(datamodel) %in% c("ID",vout))];
 
 	datainst <- t(as.data.frame(instance));
 	colnames(datainst) <- vin;
@@ -485,6 +485,7 @@ aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TR
 	# Binarization of variables
 	dsbaux <- aloja_binarize_ds(ds[,c(vout,vin)]);
 	auxset <- aloja_binarize_mixsets(vin,vout,traux=traux,ntaux=ntaux,tvaux=tvaux,ttaux=ttaux);
+	vinorig <- vin;
 	vin <- colnames(dsbaux[!(colnames(dsbaux) %in% vout)]);
 
 	# Load and split datasets
@@ -531,7 +532,7 @@ aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TR
 	rownames(rt[["maxout"]]) <- c(vout,vin);
 	rownames(rt[["minout"]]) <- c(vout,vin);
 
-	rt[["ds_original"]] <- ds;
+	rt[["ds_original"]] <- ds[,c("ID",vout,vinorig)];
 	rt[["varin"]] <- vin;
 	rt[["varout"]] <- vout;
 	
@@ -587,7 +588,7 @@ aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TR
 	{
 		aloja_save_model(rt$model,tagname=saveall);
 		aloja_save_object(rt,tagname=saveall);
-		aloja_save_predictions(rt$dataset,rt$trainset,rt$predtrain*rt$maxout[vout,1]+rt$minout[vout,1],rt$validset,rt$predval*rt$maxout[vout,1]+rt$minout[vout,1],rt$testset,rt$predtest*rt$maxout[vout,1]+rt$minout[vout,1],testname=saveall);
+		aloja_save_predictions(rt$dataset,rt$ds_original,rt$trainset,rt$predtrain*rt$maxout[vout,1]+rt$minout[vout,1],rt$validset,rt$predval*rt$maxout[vout,1]+rt$minout[vout,1],rt$testset,rt$predtest*rt$maxout[vout,1]+rt$minout[vout,1],testname=saveall);
 	}
 
 	rt;
@@ -608,13 +609,14 @@ aloja_linreg <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = T
 	# Binarization of variables
 	dsbaux <- aloja_binarize_ds(ds[,c(vout,vin)]);
 	auxset <- aloja_binarize_mixsets(vin,vout,traux=traux,ntaux=ntaux,tvaux=tvaux,ttaux=ttaux);
+	vinorig <- vin;
 	vin <- colnames(dsbaux[!(colnames(dsbaux) %in% vout)]);
 
 	# Load and split datasets
 	dsid <- cbind(ds[,"ID"],dsbaux);
 	colnames(dsid) <- c("ID",vout,vin);
 	rt <- aloja_load_datasets (dsid,vin,vout,tsplit,vsplit,auxset$ttaux,auxset$ntaux,auxset$traux,auxset$tvaux,ttfile,trfile,tvfile);
-	rt[["ds_original"]] <- ds;
+	rt[["ds_original"]] <- ds[,c("ID",vout,vinorig)];
 	rt[["varin"]] <- vin;
 	rt[["varout"]] <- vout;
 
@@ -688,7 +690,7 @@ aloja_linreg <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = T
 	{
 		aloja_save_model(rt$model,tagname=saveall);
 		aloja_save_object(rt,tagname=saveall);
-		aloja_save_predictions(rt$dataset,rt$trainset,rt$predtrain,rt$validset,rt$predval,rt$testset,rt$predtest,testname=saveall);
+		aloja_save_predictions(rt$dataset,rt$ds_original,rt$trainset,rt$predtrain,rt$validset,rt$predval,rt$testset,rt$predtest,testname=saveall);
 	}
 
 	rt;
@@ -704,7 +706,7 @@ aloja_nneighbors <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols
 
 	# Load and split datasets
 	rt <- aloja_load_datasets (ds,vin,vout,tsplit,vsplit,ttaux,ntaux,traux,tvaux,ttfile,trfile,tvfile);
-	rt[["ds_original"]] <- ds;
+	rt[["ds_original"]] <- ds[,c("ID",vout,vin)];
 	rt[["varin"]] <- vin;
 	rt[["varout"]] <- vout;
 
@@ -772,7 +774,7 @@ aloja_nneighbors <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols
 	{
 		aloja_save_model(rt$model,tagname=saveall,is.weka=TRUE);
 		aloja_save_object(rt,tagname=saveall);
-		aloja_save_predictions(rt$dataset,rt$trainset,rt$predtrain,rt$validset,rt$predval,rt$testset,rt$predtest,testname=saveall);
+		aloja_save_predictions(rt$dataset,rt$ds_original,rt$trainset,rt$predtrain,rt$validset,rt$predval,rt$testset,rt$predtest,testname=saveall);
 	}
 
 	rt;
@@ -789,7 +791,7 @@ aloja_regtree <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = 
 
 	# Load and split datasets
 	rt <- aloja_load_datasets (ds,vin,vout,tsplit,vsplit,ttaux,ntaux,traux,tvaux,ttfile,trfile,tvfile);
-	rt[["ds_original"]] <- ds;	
+	rt[["ds_original"]] <- ds[,c("ID",vout,vin)];	
 	rt[["varin"]] <- vin;
 	rt[["varout"]] <- vout;
 
@@ -879,7 +881,7 @@ aloja_regtree <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = 
 	{
 		aloja_save_model(rt$model,tagname=saveall,is.weka=TRUE);
 		aloja_save_object(rt,tagname=saveall);
-		aloja_save_predictions(rt$dataset,rt$trainset,rt$predtrain,rt$validset,rt$predval,rt$testset,rt$predtest,testname=saveall);
+		aloja_save_predictions(rt$dataset,rt$ds_original,rt$trainset,rt$predtrain,rt$validset,rt$predval,rt$testset,rt$predtest,testname=saveall);
 	}
 
 	rt;
@@ -1662,7 +1664,7 @@ aloja_best_configurations <- function (bvectors = NULL, bvec_name = NULL)
 # Save the datasets and created models                                        #
 ###############################################################################
 
-aloja_save_predictions <- function (ds, trdata, trpred, tvdata, tvpred, ttdata, ttpred, testname = "default")
+aloja_save_predictions <- function (ds, dsorig, trdata, trpred, tvdata, tvpred, ttdata, ttpred, testname = "default")
 {
 	traux <- cbind(trdata,trpred);
 	tvaux <- cbind(tvdata,tvpred);
@@ -1673,6 +1675,7 @@ aloja_save_predictions <- function (ds, trdata, trpred, tvdata, tvpred, ttdata, 
 	colnames(ttaux) <- c(colnames(ttdata),"Pred.Exe.Time");
 
 	write.table(ds, file = paste(testname,"-ds.csv",sep=""), sep = ",", row.names=FALSE);
+	write.table(dsorig, file = paste(testname,"-dsorig.csv",sep=""), sep = ",", row.names=FALSE);
 
 	write.table(traux, file = paste(testname,"-tr.csv",sep=""), sep = ",", row.names=FALSE);
 	write.table(tvaux, file = paste(testname,"-tv.csv",sep=""), sep = ",", row.names=FALSE);
