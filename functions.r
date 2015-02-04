@@ -1189,16 +1189,27 @@ aloja_outlier_dataset <- function (learned_model, vin, vout, ds = NULL, sigma = 
 	retval[["sigma"]] <- sigma;
 	retval[["hdistance"]] <- hdistance;
 
+	# If no DS, validate against itself
 	if (is.null(ds)) ds <- learned_model$ds_original;
 
 	retval[["dataset"]] <- ds;
 	retval[["predictions"]] <- aloja_predict_dataset(learned_model,vin,ds=ds);
 
 	# Compilation of datasets
-	id_pred <- rbind(learned_model$trainset,learned_model$validset,learned_model$testset);
-	id_pred <- cbind(id_pred,c(learned_model$predtrain,learned_model$predval,learned_model$predtest));
-	colnames(id_pred) <- c(colnames(learned_model$trainset),"Pred");
-	auxjoin <- id_pred;
+	if (all(vin %in% learned_model$varin))
+	{
+		id_pred <- rbind(learned_model$trainset,learned_model$validset,learned_model$testset);
+		id_pred <- cbind(id_pred,c(learned_model$predtrain,learned_model$predval,learned_model$predtest));
+		colnames(id_pred) <- c(colnames(learned_model$trainset),"Pred");
+		auxjoin <- id_pred;
+	} else {
+		paux <- rbind(as.matrix(learned_model$predtrain),as.matrix(learned_model$predval),as.matrix(learned_model$predtest));
+		rownames(paux) <- c(rownames(learned_model$trainset),rownames(learned_model$validset),rownames(learned_model$testset));
+		a <- paux[order(as.numeric(rownames(paux))),];
+		b <- merge(learned_model$ds_original,as.matrix(a),by="row.names",all.x=TRUE);
+		colnames(b) <- c("Row.names",colnames(learned_model$ds_original),"Pred");
+		auxjoin <- b[,c("ID",vout,vin,"Pred")];
+	}
 
 	# Compilation of errors (learning)
 	trerr <- learned_model$trainset[,vout] - learned_model$predtrain;
@@ -1210,7 +1221,7 @@ aloja_outlier_dataset <- function (learned_model, vin, vout, ds = NULL, sigma = 
 	for (i in 1:length(retval$predictions))
 	{
 		paux <- retval$predictions[i];
-		raux <- ds[i,vout];
+		raux <- as.numeric(ds[i,vout]);
 
 		auxout <- 0;	# 0 = Legit; 1 = Warning; 2 = Outlier
 		auxcause <- NULL; 
@@ -1259,18 +1270,25 @@ aloja_outlier_dataset <- function (learned_model, vin, vout, ds = NULL, sigma = 
 	retval;
 }
 
-aloja_outlier_instance <- function (learned_model, vin, vout, instance, result)
+aloja_outlier_instance <- function (learned_model, vin, vout, instance, observed, display = 0)
 {
-	if (length(grep(pattern="\\||\\*",inst_predict)) > 0)
+	if (length(grep(pattern="\\||\\*",instance)) > 0)
 	{
 		instances <- aloja_unfold_expression(instance,vin,learned_model);
-		comp_dataset <- cbind(instances,result);
+		comp_dataset <- cbind(instances,observed);
 	} else {
-		comp_dataset <- data.frame(cbind(t(instance),result),stringsAsFactors=FALSE);
+		comp_dataset <- data.frame(cbind(t(instance),observed),stringsAsFactors=FALSE);
 	}
 	colnames(comp_dataset) <- c(vin,vout);
-	
-	aloja_outlier_dataset (learned_model,vin,vout,ds=comp_dataset);
+
+	result <- aloja_outlier_dataset (learned_model,vin,vout,ds=comp_dataset);
+
+	retval <- NULL;
+	if (display == 0) retval <- result;
+	if (display == 1) retval <- as.vector(result$resolutions);
+	if (display == 2) retval <- as.vector(c(result$resolutions,result$cause));
+
+	retval
 }
 
 ###############################################################################
