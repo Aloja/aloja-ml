@@ -249,14 +249,16 @@ aloja_split_dataset <- function (ds, vin, vout, tsplit, vsplit)
 	aux <- ds[,c("ID",vout,vin)];
 	retval[["dataset"]] <- aux;
 
-	selected <- sample(1:nrow(aux),nrow(aux)*tsplit);
+	samples <- min(nrow(aux)*tsplit,nrow(aux)-1);
+	selected <- sample(1:nrow(aux),samples);
 	ttaux <- aux[selected,];
 	ntaux <- aux[-selected,];
 
 	retval[["tselected"]] <- selected;
 	retval[["testset"]] <- ttaux;
 
-	selected <- sample(1:nrow(ntaux),nrow(ntaux)*vsplit);
+	samples <- min(nrow(ntaux)*vsplit,nrow(ntaux)-1);
+	selected <- sample(1:nrow(ntaux),samples);
 	traux <- ntaux[selected,];
 	tvaux <- ntaux[-selected,];
 
@@ -291,7 +293,8 @@ aloja_load_testsplit <- function (ds, vin, vout, ttaux, vsplit)
 	aux <- ds[,c("ID",vout,vin)];
 	ntaux <- aux[!(aux[,"ID"] %in% ttaux[,"ID"]),];
 
-	selected <- sample(1:nrow(ntaux),nrow(ntaux)*vsplit);
+	samples <- min(nrow(ntaux)*vsplit,nrow(ntaux)-1);
+	selected <- sample(1:nrow(ntaux),samples);
 	traux <- ntaux[selected,];
 	tvaux <- ntaux[-selected,];
 
@@ -322,7 +325,8 @@ aloja_datafile_load <- function (ds = NULL, vin, vout, ttfile, trfile = NULL, tv
 		aux <- ds[,c("ID",vout,vin)];
 		ntaux <- aux[!(aux[,"ID"] %in% ttaux[,"ID"]),];
 
-		selected <- sample(1:nrow(ntaux),nrow(ntaux)*vsplit);
+		samples <- min(nrow(ntaux)*vsplit,nrow(ntaux)-1);
+		selected <- sample(1:nrow(ntaux),samples);
 		traux <- ntaux[selected,];
 		tvaux <- ntaux[-selected,];
 	}
@@ -494,14 +498,19 @@ aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TR
 	colnames(dsid) <- c("ID",vout,vin);
 	rt <- aloja_load_datasets (dsid,vin,vout,tsplit,vsplit,auxset$ttset,auxset$ntset,auxset$trset,auxset$tvset,ttfile,trfile,tvfile);
 
-	# Remove outliers (leap of faith, as vout may not be normal
+	# Remove outliers (leap of faith, as vout may not be normal) (Minimum 100 instances to compute outliers)
 	if (rmols)
 	{
-		rt[["olstrain"]] <- rt$trainset[rt$trainset[,vout] > mean(rt$trainset[,vout]) + sigma * sd(rt$trainset[,vout]),];
-		rt[["olsvalid"]] <- rt$validset[rt$validset[,vout] > mean(rt$validset[,vout]) + sigma * sd(rt$validset[,vout]),];
-		
-		rt$trainset <- rt$trainset[rt$trainset[,vout] <= mean(rt$trainset[,vout]) + sigma * sd(rt$trainset[,vout]),];
-		rt$validset <- rt$validset[rt$validset[,vout] <= mean(rt$validset[,vout]) + sigma * sd(rt$validset[,vout]),];
+		if (nrow(rt$trainset) > 100)
+		{
+			rt[["olstrain"]] <- rt$trainset[rt$trainset[,vout] > mean(rt$trainset[,vout]) + sigma * sd(rt$trainset[,vout]),];
+			rt$trainset <- rt$trainset[rt$trainset[,vout] <= mean(rt$trainset[,vout]) + sigma * sd(rt$trainset[,vout]),];
+		}
+		if (nrow(rt$validset) > 100)
+		{
+			rt[["olsvalid"]] <- rt$validset[rt$validset[,vout] > mean(rt$validset[,vout]) + sigma * sd(rt$validset[,vout]),];
+			rt$validset <- rt$validset[rt$validset[,vout] <= mean(rt$validset[,vout]) + sigma * sd(rt$validset[,vout]),];
+		}
 	}
 
 	# Normalize values
@@ -621,14 +630,19 @@ aloja_linreg <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = T
 	rt[["varin"]] <- vin;
 	rt[["varout"]] <- vout;
 
-	# Remove outliers (leap of faith, as vout may not be normal)
+	# Remove outliers (leap of faith, as vout may not be normal) (Minimum 100 instances to compute outliers)
 	if (rmols)
 	{
-		rt[["olstrain"]] <- rt$trainset[rt$trainset[,vout] > mean(rt$trainset[,vout]) + sigma * sd(rt$trainset[,vout]),];
-		rt[["olsvalid"]] <- rt$validset[rt$validset[,vout] > mean(rt$validset[,vout]) + sigma * sd(rt$validset[,vout]),];
-		
-		rt$trainset <- rt$trainset[rt$trainset[,vout] <= mean(rt$trainset[,vout]) + sigma * sd(rt$trainset[,vout]),];
-		rt$validset <- rt$validset[rt$validset[,vout] <= mean(rt$validset[,vout]) + sigma * sd(rt$validset[,vout]),];
+		if (nrow(rt$trainset) > 100)
+		{
+			rt[["olstrain"]] <- rt$trainset[rt$trainset[,vout] > mean(rt$trainset[,vout]) + sigma * sd(rt$trainset[,vout]),];
+			rt$trainset <- rt$trainset[rt$trainset[,vout] <= mean(rt$trainset[,vout]) + sigma * sd(rt$trainset[,vout]),];
+		}
+		if (nrow(rt$validset) > 100)
+		{
+			rt[["olsvalid"]] <- rt$validset[rt$validset[,vout] > mean(rt$validset[,vout]) + sigma * sd(rt$validset[,vout]),];
+			rt$validset <- rt$validset[rt$validset[,vout] <= mean(rt$validset[,vout]) + sigma * sd(rt$validset[,vout]),];
+		}
 	}
 
 	if (ppoly > 3 || ppoly < 1)
@@ -711,14 +725,19 @@ aloja_nneighbors <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols
 	rt[["varin"]] <- vin;
 	rt[["varout"]] <- vout;
 
-	# Remove outliers (leap of faith, as vout may not be normal)
+	# Remove outliers (leap of faith, as vout may not be normal) (Minimum 100 instances to compute outliers)
 	if (rmols)
 	{
-		rt[["olstrain"]] <- rt$trainset[rt$trainset[,vout] > mean(rt$trainset[,vout]) + sigma * sd(rt$trainset[,vout]),];
-		rt[["olsvalid"]] <- rt$validset[rt$validset[,vout] > mean(rt$validset[,vout]) + sigma * sd(rt$validset[,vout]),];
-		
-		rt$trainset <- rt$trainset[rt$trainset[,vout] <= mean(rt$trainset[,vout]) + sigma * sd(rt$trainset[,vout]),];
-		rt$validset <- rt$validset[rt$validset[,vout] <= mean(rt$validset[,vout]) + sigma * sd(rt$validset[,vout]),];
+		if (nrow(rt$trainset) > 100)
+		{
+			rt[["olstrain"]] <- rt$trainset[rt$trainset[,vout] > mean(rt$trainset[,vout]) + sigma * sd(rt$trainset[,vout]),];
+			rt$trainset <- rt$trainset[rt$trainset[,vout] <= mean(rt$trainset[,vout]) + sigma * sd(rt$trainset[,vout]),];
+		}
+		if (nrow(rt$validset) > 100)
+		{
+			rt[["olsvalid"]] <- rt$validset[rt$validset[,vout] > mean(rt$validset[,vout]) + sigma * sd(rt$validset[,vout]),];
+			rt$validset <- rt$validset[rt$validset[,vout] <= mean(rt$validset[,vout]) + sigma * sd(rt$validset[,vout]),];
+		}
 	}
 
 	rt[["kparam"]] <- kparam;
@@ -781,7 +800,7 @@ aloja_nneighbors <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols
 	rt;
 }
 
-aloja_regtree <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE, pngval = NULL, pngtest = NULL, saveall = NULL, ttaux = NULL, ntaux = NULL, traux = NULL, tvaux = NULL, sigma = 3, ttfile = NULL, trfile = NULL, tvfile = NULL, mparam = NULL, exsel = NULL, prange = NULL, weka.tree = 1)
+aloja_regtree <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE, pngval = NULL, pngtest = NULL, saveall = NULL, ttaux = NULL, ntaux = NULL, traux = NULL, tvaux = NULL, sigma = 3, ttfile = NULL, trfile = NULL, tvfile = NULL, mparam = NULL, exsel = NULL, prange = NULL, weka.tree = 1, quiet = 0)
 {
 	# Fix parameter class in case of CLI string input
 	if (!is.null(prange)) prange <- as.numeric(prange);
@@ -789,6 +808,8 @@ aloja_regtree <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = 
 	if (!is.numeric(vsplit)) vsplit <- as.numeric(vsplit);
 	if (!is.integer(sigma)) sigma <- as.integer(sigma);
 	if (!is.integer(mparam) && !is.null(mparam)) mparam <- as.integer(mparam);
+	if (!is.integer(quiet)) quiet <- as.integer(quiet);
+	if (!is.integer(weka.tree)) weka.tree <- as.integer(weka.tree);
 
 	if (weka.tree == 0)
 	{
@@ -830,14 +851,19 @@ aloja_regtree <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = 
 		rt$validset <- rbind(upperaux[-uppersel,],loweraux[-lowersel,]);
 	}
 
-	# Remove outliers (leap of faith, as vout may not be normal
+	# Remove outliers (leap of faith, as vout may not be normal) (Minimum 100 instances to compute outliers)
 	if (rmols)
 	{
-		rt[["olstrain"]] <- rt$trainset[rt$trainset[,vout] > mean(rt$trainset[,vout]) + sigma * sd(rt$trainset[,vout]),];
-		rt[["olsvalid"]] <- rt$validset[rt$validset[,vout] > mean(rt$validset[,vout]) + sigma * sd(rt$validset[,vout]),];
-		
-		rt$trainset <- rt$trainset[rt$trainset[,vout] <= mean(rt$trainset[,vout]) + sigma * sd(rt$trainset[,vout]),];
-		rt$validset <- rt$validset[rt$validset[,vout] <= mean(rt$validset[,vout]) + sigma * sd(rt$validset[,vout]),];
+		if (nrow(rt$trainset) > 100)
+		{
+			rt[["olstrain"]] <- rt$trainset[rt$trainset[,vout] > mean(rt$trainset[,vout]) + sigma * sd(rt$trainset[,vout]),];
+			rt$trainset <- rt$trainset[rt$trainset[,vout] <= mean(rt$trainset[,vout]) + sigma * sd(rt$trainset[,vout]),];
+		}
+		if (nrow(rt$validset) > 100)
+		{
+			rt[["olsvalid"]] <- rt$validset[rt$validset[,vout] > mean(rt$validset[,vout]) + sigma * sd(rt$validset[,vout]),];
+			rt$validset <- rt$validset[rt$validset[,vout] <= mean(rt$validset[,vout]) + sigma * sd(rt$validset[,vout]),];
+		}
 	}
 
 	# Training and Validation
@@ -907,8 +933,8 @@ aloja_regtree <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = 
 		dev.off();
 	}
 
-	print(c(rt$maeval,rt$raeval));
-	print(c(rt$maetest,rt$raetest));
+	if (quiet == 0) print(c(rt$maeval,rt$raeval));
+	if (quiet == 0) print(c(rt$maetest,rt$raetest));
 
 	if (!is.null(saveall))
 	{
@@ -1098,7 +1124,7 @@ aloja_predict_individual_instance <- function (learned_model, vin, inst_predict)
 # Fine-tunning parameters for Learning Algorithms                             #
 ###############################################################################
 
-aloja_m5p_select <- function (vout, vin, traux, tvaux, mintervals, weka.tree = 0)
+aloja_m5p_select <- function (vout, vin, traux, tvaux, mintervals, weka.tree = 0, quiet = 1)
 {
 	trmae <- NULL;
 	tvmae <- NULL;
@@ -1127,9 +1153,9 @@ aloja_m5p_select <- function (vout, vin, traux, tvaux, mintervals, weka.tree = 0
 		tvmae <- c(tvmae,mae);
 
 		if (mae < mminmae - off_threshold) { mmin <- i; mminmae <- mae; }
-		print(paste("[INFO]",i,mae,mmin,mminmae));
+		if (quiet == 0) print(paste("[INFO]",i,mae,mmin,mminmae));
 	}
-	print (paste("Selected M:",mmin));	
+	if (quiet == 0) print (paste("Selected M:",mmin));	
 
 	retval <- list();
 	retval[["trmae"]] <- trmae;
@@ -1272,6 +1298,8 @@ aloja_outlier_dataset <- function (learned_model, vin, vout, ds = NULL, sigma = 
 
 aloja_outlier_instance <- function (learned_model, vin, vout, instance, observed, display = 0)
 {
+	if (!is.integer(display)) display <- as.integer(display);
+
 	if (length(grep(pattern="\\||\\*",instance)) > 0)
 	{
 		instances <- aloja_unfold_expression(instance,vin,learned_model);
@@ -1372,6 +1400,8 @@ aloja_transform_data <- function (ds, pca_obj = NULL, pca_name = NULL, saveall =
 
 aloja_transform_instance <- function (inst_transform, pca_obj = NULL, pca_name = NULL, verbose = 0)
 {
+	if (!is.integer(verbose)) verbose <- as.integer(verbose);
+
 	retval <- NULL;
 	
 	if (is.null(pca_name) && is.null(pca_obj))
@@ -1596,7 +1626,7 @@ aloja_dataset_collapse_expand <- function (ds, vin, vout, dimension1, dimension2
 	retval;
 }
 
-aloja_dataset_clustering <- function (datamatrix, k = 3, na.predict = NULL)
+aloja_dataset_clustering <- function (datamatrix, k = 3, learned_model = NULL)
 {
 	if (class(datamatrix) == "character")
 	{
@@ -1605,7 +1635,7 @@ aloja_dataset_clustering <- function (datamatrix, k = 3, na.predict = NULL)
 		maux <- datamatrix;
 	}
 
-	if (!is.null(na.predict) && all(c(na.predict$varin %in% c(dimension1,dimension2),c(dimension1,dimension2) %in% na.predict$varin)))
+	if (!is.null(learned_model) && all(c(learned_model$varin %in% c(dimension1,dimension2),c(dimension1,dimension2) %in% learned_model$varin)))
 	{
 		for (i in 1:length(maux))
 		{
@@ -1619,13 +1649,102 @@ aloja_dataset_clustering <- function (datamatrix, k = 3, na.predict = NULL)
 
 				inst_aux <- c(dim1_aux,strsplit(dim2_aux,split=":")[[1]]);
 
-				maux[i] <- aloja_predict_instance (na.predict,c(dimension1,dimension2),inst_aux);
+				maux[i] <- aloja_predict_instance (learned_model,c(dimension1,dimension2),inst_aux);
 			}
 		}
 	} else {
 		maux[is.na(maux)] <- 0;
 	}
 	retval <- kmeans(maux, k);
+
+	retval;
+}
+
+###############################################################################
+# Example selection methods                                                   #
+###############################################################################
+
+aloja_minimal_instances <- function (learned_model, quiet = 0, kmax = 200, step = 10, saveall = NULL)
+{
+	if (!is.integer(kmax)) kmax <- as.integer(kmax);
+	if (!is.integer(step)) step <- as.integer(step);
+	if (!is.integer(quiet)) quiet <- as.integer(quiet);
+
+	retval <- list();
+	ds <- learned_model$ds_original;
+	vout <- learned_model$varout;
+	vin <- colnames(learned_model$ds_original)[!(colnames(learned_model$ds_original) %in% c("ID",vout))];
+
+	# Binarization
+	dsbin <- aloja_binarize_ds(rbind(learned_model$trainset,learned_model$validset));
+	vbin <- colnames(dsbin)[!(colnames(dsbin) %in% c("ID",vout))];
+
+	# Iteration over Clustering
+	best.mae <- 9E15;
+	retval[["centers"]] <- retval[["maes"]] <- retval[["datasets"]] <- retval[["sizes"]] <- list();
+	retval[["best.k"]] <- count <- 0;
+	for (k in seq(10,kmax,by=step))
+	{
+		count <- count + 1;
+
+		# Center Retrieval
+		kcaux <- kmeans(dsbin[,c(vbin,vout)], k);
+
+		# De-binarization of Data
+		levs1 <- sapply(vin,function(x) levels(ds[,x])); # Levels
+		dsdbin <- ds[0,];				 # DS headers, attributes and levels
+
+		weights <- NULL;
+		for (j in 1:nrow(kcaux$centers))
+		{
+			instance <- NULL;
+			for (i in names(levs1))
+			{
+
+				if (is.null(levs1[[i]]))
+				{
+					instance <- c(instance,ceiling(kcaux$centers[j,i]));
+				} else {
+					values <- kcaux$centers[j,levs1[[i]]];
+					if (length(levs1[[i]]) == 1 && values == 1)
+					{
+						candidate <- levs1[[i]];				# R -> Derp, derp, derp, derp...
+					} else {
+						candidate <- names(which(values==max(values)))[1];	# By default, in a draw, we pick the 1st
+					}
+					instance <- c(instance,candidate); 
+				}
+			}
+			instance <- c(j,kcaux$centers[j,vout],instance);
+			dsdbin[j,] <- data.frame(t(instance),stringsAsFactors=FALSE);
+			weights <- c(weights,length(which(kcaux$cluster==j)));
+		}
+
+		# Testing and comparing
+		model_new <- aloja_regtree(dsdbin,vin=vin,vout=vout,ttaux=learned_model$testset,vsplit=0.99,quiet=1); # By default, the vsplit is 0.9 training and 0.1 validation
+
+		if (quiet == 0) print(paste(k,model_new$maetest,retval$best.k,best.mae,sep=" "));
+
+		if (best.mae > model_new$maetest)
+		{
+			best.mae <- model_new$maetes;
+			retval$best.k <- k;
+		}
+
+		# Save iteration
+		retval$centers[[count]] <- kcaux;
+		retval$maes[[count]] <- model_new$maetest;
+		retval$datasets[[count]] <- dsdbin;
+		retval$sizes[[count]] <- weights;
+	}
+
+	if (!is.null(saveall))
+	{
+		write(sapply(retval$sizes,function(x) paste(x,collapse=",")),file=paste(saveall,"-sizes.csv",sep=""));
+		write.table(data.frame(K=sapply(retval$datasets,function(x) nrow(x)),MAE=unlist(retval$maes)),file=paste(saveall,"-maes.csv",sep=""),sep=",",row.names=FALSE,col.names=FALSE);
+		for (i in 1:count) write.table(retval$datasets[[i]],file=paste(saveall,"-dsk",nrow(retval$datasets[[i]]),".csv",sep=""),sep=",",row.names=FALSE, quote=FALSE);
+		aloja_save_object(retval,tagname=saveall);
+	}
 
 	retval;
 }

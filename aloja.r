@@ -167,6 +167,12 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 	kc2 <- aloja_dataset_clustering(datamatrix=dsc1$matrix,k=3,na.predict=model_aux);
 
 ###############################################################################
+# Example selection for Benchmarks
+
+	m5p4 <- aloja_regtree(ds=dataset[dataset$Benchmark=="terasort",],vin=varin,vout=varout,saveall="m5p4");
+	mi1 <- aloja_minimal_instances(learned_model=m5p4,quiet=0,kmax=200,step=10);
+
+###############################################################################
 # Classification of New Benchmarks
 
 # TODO FIXME - Refactor the following code:
