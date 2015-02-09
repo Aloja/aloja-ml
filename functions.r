@@ -476,7 +476,7 @@ aloja_binarize_instance <- function (instance, vin, vout, datamodel = NULL, data
 # Learning methods                                                            #
 ###############################################################################
 
-aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE, pngval = NULL, pngtest = NULL, saveall = NULL, ttaux = NULL, ntaux = NULL, traux = NULL, tvaux = NULL, sigma = 3, ttfile = NULL, trfile = NULL, tvfile = NULL, decay = 5e-4, hlayers = 3, maxit = 1000, prange = NULL)
+aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE, pngval = NULL, pngtest = NULL, saveall = NULL, ttaux = NULL, ntaux = NULL, traux = NULL, tvaux = NULL, sigma = 3, ttfile = NULL, trfile = NULL, tvfile = NULL, decay = 5e-4, hlayers = 3, maxit = 1000, prange = NULL, quiet = 0)
 {
 	# Fix parameter class in case of CLI string input
 	if (!is.null(prange)) prange <- as.numeric(prange);
@@ -591,8 +591,8 @@ aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TR
 	#plot.nnet(rt$model);
 	#plot.nnet(rt$model$wts,rt$model$n);
 
-	print(c(rt$maeval,rt$raeval));
-	print(c(rt$maetest,rt$raetest));
+	if (quiet == 0) print(c(rt$maeval,rt$raeval));
+	if (quiet == 0) print(c(rt$maetest,rt$raetest));
 
 	if (!is.null(saveall))
 	{
@@ -604,7 +604,7 @@ aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TR
 	rt;
 }
 
-aloja_linreg <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE, pngval = NULL, pngtest = NULL, saveall = NULL, ttaux = NULL, ntaux = NULL, traux = NULL, tvaux = NULL, sigma = 3, ttfile = NULL, trfile = NULL, tvfile = NULL, ppoly = 1, prange = NULL)
+aloja_linreg <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE, pngval = NULL, pngtest = NULL, saveall = NULL, ttaux = NULL, ntaux = NULL, traux = NULL, tvaux = NULL, sigma = 3, ttfile = NULL, trfile = NULL, tvfile = NULL, ppoly = 1, prange = NULL, quiet = 0)
 {
 	# Fix parameter class in case of CLI string input
 	if (!is.null(prange)) prange <- as.numeric(prange);
@@ -698,8 +698,8 @@ aloja_linreg <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = T
 		dev.off();
 	}
 
-	print(c(rt$maeval,rt$raeval));
-	print(c(rt$maetest,rt$raetest));
+	if (quiet == 0) print(c(rt$maeval,rt$raeval));
+	if (quiet == 0) print(c(rt$maetest,rt$raetest));
 
 	if (!is.null(saveall))
 	{
@@ -711,7 +711,7 @@ aloja_linreg <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = T
 	rt;
 }
 
-aloja_nneighbors <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE, pngval = NULL, pngtest = NULL, saveall = NULL, ttaux = NULL, ntaux = NULL, traux = NULL, tvaux = NULL, sigma = 3, ttfile = NULL, trfile = NULL, tvfile = NULL, kparam = NULL, iparam = TRUE)
+aloja_nneighbors <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE, pngval = NULL, pngtest = NULL, saveall = NULL, ttaux = NULL, ntaux = NULL, traux = NULL, tvaux = NULL, sigma = 3, ttfile = NULL, trfile = NULL, tvfile = NULL, kparam = NULL, iparam = TRUE, quiet = 0)
 {
 	# Fix parameter class in case of CLI string input
 	if (!is.numeric(tsplit)) tsplit <- as.numeric(tsplit);
@@ -746,7 +746,7 @@ aloja_nneighbors <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols
 	# Training and Validation
 	if (is.null(kparam))
 	{
-		rt[["selected_model"]] <- aloja_knn_select(vout, vin, rt$trainset, rt$validset, c("1","2","3","5","10","25","50","100"), iparam);
+		rt[["selected_model"]] <- aloja_knn_select(vout, vin, rt$trainset, rt$validset, c("1","2","3","5","10","25","50","100"), iparam, quiet);
 		kparam <- rt$selected_model$kmin;
 	}
 	rt[["model"]] <- IBk(formula=rt$trainset[,vout] ~ . , data = rt$trainset[,vin], control = Weka_control(K = kparam, I = iparam));
@@ -787,8 +787,8 @@ aloja_nneighbors <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols
 		dev.off();
 	}
 
-	print(c(rt$maeval,rt$raeval));
-	print(c(rt$maetest,rt$raetest));
+	if (quiet == 0) print(c(rt$maeval,rt$raeval));
+	if (quiet == 0) print(c(rt$maetest,rt$raetest));
 
 	if (!is.null(saveall))
 	{
@@ -1166,7 +1166,7 @@ aloja_m5p_select <- function (vout, vin, traux, tvaux, mintervals, weka.tree = 0
 	retval;
 }
 
-aloja_knn_select <- function (vout, vin, traux, tvaux, kintervals, iparam)
+aloja_knn_select <- function (vout, vin, traux, tvaux, kintervals, iparam, quiet = 1)
 {
 	trmae <- NULL;
 	tvmae <- NULL;
@@ -1185,7 +1185,7 @@ aloja_knn_select <- function (vout, vin, traux, tvaux, kintervals, iparam)
 
 		if (mae < kminmae - off_threshold) { kmin <- i; kminmae <- mae; }
 	}
-	print (paste("Selected K:",kmin));	
+	if (quiet == 0) print (paste("Selected K:",kmin));	
 
 	retval <- list();
 	retval[["trmae"]] <- trmae;
