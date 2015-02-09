@@ -1683,7 +1683,7 @@ aloja_minimal_instances <- function (learned_model, quiet = 0, kmax = 200, step 
 	best.mae <- 9E15;
 	retval[["centers"]] <- retval[["maes"]] <- retval[["datasets"]] <- retval[["sizes"]] <- list();
 	retval[["best.k"]] <- count <- 0;
-	for (k in seq(10,kmax,by=step))
+	for (k in seq(10,min(kmax,nrow(dsbin)),by=step))
 	{
 		count <- count + 1;
 
@@ -1719,6 +1719,7 @@ aloja_minimal_instances <- function (learned_model, quiet = 0, kmax = 200, step 
 			dsdbin[j,] <- data.frame(t(instance),stringsAsFactors=FALSE);
 			weights <- c(weights,length(which(kcaux$cluster==j)));
 		}
+		for (j in colnames(dsdbin)) class(dsdbin[,j]) <- class(ds[0,j]);
 
 		# Testing and comparing
 		model_new <- aloja_regtree(dsdbin,vin=vin,vout=vout,ttaux=learned_model$testset,vsplit=0.99,quiet=1); # By default, the vsplit is 0.9 training and 0.1 validation
