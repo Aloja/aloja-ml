@@ -393,10 +393,10 @@ aloja_binarize_mixsets <- function (vin, vout, traux = NULL, ntaux = NULL, tvaux
 {
 	retval <- list();
 
-	if (!is.null(traux)) traux <- aloja_binarize_ds(traux[,c("ID",vout,vin)]);
-	if (!is.null(ntaux)) ntaux <- aloja_binarize_ds(ntaux[,c("ID",vout,vin)]);
-	if (!is.null(tvaux)) tvaux <- aloja_binarize_ds(tvaux[,c("ID",vout,vin)]);
-	if (!is.null(ttaux)) ttaux <- aloja_binarize_ds(ttaux[,c("ID",vout,vin)]);
+	if (!is.null(traux) && !all(sapply(colnames(traux),function(x) is.numeric(traux[,x])))) traux <- aloja_binarize_ds(traux[,c("ID",vout,vin)]);
+	if (!is.null(ntaux) && !all(sapply(colnames(ntaux),function(x) is.numeric(ntaux[,x])))) ntaux <- aloja_binarize_ds(ntaux[,c("ID",vout,vin)]);
+	if (!is.null(tvaux) && !all(sapply(colnames(tvaux),function(x) is.numeric(tvaux[,x])))) tvaux <- aloja_binarize_ds(tvaux[,c("ID",vout,vin)]);
+	if (!is.null(ttaux) && !all(sapply(colnames(ttaux),function(x) is.numeric(ttaux[,x])))) ttaux <- aloja_binarize_ds(ttaux[,c("ID",vout,vin)]);
 
 	if (!is.null(traux) & !is.null(tvaux) & !is.null(ttaux))
 	{
