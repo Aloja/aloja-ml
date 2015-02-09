@@ -1248,6 +1248,7 @@ aloja_outlier_dataset <- function (learned_model, vin, vout, ds = NULL, sigma = 
 	{
 		paux <- retval$predictions[i];
 		raux <- as.numeric(ds[i,vout]);
+		if ("ID" %in% colnames(ds)) { iaux <- as.numeric(ds[i,"ID"]); } else { iaux <- 0; }
 
 		auxout <- 0;	# 0 = Legit; 1 = Warning; 2 = Outlier
 		auxcause <- NULL; 
@@ -1281,10 +1282,10 @@ aloja_outlier_dataset <- function (learned_model, vin, vout, ds = NULL, sigma = 
 
 			if (auxout < 2) auxcause <- paste("Resolution:",i,"-","-",auxout,sep=" ");
 		}
-		retval$resolutions <- rbind(retval$resolutions,c(auxout,paux,raux,paste(apply(ds[i,vin],2,function(x) as.character(x)),collapse=":")));
+		retval$resolutions <- rbind(retval$resolutions,c(auxout,paux,raux,paste(apply(ds[i,vin],2,function(x) as.character(x)),collapse=":"),iaux));
 		retval$cause <- c(retval$cause,auxcause);
 	}
-	colnames(retval$resolutions) <- c("Resolution","Model","Observed","Configuration");
+	colnames(retval$resolutions) <- c("Resolution","Model","Observed","Configuration","ID");
 
 	if (!is.null(saveall))
 	{
