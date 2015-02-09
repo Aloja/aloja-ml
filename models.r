@@ -66,6 +66,8 @@ m5pq.tree <- function (formula, dataset, m = 30, cp = 0.001)
 	preds <- unlist(preds);
 	retval[["fitted.values"]] <- preds[order(as.integer(names(preds)))];
 
+	class(retval) <- c(class(retval),"m5pq");
+
 	retval;
 }
 
