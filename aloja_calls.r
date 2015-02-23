@@ -258,4 +258,29 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 
 	kc1 <- do.call(aloja_dataset_clustering,params);
 
+	# Outliers Dataset
+	params <- list();
+	params[["ds"]] = dataset;
+	params[["vin"]] = varin;
+	params[["vout"]] = varout;
+	params[["learned_model"]] = m5p1;
+	params[["saveall"]] = "outds1";
+	params[["sigma"]] = 3;
+	params[["hdinstance"]] = 3;
+
+	outds1 <- do.call(aloja_outlier_dataset,params);
+
+	# Outliers Instance
+	params <- list();
+	params[["instance"]] = c("sort","ETH","RR3","8","10","1","65536","None","32","Azure L");
+	params[["observed"]] = 100000;
+	params[["vin"]] = varin;
+	params[["vout"]] = varout;
+	params[["learned_model"]] = m5p1;
+	params[["saveall"]] = "outds1";
+	params[["sigma"]] = 3;
+	params[["hdinstance"]] = 3;
+	params[["display"]] = 1;
+
+	outinst1 <- do.call(aloja_outlier_instance,params);
 

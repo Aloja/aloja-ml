@@ -758,7 +758,7 @@ aloja_nneighbors <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols
 
 	if (!is.null(pngval))
 	{
-		png(paste(pngval,".png",sep=""),width=500,height=500);
+		png(paste(pngval,".png",sep=""),width=1000,height=500);
 		par(mfrow=c(1,2));
 		plot(rt$predval,rt$validset[,vout],main=paste("K-NN K =",kparam,ifelse(iparam,"Weight = Inv.Dist.","")));
 		abline(0,1);
@@ -869,7 +869,7 @@ aloja_regtree <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = 
 	# Training and Validation
 	if (is.null(mparam))
 	{
-		rt[["selected_model"]] <- aloja_m5p_select(vout, vin, rt$trainset, rt$validset, c("1","2","5","10","25","50","75","100","150","200"),weka.tree=weka.tree);
+		rt[["selected_model"]] <- aloja_m5p_select(vout, vin, rt$trainset, rt$validset, c("1","2","5","10","25","50","75","100","150","200"),weka.tree=weka.tree,quiet=quiet);
 		mparam <- rt$selected_model$mmin;
 	}
 	if (weka.tree == 0)
@@ -1681,8 +1681,8 @@ aloja_minimal_instances <- function (learned_model, quiet = 0, kmax = 200, step 
 	vbin <- colnames(dsbin)[!(colnames(dsbin) %in% c("ID",vout))];
 
 	# Iteration over Clustering
-	best.mae <- 9E15;
-	retval[["centers"]] <- retval[["maes"]] <- retval[["datasets"]] <- retval[["sizes"]] <- list();
+	best.rae <- 9E15;
+	retval[["centers"]] <- retval[["raes"]] <- retval[["datasets"]] <- retval[["sizes"]] <- list();
 	retval[["best.k"]] <- count <- 0;
 	for (k in seq(10,min(kmax,nrow(dsbin)),by=step))
 	{
@@ -1729,17 +1729,17 @@ aloja_minimal_instances <- function (learned_model, quiet = 0, kmax = 200, step 
 		if ("nnet" %in% class(learned_model$model)) model_new <- aloja_nnet(dsdbin,vin=vin,vout=vout,ttaux=learned_model$testset,vsplit=0.99,quiet=1);
 		if ("lm" %in% class(learned_model$model)) model_new <- aloja_linreg(dsdbin,vin=vin,vout=vout,ttaux=learned_model$testset,vsplit=0.99,quiet=1);
 
-		if (quiet == 0) print(paste(k,model_new$maetest,retval$best.k,best.mae,sep=" "));
+		if (quiet == 0) print(paste(k,model_new$raetest,retval$best.k,best.rae,sep=" "));
 
-		if (best.mae > model_new$maetest)
+		if (best.rae > model_new$raetest)
 		{
-			best.mae <- model_new$maetes;
+			best.rae <- model_new$raetest;
 			retval$best.k <- k;
 		}
 
 		# Save iteration
 		retval$centers[[count]] <- kcaux;
-		retval$maes[[count]] <- model_new$maetest;
+		retval$raes[[count]] <- model_new$raetest;
 		retval$datasets[[count]] <- dsdbin;
 		retval$sizes[[count]] <- weights;
 	}
@@ -1747,7 +1747,7 @@ aloja_minimal_instances <- function (learned_model, quiet = 0, kmax = 200, step 
 	if (!is.null(saveall))
 	{
 		write(sapply(retval$sizes,function(x) paste(x,collapse=",")),file=paste(saveall,"-sizes.csv",sep=""));
-		write.table(data.frame(K=sapply(retval$datasets,function(x) nrow(x)),MAE=unlist(retval$maes)),file=paste(saveall,"-maes.csv",sep=""),sep=",",row.names=FALSE,col.names=FALSE);
+		write.table(data.frame(K=sapply(retval$datasets,function(x) nrow(x)),RAE=unlist(retval$raes)),file=paste(saveall,"-raes.csv",sep=""),sep=",",row.names=FALSE,col.names=FALSE);
 		for (i in 1:count) write.table(retval$datasets[[i]],file=paste(saveall,"-dsk",nrow(retval$datasets[[i]]),".csv",sep=""),sep=",",row.names=FALSE, quote=FALSE);
 		aloja_save_object(retval,tagname=saveall);
 	}
