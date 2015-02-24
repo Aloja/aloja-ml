@@ -1285,7 +1285,7 @@ aloja_outlier_dataset <- function (learned_model, vin, vout, ds = NULL, sigma = 
 		retval$resolutions <- rbind(retval$resolutions,c(auxout,paux,raux,paste(apply(ds[i,vin],2,function(x) as.character(x)),collapse=":"),iaux));
 		retval$cause <- c(retval$cause,auxcause);
 	}
-	colnames(retval$resolutions) <- c("Resolution","Model","Observed","Configuration","ID");
+	colnames(retval$resolutions) <- c("Resolution","Model","Observed",paste(vin,collapse=":"),"ID");
 
 	if (!is.null(saveall))
 	{
