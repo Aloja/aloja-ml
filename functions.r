@@ -286,12 +286,14 @@ aloja_load_splits <- function (vin, vout, ttaux, traux, tvaux)
 	retval;
 }
 
-aloja_load_testsplit <- function (ds, vin, vout, ttaux, vsplit)
+aloja_load_testsplit <- function (ds, vin, vout, ttaux, vsplit, exclusion = 0)
 {
 	retval <- list();
 
 	aux <- ds[,c("ID",vout,vin)];
-	ntaux <- aux[!(aux[,"ID"] %in% ttaux[,"ID"]),];
+
+	if (exclusion==1) ntaux <- aux[!(aux[,"ID"] %in% ttaux[,"ID"]),];
+	if (exclusion==0) ntaux <- aux;
 
 	samples <- min(nrow(ntaux)*vsplit,nrow(ntaux)-1);
 	selected <- sample(1:nrow(ntaux),samples);
@@ -311,7 +313,7 @@ aloja_load_testsplit <- function (ds, vin, vout, ttaux, vsplit)
 	retval;
 }
 
-aloja_datafile_load <- function (ds = NULL, vin, vout, ttfile, trfile = NULL, tvfile = NULL, vsplit = 0.66)
+aloja_datafile_load <- function (ds = NULL, vin, vout, ttfile, trfile = NULL, tvfile = NULL, vsplit = 0.66, exclusion = 0)
 {
 	retval <- list();
 
@@ -323,7 +325,9 @@ aloja_datafile_load <- function (ds = NULL, vin, vout, ttfile, trfile = NULL, tv
 		tvaux <- read.table(tvfile,header=T,sep=",")[,c("ID",vout,vin)];
 	} else {
 		aux <- ds[,c("ID",vout,vin)];
-		ntaux <- aux[!(aux[,"ID"] %in% ttaux[,"ID"]),];
+
+		if (exclusion==1) ntaux <- aux[!(aux[,"ID"] %in% ttaux[,"ID"]),];
+		if (exclusion==0) ntaux <- aux;
 
 		samples <- min(nrow(ntaux)*vsplit,nrow(ntaux)-1);
 		selected <- sample(1:nrow(ntaux),samples);
