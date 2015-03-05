@@ -1,5 +1,0 @@
-"Exe.Time","Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster"
-"4244",272,"hivebench_join","IB","HDD",12,10,1,65536,"BZIP2",0,"Local 1"
-"4251",272,"hivebench_join","IB","SSD",12,10,1,65536,"BZIP2",0,"Local 1"
-"4145",1285,"hivebench_join","IB","SSD",12,10,1,65536,"None",64,"Local 1"
-"4345",552,"hivebench_join","IB","SSD",24,10,1,4096,"None",0,"Local 1"
