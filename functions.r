@@ -959,8 +959,25 @@ aloja_regtree <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = 
 # Predicting methods                                                          #
 ###############################################################################
 
-aloja_predict_dataset <- function (learned_model, vin, ds = NULL, data_file = NULL)
+wrapper_predict_dataset <- function(idx,learned_model,vin,ds)
 {
+	dummy <- "Initialize this environment, you R fucking moron!";
+	pred_aux <- aloja_predict_individual_instance (vin=vin,learned_model=learned_model,inst_predict=ds[idx,]);
+	return (pred_aux);
+}
+
+wrapper_predict_individual_instance <- function(idx,learned_model,vin,instances)
+{
+	dummy <- "Initialize this environment, you R fucking moron!";
+	pred_aux <- aloja_predict_individual_instance (vin=vin,learned_model=learned_model,inst_predict=instances[idx,]);
+	laux <- c(paste(sapply(instances[idx,],function(x) as.character(x)),collapse=","),pred_aux);
+	return (laux);
+}
+
+aloja_predict_dataset <- function (learned_model, vin, ds = NULL, data_file = NULL, sfCPU = 1)
+{
+	if (!is.integer(sfCPU)) sfCPU <- as.integer(sfCPU);
+
 	retval <- NULL;
 	if (is.null(ds) && is.null(data_file))
 	{
@@ -978,12 +995,21 @@ aloja_predict_dataset <- function (learned_model, vin, ds = NULL, data_file = NU
 		ds <- ds[,vin];
 	}
 
-	for (i in 1:nrow(ds))
+	if ("snowfall" %in% installed.packages() && sfCPU > 1)
 	{
-		pred_aux <- aloja_predict_individual_instance (learned_model, vin, ds[i,]);
-		retval <- c(retval, pred_aux);
+		library(snowfall);
+		sfInit(parallel=TRUE, cpus=sfCPU);
+		sfExport(list=c("vin","ds","learned_model","aloja_predict_individual_instance"),local=TRUE);
+		fyr <- sfLapply(1:nrow(ds), wrapper_predict_dataset,learned_model=learned_model,vin=vin,ds=ds);
+		sfStop();
+		retval <- unlist(fyr);
+	} else {
+		for (i in 1:nrow(ds))
+		{
+			pred_aux <- aloja_predict_individual_instance (learned_model, vin, ds[i,]);
+			retval <- c(retval, pred_aux);
+		}
 	}
-
 	retval;
 }
 
@@ -1027,8 +1053,9 @@ aloja_unfold_expression <- function (expression, vin, reference_model)
 	instances;
 }
 
-aloja_predict_instance <- function (learned_model, vin, inst_predict, sorted = NULL)
+aloja_predict_instance <- function (learned_model, vin, inst_predict, sorted = NULL, sfCPU = 1)
 {
+	if (!is.integer(sfCPU)) sfCPU <- as.integer(sfCPU);
 	retval <- NULL;
 
 	if (length(grep(pattern="\\||\\*",inst_predict)) > 0)
@@ -1036,10 +1063,19 @@ aloja_predict_instance <- function (learned_model, vin, inst_predict, sorted = N
 		instances <- aloja_unfold_expression(inst_predict,vin,learned_model);
 
 		laux <- list();
-		for (i in 1:nrow(instances))
+		if ("snowfall" %in% installed.packages() && sfCPU > 1)
 		{
-			pred_aux <- aloja_predict_individual_instance (learned_model, vin, instances[i,]);
-			laux[[i]] <- c(paste(sapply(instances[i,],function(x) as.character(x)),collapse=","),pred_aux);
+			library(snowfall);
+			sfInit(parallel=TRUE, cpus=sfCPU);
+			sfExport(list=c("instances","learned_model","vin","aloja_predict_individual_instance"),local=TRUE);
+			laux <- sfLapply(1:nrow(instances), wrapper_predict_individual_instance,learned_model=learned_model,vin=vin,instances=instances);
+			sfStop();
+		} else {
+			for (i in 1:nrow(instances))
+			{
+				pred_aux <- aloja_predict_individual_instance (learned_model, vin, instances[i,]);
+				laux[[i]] <- c(paste(sapply(instances[i,],function(x) as.character(x)),collapse=","),pred_aux);
+			}
 		}
 		daux <- t(as.data.frame(laux));
 		daux <- data.frame(Instance=as.character(daux[,1]),Prediction=as.numeric(daux[,2]),stringsAsFactors=FALSE);
@@ -1205,10 +1241,51 @@ aloja_knn_select <- function (vout, vin, traux, tvaux, kintervals, iparam, quiet
 # Outlier Detection Mechanisms                                                #
 ###############################################################################
 
-aloja_outlier_dataset <- function (learned_model, vin, vout, ds = NULL, sigma = 3, hdistance = 3, saveall = NULL)
+wrapper_outlier_dataset <- function(idx,ds,vin,vout,auxjoin,auxjoin_s,thres1,hdistance)
+{
+	auxout <- 1;
+	auxcause <- paste("Resolution:",idx,"- - 1",sep=" ");
+
+	# Check for identical configurations
+	idconfs <- which(apply(auxjoin_s,1,function(x) all(x==ds[idx,vin])));
+	if (length(idconfs) > 0)
+	{
+		auxerrs <- c(auxjoin[idconfs,vout] - auxjoin[idconfs,"Pred"]);
+		length1 <- length(auxerrs[auxerrs <= thres1]);
+		length2 <- length(auxerrs)/2;
+		if (length1 > length2)
+		{
+			auxout <- 2;
+			auxcause <- paste("Resolution:",idx,length1,length2,auxout,"by Identical",sep=" ");
+		}
+	}
+	if (auxout < 2 && hdistance > 0)
+	{
+		# Check for similar configurations (Hamming distance 'hdistance')
+		idconfs <- which(apply(auxjoin_s[,vin],1,function(x) sum(x!=ds[idx,vin])) <= hdistance);
+		if (length(idconfs) > 0)
+		{
+			auxerrs <- c(auxjoin[idconfs,vout] - auxjoin[idconfs,"Pred"]);
+			length1 <- length(auxerrs[auxerrs <= thres1]);
+			length2 <- length(auxerrs)/2;
+			if (length1 > length2)
+			{
+				auxout <- 2;
+				auxcause <- paste("Resolution:",idx,length1,length2,auxout,"by Neighbours",sep=" ");
+			}
+		}
+	}
+	retval <- list();
+	retval$cause <- auxcause;
+	retval$resolution <- auxout;
+	return(retval);
+}
+
+aloja_outlier_dataset <- function (learned_model, vin, vout, ds = NULL, sigma = 3, hdistance = 3, saveall = NULL, sfCPU = 1)
 {
 	if (!is.integer(sigma)) sigma <- as.integer(sigma);
 	if (!is.integer(hdistance)) hdistance <- as.integer(hdistance);
+	if (!is.integer(sfCPU)) sfCPU <- as.integer(sfCPU);
 
 	retval <- list();
 	retval[["resolutions"]] <- NULL;
@@ -1223,7 +1300,7 @@ aloja_outlier_dataset <- function (learned_model, vin, vout, ds = NULL, sigma = 
 	if (is.null(ds)) ds <- learned_model$ds_original;
 
 	retval[["dataset"]] <- ds;
-	retval[["predictions"]] <- aloja_predict_dataset(learned_model,vin,ds=ds);
+	retval[["predictions"]] <- aloja_predict_dataset(learned_model,vin,ds=ds,sfCPU=3);
 
 	# Compilation of datasets
 	if (all(vin %in% learned_model$varin))
@@ -1260,28 +1337,23 @@ aloja_outlier_dataset <- function (learned_model, vin, vout, ds = NULL, sigma = 
 	colnames(retval$resolutions) <- c("Resolution","Model","Observed",paste(vin,collapse=":"),"ID");
 
 	# Check the far points for outliers
-	for (i in (1:length(retval$predictions))[cond1])
+	if ("snowfall" %in% installed.packages() && sfCPU > 1)
 	{
-		auxout <- 1;
-		auxcause <- paste("Resolution:",i,"- - 1",sep=" ");
+		library(snowfall);
+		sfInit(parallel=TRUE, cpus=sfCPU);
+		sfExport(list=c("ds","vin","vout","auxjoin","auxjoin_s","thres1","hdistance"),local=TRUE);
+		rets <- sfLapply((1:length(paux))[cond1], wrapper_outlier_dataset,ds=ds,vin=vin,vout=vout,auxjoin=auxjoin,auxjoin_s=auxjoin_s,thres1=thres1,hdistance=hdistance);
+		sfStop();
+		retval$resolutions[cond1,"Resolution"] <- sapply(1:length(rets),function(x) rets[[x]]$resolution);
+		retval$cause <- sapply(1:length(rets),function(x) rets[[x]]$cause);
+	} else {
+		for (i in (1:length(paux))[cond1])
+		{
+			auxout <- 1;
+			auxcause <- paste("Resolution:",i,"- - 1",sep=" ");
 
-		# Check for identical configurations
-		idconfs <- which(apply(auxjoin_s,1,function(x) all(x==ds[i,vin])));
-		if (length(idconfs) > 0)
-		{
-			auxerrs <- c(auxjoin[idconfs,vout] - auxjoin[idconfs,"Pred"]);
-			length1 <- length(auxerrs[auxerrs <= thres1]);
-			length2 <- length(auxerrs)/2;
-			if (length1 > length2)
-			{
-				auxout <- 2;
-				auxcause <- paste("Resolution:",i,length1,length2,auxout,"by Identical",sep=" ");
-			}
-		}
-		if (auxout < 2 && hdistance > 0)
-		{
-			# Check for similar configurations (Hamming distance 'hdistance')
-			idconfs <- which(apply(auxjoin_s[,vin],1,function(x) sum(x!=ds[i,vin])) <= hdistance);
+			# Check for identical configurations
+			idconfs <- which(apply(auxjoin_s,1,function(x) all(x==ds[i,vin])));
 			if (length(idconfs) > 0)
 			{
 				auxerrs <- c(auxjoin[idconfs,vout] - auxjoin[idconfs,"Pred"]);
@@ -1290,12 +1362,28 @@ aloja_outlier_dataset <- function (learned_model, vin, vout, ds = NULL, sigma = 
 				if (length1 > length2)
 				{
 					auxout <- 2;
-					auxcause <- paste("Resolution:",i,length1,length2,auxout,"by Neighbours",sep=" ");
+					auxcause <- paste("Resolution:",i,length1,length2,auxout,"by Identical",sep=" ");
 				}
 			}
+			if (auxout < 2 && hdistance > 0)
+			{
+				# Check for similar configurations (Hamming distance 'hdistance')
+				idconfs <- which(apply(auxjoin_s[,vin],1,function(x) sum(x!=ds[i,vin])) <= hdistance);
+				if (length(idconfs) > 0)
+				{
+					auxerrs <- c(auxjoin[idconfs,vout] - auxjoin[idconfs,"Pred"]);
+					length1 <- length(auxerrs[auxerrs <= thres1]);
+					length2 <- length(auxerrs)/2;
+					if (length1 > length2)
+					{
+						auxout <- 2;
+						auxcause <- paste("Resolution:",i,length1,length2,auxout,"by Neighbours",sep=" ");
+					}
+				}
+			}
+			retval$cause <- c(retval$cause,auxcause);
+			retval$resolutions[i,"Resolution"] <- auxout;
 		}
-		retval$cause <- c(retval$cause,auxcause);
-		retval$resolutions[i,"Resolution"] <- auxout;
 	}
 
 	if (!is.null(saveall))
