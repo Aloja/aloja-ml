@@ -1248,48 +1248,55 @@ aloja_outlier_dataset <- function (learned_model, vin, vout, ds = NULL, sigma = 
 	stdev_err <- sd(c(trerr,tverr,tterr));
 	mean_err <- mean(c(trerr,tverr,tterr));
 
-	for (i in 1:length(retval$predictions))
-	{
-		paux <- retval$predictions[i];
-		raux <- as.numeric(ds[i,vout]);
-		if ("ID" %in% colnames(ds)) { iaux <- as.numeric(ds[i,"ID"]); } else { iaux <- 0; }
+	# Vectorization and Pre-calculation [Optimization]
+	thres1 <- mean_err + (stdev_err * sigma);
+	ifelse("ID" %in% colnames(ds),iaux <- as.numeric(ds[,"ID"]), iaux <- rep(0,nrow(ds))); 
+	raux <- as.numeric(ds[,vout]);
+	paux <- retval$predictions;
+	cond1 <- abs(paux-raux) > thres1;
+	auxjoin_s <- apply(auxjoin[,vin],2,function(x) sub("^\\s+","",x));
 
-		auxout <- 0;	# 0 = Legit; 1 = Warning; 2 = Outlier
-		auxcause <- NULL; 
-
-		if (abs(paux-raux) > mean_err + (stdev_err * sigma))
-		{
-			auxout <- 1;
-
-			# Check for identical configurations
-			idconfs <- which(apply(auxjoin[,vin],1,function(x) all(sub("^\\s+","",x)==ds[i,vin]))); # APPLY and its f*****g character coercion...
-			if (length(idconfs) > 0)
-			{
-				auxerrs <- c(auxjoin[idconfs,vout] - auxjoin[idconfs,"Pred"]);
-				if (length(auxerrs[auxerrs <= mean_err + stdev_err * sigma]) > length(auxerrs)/2)
-				{
-					auxout <- 2;
-					auxcause <- paste("Resolution:",i,length(auxerrs[auxerrs <= stdev_err * sigma]),length(auxerrs),auxout,"by Identical",sep=" ");
-				}
-			}
-			# Check for similar configurations (Hamming distance 'hdistance')
-			idconfs <- which(apply(auxjoin[,vin],1,function(x) length(which(sub("^\\s+","",x)==ds[i,vin])))>=length(vin)-hdistance);
-			if (length(idconfs) > 0)
-			{
-				auxerrs <- c(auxjoin[idconfs,vout] - auxjoin[idconfs,"Pred"]);
-				if (length(auxerrs[auxerrs <= mean_err + stdev_err * sigma]) > length(auxerrs)/2)
-				{
-					auxout <- 2;
-					auxcause <- paste("Resolution:",i,length(auxerrs[auxerrs <= stdev_err * sigma]),length(auxerrs),auxout,"by Neighbours",sep=" ");
-				}
-			}
-
-			if (auxout < 2) auxcause <- paste("Resolution:",i,"-","-",auxout,sep=" ");
-		}
-		retval$resolutions <- rbind(retval$resolutions,c(auxout,paux,raux,paste(apply(ds[i,vin],2,function(x) as.character(x)),collapse=":"),iaux));
-		retval$cause <- c(retval$cause,auxcause);
-	}
+	retval$resolutions <- data.frame(rep(0,nrow(ds)),paux,raux,apply(ds[,vin],1,function(x) paste(as.character(x),collapse=":")),iaux);
 	colnames(retval$resolutions) <- c("Resolution","Model","Observed",paste(vin,collapse=":"),"ID");
+
+	# Check the far points for outliers
+	for (i in (1:length(retval$predictions))[cond1])
+	{
+		auxout <- 1;
+		auxcause <- paste("Resolution:",i,"- - 1",sep=" ");
+
+		# Check for identical configurations
+		idconfs <- which(apply(auxjoin_s,1,function(x) all(x==ds[i,vin])));
+		if (length(idconfs) > 0)
+		{
+			auxerrs <- c(auxjoin[idconfs,vout] - auxjoin[idconfs,"Pred"]);
+			length1 <- length(auxerrs[auxerrs <= thres1]);
+			length2 <- length(auxerrs)/2;
+			if (length1 > length2)
+			{
+				auxout <- 2;
+				auxcause <- paste("Resolution:",i,length1,length2,auxout,"by Identical",sep=" ");
+			}
+		}
+		if (auxout < 2 && hdistance > 0)
+		{
+			# Check for similar configurations (Hamming distance 'hdistance')
+			idconfs <- which(apply(auxjoin_s[,vin],1,function(x) sum(x!=ds[i,vin])) <= hdistance);
+			if (length(idconfs) > 0)
+			{
+				auxerrs <- c(auxjoin[idconfs,vout] - auxjoin[idconfs,"Pred"]);
+				length1 <- length(auxerrs[auxerrs <= thres1]);
+				length2 <- length(auxerrs)/2;
+				if (length1 > length2)
+				{
+					auxout <- 2;
+					auxcause <- paste("Resolution:",i,length1,length2,auxout,"by Neighbours",sep=" ");
+				}
+			}
+		}
+		retval$cause <- c(retval$cause,auxcause);
+		retval$resolutions[i,"Resolution"] <- auxout;
+	}
 
 	if (!is.null(saveall))
 	{
