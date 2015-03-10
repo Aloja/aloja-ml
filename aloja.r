@@ -130,6 +130,45 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 	abline(0,1);
 	points(m5p1dim$predtest[rownames(m5p1dim$testset) %in% rownames(pca1$dataset[pca1$dataset[,"dfsioe_read"]==1,])],m5p1dim$testset[rownames(m5p1dim$testset) %in% rownames(pca1$dataset[pca1$dataset[,"dfsioe_read"]==1,]),1],col="red");
 
+
+###############################################################################
+# Optimization Techniques                                                     #
+###############################################################################
+
+###############################################################################
+# Outlier Detection (with paralelization)
+
+	params <- list();
+	params[["ds"]] = m5p2$dataset;
+	params[["vin"]] = m5p2$varin;
+	params[["vout"]] = "Exe.Time";
+	params[["learned_model"]] = m5p2;
+	params[["sigma"]] = 1;
+	params[["hdistance"]] = 0;
+	params[["sfCPU"]] = 3;
+
+	system.time(outds5 <- do.call(aloja_outlier_dataset,params));
+
+	system.time(a <- aloja_predict_dataset(m5p2,m5p2$varin,ds=m5p2$dataset,sfCPU=3))
+	system.time(a <- aloja_predict_instance(m5p2,m5p2$varin,inst_predict=c("prep_terasort","ETH","HDD","8","10","1","65536","Cmp0","64","Cl3","al-03","8","1","linux","8","56","azure","A7","IaaS"),sfCPU=3))
+
+###############################################################################
+# Find Attributes against Genetic Search
+
+	vin1 <- c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster");
+	vin2 <- c("Cl.Name","Datanodes","Headnodes","VM.OS","VM.Cores","VM.RAM","Provider","VM.Size","Type");
+	expressionA1 <- c("terasort","*","*","*","*","*","*","*","*","Cl3","al-03","8","1","linux","8","56","azure","A7","IaaS");
+	expressionA2 <- c("terasort","*","*","*","*","*","*","*","*","Cl1","m1000-01","3","1","linux","12","128","on-premise","SYS-6027R-72RF","On-premise");
+	expressionA3 <- c("terasort","*","*","*","*","*","*","*","*","Cl4","al-04","8","1","linux","8","56","azure","A7","IaaS");
+
+	system.time(a1 <- aloja_predict_instance(m5p2,c(vin1,vin2),inst_predict=expressionA1,sfCPU=1));
+	system.time(a2 <- aloja_predict_instance(m5p2,c(vin1,vin2),inst_predict=expressionA2,sfCPU=1));
+	system.time(a3 <- aloja_predict_instance(m5p2,c(vin1,vin2),inst_predict=expressionA3,sfCPU=1));
+	a <- rbind(a1,a2); a <- rbind(a,a3); a[which(a$Prediction==min(a$Prediction)),];
+
+	expressionB <- c("terasort","*","*","*","*","*","*","*","*","Cl1|Cl3|Cl4");
+	system.time(b <- aloja_genalg_search(reference_model=m5p2,vin=vin1,vin_complete=vin2,expression=expressionB))
+
 ###############################################################################
 # Dataset and Benchmark Caracterization                                       #
 ###############################################################################

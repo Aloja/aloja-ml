@@ -476,6 +476,37 @@ aloja_binarize_instance <- function (instance, vin, vout, datamodel = NULL, data
 	if (as.string != 0) { paste(datamodel[1,],collapse=","); } else { datamodel[1,]; }
 }
 
+aloja_debinarize_instance <- function (ds, vin, binstance)
+{
+	dsdbin <- ds[0,vin];									# DS headers, attributes and levels
+	levs1 <- sapply(colnames(dsdbin),function(x) levels(ds[,x]));				# Levels
+
+	instance <- NULL;
+	for (i in names(levs1))
+	{
+
+		if (is.null(levs1[[i]]))
+		{
+			instance <- c(instance,ceiling(binstance[i]));
+		} else {
+			values <- binstance[levs1[[i]]];
+			if (length(levs1[[i]]) == 1 && values == 1)
+			{
+				candidate <- levs1[[i]];					# R -> Derp, derp, derp, derp...
+			} else if (sum(values) == 0) {
+				candidate <- NA;
+			} else {
+				candidate <- names(values[which(values==max(values))])[1];	# By default, in a draw, we pick the 1st
+			}
+			instance <- c(instance,candidate); 
+		}
+	}
+	dsdbin[1,] <- data.frame(t(instance),stringsAsFactors=FALSE);
+
+	for (j in colnames(dsdbin)) class(dsdbin[,j]) <- class(ds[0,j]);
+	dsdbin;
+}
+
 ###############################################################################
 # Learning methods                                                            #
 ###############################################################################
@@ -1027,9 +1058,9 @@ aloja_unfold_expression <- function (expression, vin, reference_model)
 				caux <- reference_model$ds_original[,vin[i]]; # When Vars are binarized but instance is not.
 			}
 			if (class(caux)=="factor") plist[[i]] <- levels(caux);
-			if (class(caux)=="integer")
+			if (class(caux) %in% c("integer","numeric"))
 			{
-				print(paste("[WARNING] * in",i,"is integer. Unique values from learned_model dataset will be used.",sep=" "));
+				#print(paste("[WARNING] * in",i,"is integer. Unique values from learned_model dataset will be used.",sep=" "));
 				plist[[i]] <- unique(caux);
 			}
 
@@ -1047,6 +1078,7 @@ aloja_unfold_expression <- function (expression, vin, reference_model)
 	for(cname in vin)
 	{
 		if (class(reference_model$ds_original[,cname])=="integer") instances[,cname] <- as.integer(as.character(instances[,cname]));
+		if (class(reference_model$ds_original[,cname])=="numeric") instances[,cname] <- as.numeric(as.character(instances[,cname]));
 		if (class(reference_model$ds_original[,cname])=="factor") instances[,cname] <- factor(instances[,cname],levels=levels(reference_model$ds_original[,cname]));
 	}
 
