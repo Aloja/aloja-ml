@@ -170,6 +170,32 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 	system.time(b <- aloja_genalg_search(reference_model=m5p2,vin=vin1,vin_complete=vin2,expression=expressionB))
 
 ###############################################################################
+# Group Data on Find Attributes
+
+	#m5p2 - 2f9e5425835008cebabc6966c65bc626
+	vin1 <- c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster");
+	vin2 <- c("Cl.Name","Datanodes","Headnodes","VM.OS","VM.Cores","VM.RAM","Provider","VM.Size","Type");
+	expression <- c("terasort","ETH|IB","HDD|SSD","*","10","1","65536|131072","Cmp0","128","Cl1","m1000-01","3","1","linux","12","128","on-premise","SYS-6027R-72RF","On-premise");
+	a <- aloja_predict_instance(m5p2,c(vin1,vin2),inst_predict=expression,sfCPU=3);
+
+	stree <- aloja_representative_tree(a, method = "ordered");
+	aloja_repress_tree_string(stree);
+	aloja_repress_tree_ascii(stree);
+
+	#########
+	b <- sapply(a$Instance,function(x) strsplit(x,","));
+	b <- as.data.frame(t(matrix(unlist(b),nrow=length(c(vin1,vin2)))));
+	b <- cbind(b,a$Prediction);
+	colnames(b) <- c(vin1,vin2,"Prediction");
+	bord <- b[order(b$Prediction),];
+
+	hdaux <- sapply(1:nrow(bord),function(x) { sapply(1:nrow(bord),function(y) { sum(bord[x,]!=bord[y,]) }) });
+	hc <- hclust(as.dist(hdaux),"ave");
+	rhc <- reorder.hclust(x=hc,dis=dist(bord$Prediction))
+	plot(rhc,labels=round(bord$Prediction))
+	#text(x=rhc$order,y=rhc$height,labels="H")
+
+###############################################################################
 # Dataset and Benchmark Caracterization                                       #
 ###############################################################################
 

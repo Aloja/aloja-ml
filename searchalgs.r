@@ -74,3 +74,138 @@ aloja_genalg_evaluate <- function (string=c())
 	returnVal;
 }
 
+###############################################################################
+# Algorithms to decompose search results into Decision Trees                  #
+###############################################################################
+
+aloja_representative_tree <- function (predicted_instances, method = "ordered")
+{
+	b <- sapply(predicted_instances$Instance,function(x) strsplit(x,","));
+	b <- as.data.frame(t(matrix(unlist(b),nrow=length(c(vin1,vin2)))));
+	b <- cbind(b,predicted_instances$Prediction);
+	colnames(b) <- c(vin1,vin2,"Prediction");
+	bord <- b[order(b$Prediction),];
+
+	#daux <- rpart(Prediction ~., data = bord, parms=list(split='gini'));
+	#daux <- rpart(Prediction ~., data = baux, control=rpart.control(minsplit = 2), parms=list(split='gini')); var1 <- rownames(daux$splits)[1];
+	# eq: rpart(Prediction ~., data = bord, control=rpart.control(minsplit = 2), method = "class"); # This does the same that gini...
+
+	gini_improvement <- function (ds, var1, target)
+	{
+		gini <- function(x, unbiased = FALSE)
+		{
+		    n <- length(x)
+		    mu <- mean(x)
+		    N <- if (unbiased) n * (n - 1) else n * n
+		    ox <- x[order(x)];
+		    dsum <- drop(crossprod(2 * 1:n - n - 1,  ox))
+		    dsum / (mu * N)
+		}
+	
+		impurities <- NULL;
+		nobs <- NULL;
+		for (i in levels(as.factor(ds[,var1])))
+		{
+			if (nrow(ds[ds[,var1]==i,]) > 0)
+			{
+				impurities <- c(impurities,gini(ds[ds[,var1]==i,target]));
+				nobs <- c(nobs,nrow(ds[ds[,var1]==i,]));
+			}
+		}
+		sum_nobs <- nrow(ds);
+
+		impurity_root<- gini(ds[,target]);
+		impurity_sum <- sum(sapply(1:length(impurities),function(x) impurities[x]*(nobs[x]/sum_nobs)));
+		impurity_root - impurity_sum ;
+	}
+	
+	attrib_search <- function (baux,level=0,method="ordered")
+	{
+		retval <- NULL;
+		if (nrow(baux) > 1)
+		{
+			if (method == "ordered") # Using "ordered changes" method
+			{
+				ns <- colnames(baux)[!colnames(baux) %in% "Prediction"];
+
+				changes <- NULL;
+				chnames <- NULL;
+				for (i in ns)
+				{
+					change <- 0;
+					for (j in 2:nrow(baux))
+					{
+						if (baux[j-1,i] != baux[j,i]) change <- change + 1;
+					}
+					if (change > 0)
+					{
+						changes <- c(changes,change);
+						chnames <- c(chnames,i);
+					}
+				}
+				var1 <- chnames[(which(changes==min(changes)))[1]];
+
+			} else if (method == "information") # Using information gain
+			{
+				daux <- information.gain(Prediction~., baux);
+				var1 <- (rownames(daux)[which(daux==max(daux))])[1];
+
+			} else if (method == "gini") # Using gini improvement
+			{
+				ns <- colnames(baux)[!colnames(baux) %in% "Prediction"];
+				daux <- sapply(ns, function(x) gini_improvement(baux,x,"Prediction"));
+				var1 <- (names(daux)[which(daux==max(daux))])[1];
+			}
+		
+			retval <- list();
+			for (i in levels(baux[,var1])) # TODO - Executar en Ordre
+			{
+				bnext <- baux[baux[,var1]==i,];
+				retval[[paste(var1,i,sep="=")]] <- attrib_search(bnext,level=level+1,method=method);
+			}
+		} else {
+			retval <- round(mean(baux$Prediction));
+		}
+		retval;
+	}
+	attrib_search(bord,method=method);
+}
+
+aloja_repress_tree_string <- function (stree)
+{
+	if (!is.numeric(stree))
+	{
+		levelval <- '';
+		for(i in names(stree))
+		{
+			plevelval <- aloja_repress_tree_string (stree[[i]]);
+			if (levelval != '') levelval <- paste(levelval,",",sep="");
+			levelval <- paste(levelval,i,":",plevelval,sep="");
+		}
+		retval <- paste("{",levelval,"}",sep="");
+	} else {
+		retval <- stree;
+	}
+	retval;
+}
+
+aloja_repress_tree_ascii <- function (stree, level = 0)
+{
+	retval <- NULL;
+	for(i in names(stree))
+	{
+		spaces <- paste(c(rep("  ",level),"*"),sep="",collapse="");
+		icute <- str_replace(i,"="," : ");
+		if (is.numeric(stree[[i]]))
+		{
+			retval <- c(retval,paste(spaces,icute,"->",mean(stree[[i]]),sep=" "));
+		} else {
+			retval <- c(retval,paste(spaces,icute,sep=" "));
+			plevelval <- aloja_repress_tree_ascii (stree[[i]], level=level+1);
+			retval <- c(retval,plevelval);
+		}
+	}
+
+	if (level == 0) retval <- as.matrix(retval);
+	retval;
+}
