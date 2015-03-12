@@ -4,7 +4,6 @@
 # 2015-03-09
 # Heuristics and search library for ALOJA-ML
 
-source("functions.r");
 library("genalg");
 
 ###############################################################################
