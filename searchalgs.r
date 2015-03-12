@@ -78,12 +78,15 @@ aloja_genalg_evaluate <- function (string=c())
 # Algorithms to decompose search results into Decision Trees                  #
 ###############################################################################
 
-aloja_representative_tree <- function (predicted_instances, method = "ordered")
+aloja_representative_tree <- function (predicted_instances = NULL, vin, method = "ordered", pred_file = NULL, output = NULL, ...)
 {
+	if (is.null(predicted_instances) && is.null(pred_file)) return (NULL);
+	if (is.null(predicted_instances)) predicted_instances <- read.table(paste(pred_file,"-predictions.data",sep=""),sep=",",header=TRUE,stringsAsFactors=FALSE);
+
 	b <- sapply(predicted_instances$Instance,function(x) strsplit(x,","));
-	b <- as.data.frame(t(matrix(unlist(b),nrow=length(c(vin1,vin2)))));
+	b <- as.data.frame(t(matrix(unlist(b),nrow=length(vin))));
 	b <- cbind(b,predicted_instances$Prediction);
-	colnames(b) <- c(vin1,vin2,"Prediction");
+	colnames(b) <- c(vin,"Prediction");
 	bord <- b[order(b$Prediction),];
 
 	#daux <- rpart(Prediction ~., data = bord, parms=list(split='gini'));
@@ -168,7 +171,13 @@ aloja_representative_tree <- function (predicted_instances, method = "ordered")
 		}
 		retval;
 	}
-	attrib_search(bord,method=method);
+	stree <- attrib_search(bord,method=method);
+
+	retval <- stree
+	if (!is.null(output) && output=="string") retval <- aloja_repress_tree_string (stree);
+	if (!is.null(output) && output=="ascii") retval <- aloja_repress_tree_ascii (stree);
+
+	retval;	
 }
 
 aloja_repress_tree_string <- function (stree)

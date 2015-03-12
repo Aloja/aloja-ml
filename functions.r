@@ -1085,7 +1085,7 @@ aloja_unfold_expression <- function (expression, vin, reference_model)
 	instances;
 }
 
-aloja_predict_instance <- function (learned_model, vin, inst_predict, sorted = NULL, sfCPU = 1)
+aloja_predict_instance <- function (learned_model, vin, inst_predict, sorted = NULL, sfCPU = 1, saveall = NULL)
 {
 	if (!is.integer(sfCPU)) sfCPU <- as.integer(sfCPU);
 	retval <- NULL;
@@ -1124,6 +1124,8 @@ aloja_predict_instance <- function (learned_model, vin, inst_predict, sorted = N
 		daux <- t(as.data.frame(laux));
 		retval <- data.frame(Instance=as.character(daux[,1]),Prediction=as.numeric(daux[,2]),stringsAsFactors=FALSE);
 	}
+
+	if (!is.null(saveall)) write.table(retval, file = paste(saveall,"-predictions.data",sep=""), sep = ",", row.names=FALSE);
 	retval;
 }
 
