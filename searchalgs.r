@@ -5,6 +5,7 @@
 # Heuristics and search library for ALOJA-ML
 
 library("genalg");
+library("FSelector");
 
 ###############################################################################
 # Search algorithms based on heuristics                                       #
@@ -180,6 +181,7 @@ aloja_representative_tree <- function (predicted_instances = NULL, vin, method =
 	retval <- stree
 	if (!is.null(output) && output=="string") retval <- aloja_repress_tree_string (stree);
 	if (!is.null(output) && output=="ascii") retval <- aloja_repress_tree_ascii (stree);
+	if (!is.null(output) && output=="html") retval <- aloja_repress_tree_html (stree);
 
 	retval;	
 }
@@ -220,5 +222,23 @@ aloja_repress_tree_ascii <- function (stree, level = 0)
 	}
 
 	if (level == 0) retval <- as.matrix(retval);
+	retval;
+}
+
+aloja_repress_tree_html <- function (stree)
+{
+	if (!is.numeric(stree))
+	{
+		levelval <- '';
+		for(i in names(stree))
+		{
+			plevelval <- aloja_repress_tree_html (stree[[i]]);
+			if (levelval != '') levelval <- paste(levelval,"</li><li>",sep="");
+			levelval <- paste(levelval,i,":",plevelval,sep="");
+		}
+		retval <- paste("<ul><li>",levelval,"</li></ul>",sep="");
+	} else {
+		retval <- stree;
+	}
 	retval;
 }
