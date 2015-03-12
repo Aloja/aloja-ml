@@ -78,10 +78,15 @@ aloja_genalg_evaluate <- function (string=c())
 # Algorithms to decompose search results into Decision Trees                  #
 ###############################################################################
 
-aloja_representative_tree <- function (predicted_instances = NULL, vin, method = "ordered", pred_file = NULL, output = NULL, ...)
+aloja_representative_tree <- function (predicted_instances = NULL, vin, method = "ordered", pred_file = NULL, dump_file = NULL, output = NULL, ...)
 {
-	if (is.null(predicted_instances) && is.null(pred_file)) return (NULL);
-	if (is.null(predicted_instances)) predicted_instances <- read.table(paste(pred_file,"-predictions.data",sep=""),sep=",",header=TRUE,stringsAsFactors=FALSE);
+	if (is.null(predicted_instances) && is.null(pred_file) && is.null(dump_file)) return (NULL);
+	if (is.null(predicted_instances) && !is.null(pred_file)) predicted_instances <- read.table(paste(pred_file,"-predictions.data",sep=""),sep=",",header=TRUE,stringsAsFactors=FALSE);
+	if (is.null(predicted_instances) && !is.null(dump_file))
+	{
+		predicted_instances <- (read.table(dump_file,sep="",header=FALSE,stringsAsFactors=FALSE))[,c(2,3)];
+		colnames(predicted_instances) <- c("Instance","Prediction");
+	}
 
 	b <- sapply(predicted_instances$Instance,function(x) strsplit(x,","));
 	b <- as.data.frame(t(matrix(unlist(b),nrow=length(vin))));
