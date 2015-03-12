@@ -234,11 +234,11 @@ aloja_repress_tree_html <- function (stree)
 		{
 			plevelval <- aloja_repress_tree_html (stree[[i]]);
 			if (levelval != '') levelval <- paste(levelval,"</li><li>",sep="");
-			levelval <- paste(levelval,i,":",plevelval,sep="");
+			levelval <- paste(levelval,i,plevelval,sep="");
 		}
 		retval <- paste("<ul><li>",levelval,"</li></ul>",sep="");
 	} else {
-		retval <- stree;
+		retval <- paste(" &#8658; ",stree,sep="");
 	}
 	retval;
 }
