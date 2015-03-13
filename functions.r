@@ -14,9 +14,10 @@ library(session);
 
 set.seed(1234567890);
 
-#source_url('https://gist.githubusercontent.com/fawda123/7471137/raw/466c1474d0a505ff044412703516c34f1a4684a5/nnet_plot_update.r')
 source_url('https://raw.githubusercontent.com/Aloja/aloja-ml/master/models.r');
 source_url('https://raw.githubusercontent.com/Aloja/aloja-ml/master/searchalgs.r');
+#source('models.r');
+#source('searchalgs.r');
 
 ###############################################################################
 # Read datasets and prepare them for usage                                    #
@@ -1126,7 +1127,16 @@ aloja_predict_instance <- function (learned_model, vin, inst_predict, sorted = N
 		retval <- data.frame(Instance=as.character(daux[,1]),Prediction=as.numeric(daux[,2]),stringsAsFactors=FALSE);
 	}
 
-	if (!is.null(saveall)) write.table(retval, file = paste(saveall,"-predictions.data",sep=""), sep = ",", row.names=FALSE);
+	if (!is.null(saveall))
+	{
+		write.table(retval, file = paste(saveall,"-predictions.data",sep=""), sep = ",", row.names=FALSE);
+
+		aux <- do.call(rbind,strsplit(retval$Instance,","));
+		aux <- cbind(aux,retval$Prediction);
+		aux <- cbind(seq(1:nrow(aux)),aux);
+		colnames(aux) <- c("ID",vin,learned_model$varout);
+		write.table(aux, file = paste(saveall,"-dataset.data",sep=""), sep = ",", row.names=FALSE);
+	}
 	retval;
 }
 
