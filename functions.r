@@ -1022,8 +1022,8 @@ aloja_predict_dataset <- function (learned_model, vin, ds = NULL, data_file = NU
 	if (!is.null(data_file))
 	{
 		fileset <- read.table(file=data_file,header=T,sep=",");
-		# TODO - Adequate data_file to learned model DS
-		ds <- aloja_dbind(NULL,fileset[,vin]);
+		daux <- aloja_dbind(learned_model$ds_original[,vin],fileset[,vin]);
+		ds <- daux[nrow(learned_model$ds_original):nrow(daux),];
 	} else {
 		ds <- ds[,vin];
 	}
@@ -2090,7 +2090,7 @@ aloja_dbind <- function (dataframe_1, dataframe_2)
 	for (name_1 in colnames(dataframe_1))
 	{
 		vec_aux <- NULL;
-		if (!is.null(dataframe_2[,name_1]))
+		if (name_1 %in% colnames(dataframe_2))
 		{
 			cnames <- c(cnames,name_1);
 			if (class(dataframe_1[,name_1]) == "factor" || class(dataframe_2[,name_1]) == "factor")
