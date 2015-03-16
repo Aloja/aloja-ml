@@ -1441,7 +1441,7 @@ aloja_outlier_dataset <- function (learned_model, vin, vout, ds = NULL, sigma = 
 	retval;
 }
 
-aloja_outlier_instance <- function (learned_model, vin, vout, instance, observed, display = 0)
+aloja_outlier_instance <- function (learned_model, vin, vout, instance, observed, display = 0, sfCPU = 1)
 {
 	if (!is.integer(display)) display <- as.integer(display);
 
@@ -1454,7 +1454,7 @@ aloja_outlier_instance <- function (learned_model, vin, vout, instance, observed
 	}
 	colnames(comp_dataset) <- c(vin,vout);
 
-	result <- aloja_outlier_dataset (learned_model,vin,vout,ds=comp_dataset);
+	result <- aloja_outlier_dataset (learned_model,vin,vout,ds=comp_dataset,sfCPU=sfCPU);
 
 	retval <- NULL;
 	if (display == 0) retval <- result;
