@@ -1130,6 +1130,7 @@ aloja_predict_instance <- function (learned_model, vin, inst_predict, sorted = N
 	if (!is.null(saveall))
 	{
 		write.table(retval, file = paste(saveall,"-predictions.data",sep=""), sep = ",", row.names=FALSE);
+		write.table(retval, file = paste(saveall,"-stdout.data",sep=""), sep = " ", row.names=TRUE);
 
 		aux <- do.call(rbind,strsplit(retval$Instance,","));
 		aux <- cbind(aux,retval$Prediction);
@@ -1345,7 +1346,7 @@ aloja_outlier_dataset <- function (learned_model, vin, vout, ds = NULL, sigma = 
 	if (is.null(ds)) ds <- learned_model$ds_original;
 
 	retval[["dataset"]] <- ds;
-	retval[["predictions"]] <- aloja_predict_dataset(learned_model,vin,ds=ds,sfCPU=3);
+	retval[["predictions"]] <- aloja_predict_dataset(learned_model,vin,ds=ds,sfCPU=sfCPU);
 
 	# Compilation of datasets
 	if (all(vin %in% learned_model$varin))
