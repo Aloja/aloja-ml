@@ -35,7 +35,9 @@
 #
 #	 ./aloja_cli.r -m aloja_representative_tree -p method=ordered:pred_file="m5p1-instances":output="string" -v
 
-source("functions.r");
+library(devtools);
+source_url('https://raw.githubusercontent.com/Aloja/aloja-ml/master/functions.r');
+#source("functions.r");
 
 ###############################################################################
 # Read arguments from CLI

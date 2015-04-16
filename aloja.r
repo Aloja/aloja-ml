@@ -5,7 +5,9 @@
 # 2014-11-24
 # Scripts and snippets for ALOJA-ML
 
-source("functions.r");
+library(devtools);
+source_url('https://raw.githubusercontent.com/Aloja/aloja-ml/master/functions.r');
+#source("functions.r");
 options(width=as.integer(Sys.getenv("COLUMNS")));
 
 ###############################################################################
@@ -15,7 +17,8 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 	dataset <- aloja_get_data(fread = "aloja-dataset.csv", cds = FALSE, hds = FALSE, fproc = "aloja-process");
 
 	varout <- "Exe.Time";
-	varin <- c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster");
+	#varin <- c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster");
+	varin <- c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster","Cl.Name","Datanodes","Headnodes","VM.OS","VM.Cores","VM.RAM","Provider","VM.Size","Type");
 
 	aloja_print_summaries(fprint="output", ds=dataset, fwidth = 1000, ms = 10, sname = "Benchmark");
 
@@ -149,6 +152,9 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 
 	system.time(outds5 <- do.call(aloja_outlier_dataset,params));
 
+###############################################################################
+# Prediction (with paralelization)
+
 	system.time(a <- aloja_predict_dataset(m5p2,m5p2$varin,ds=m5p2$dataset,sfCPU=3))
 	system.time(a <- aloja_predict_instance(m5p2,m5p2$varin,inst_predict=c("prep_terasort","ETH","HDD","8","10","1","65536","Cmp0","64","Cl3","al-03","8","1","linux","8","56","azure","A7","IaaS"),sfCPU=3))
 
@@ -168,6 +174,10 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 
 	expressionB <- c("terasort","*","*","*","*","*","*","*","*","Cl1|Cl3|Cl4");
 	system.time(b <- aloja_genalg_search(reference_model=m5p2,vin=vin1,vin_complete=vin2,expression=expressionB))
+
+###############################################################################
+# Data Representation                                                         #
+###############################################################################
 
 ###############################################################################
 # Group Data on Find Attributes

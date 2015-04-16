@@ -478,6 +478,17 @@ aloja_binarize_instance <- function (instance, vin, vout, datamodel = NULL, data
 	if (as.string != 0) { paste(datamodel[1,],collapse=","); } else { datamodel[1,]; }
 }
 
+aloja_debinarize_ds <- function (dsbin, vin, ds_ref)
+{
+	dsdbin <- ds_ref[0,vin];
+	for (i in 1:nrow(dsbin))
+	{
+		daux <- aloja_debinarize_instance(ds_ref,vin,dsbin[i,]);
+		dsdbin <- rbind(dsdbin,daux);
+	}
+	dsdbin;
+}
+
 aloja_debinarize_instance <- function (ds, vin, binstance)
 {
 	dsdbin <- ds[0,vin];									# DS headers, attributes and levels
@@ -631,6 +642,11 @@ aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TR
 	if (quiet == 0) print(c(rt$maeval,rt$raeval));
 	if (quiet == 0) print(c(rt$maetest,rt$raetest));
 
+	# Debinarize datasets
+	rt$trainset <- aloja_debinarize_ds(rt$trainset,colnames(rt$ds_original),rt$ds_original);
+	rt$validset <- aloja_debinarize_ds(rt$validset,colnames(rt$ds_original),rt$ds_original);
+	rt$testset <- aloja_debinarize_ds(rt$testset,colnames(rt$ds_original),rt$ds_original);
+
 	if (!is.null(saveall))
 	{
 		aloja_save_model(rt$model,tagname=saveall);
@@ -737,6 +753,11 @@ aloja_linreg <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = T
 
 	if (quiet == 0) print(c(rt$maeval,rt$raeval));
 	if (quiet == 0) print(c(rt$maetest,rt$raetest));
+
+	# Debinarize datasets
+	rt$trainset <- aloja_debinarize_ds(rt$trainset,colnames(rt$ds_original),rt$ds_original);
+	rt$validset <- aloja_debinarize_ds(rt$validset,colnames(rt$ds_original),rt$ds_original);
+	rt$testset <- aloja_debinarize_ds(rt$testset,colnames(rt$ds_original),rt$ds_original);
 
 	if (!is.null(saveall))
 	{
