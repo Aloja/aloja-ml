@@ -177,11 +177,12 @@ aloja_representative_tree <- function (predicted_instances = NULL, vin, method =
 		retval;
 	}
 	stree <- attrib_search(bord,method=method);
+	ctree <- aloja_compress_tree(stree);
 
-	retval <- aloja_compress_tree(stree);
-	if (!is.null(output) && output=="string") retval <- aloja_repress_tree_string (stree);
-	if (!is.null(output) && output=="ascii") retval <- aloja_repress_tree_ascii (stree);
-	if (!is.null(output) && output=="html") retval <- aloja_repress_tree_html (stree);
+	retval <- ctree;
+	if (!is.null(output) && output=="string") retval <- aloja_repress_tree_string (ctree);
+	if (!is.null(output) && output=="ascii") retval <- aloja_repress_tree_ascii (ctree);
+	if (!is.null(output) && output=="html") retval <- aloja_repress_tree_html (ctree);
 
 	retval;	
 }
