@@ -18,7 +18,7 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 
 	varout <- "Exe.Time";
 	#varin <- c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster");
-	varin <- c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster","Cl.Name","Datanodes","Headnodes","VM.OS","VM.Cores","VM.RAM","Provider","VM.Size","Type");
+	varin <- c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster","Cl.Name","Datanodes","Headnodes","VM.OS","VM.Cores","VM.RAM","Provider","VM.Size","Type","Bench.Type");
 
 	aloja_print_summaries(fprint="output", ds=dataset, fwidth = 1000, ms = 10, sname = "Benchmark");
 
@@ -45,7 +45,7 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 	## Training M5P without example selection
 
 	#m5p1 <- aloja_regtree(dataset,vin=varin,vout=varout);
-	m5p1 <- aloja_regtree(dataset,vin=varin,vout=varout,saveall="m5p-simple",pngval="m5p-simple-app",pngtest="m5p-simple-test");
+	m5p1 <- aloja_regtree(dataset,vin=varin,vout=varout,saveall="m5p-1",pngval="m5p-1-app",pngtest="m5p-1-test");
 
 	#######################################################################
 	## Training M5P with example selection

@@ -178,12 +178,53 @@ aloja_representative_tree <- function (predicted_instances = NULL, vin, method =
 	}
 	stree <- attrib_search(bord,method=method);
 
-	retval <- stree
+	retval <- aloja_compress_tree(stree);
 	if (!is.null(output) && output=="string") retval <- aloja_repress_tree_string (stree);
 	if (!is.null(output) && output=="ascii") retval <- aloja_repress_tree_ascii (stree);
 	if (!is.null(output) && output=="html") retval <- aloja_repress_tree_html (stree);
 
 	retval;	
+}
+
+aloja_compress_tree <- function (stree, level = 0)
+{
+	retval <- list();
+	for(i in names(stree))
+	{
+		if (is.numeric(stree[[i]]))
+		{
+			retval[[i]] <- stree[[i]];
+		} else {
+			retval[[i]] <- aloja_compress_tree(stree[[i]], level=level+1);
+		}
+	}
+
+	names_list <- names(stree);
+	for (i in names(stree))
+	{
+		for (j in names_list)
+		{
+			if (i != j && identical(retval[[i]],retval[[j]]))
+			{
+				aux <- retval[[i]];
+				retval[[i]] <- NULL;
+				retval[[j]] <- NULL;
+
+				pattr <- sub("(.*)=.*","\\1",i);
+				iattr <- sub(".*=(.*)","\\1",i);
+				jattr <- sub(".*=(.*)","\\1",j);
+
+				new_name <- paste(pattr,paste(iattr,jattr,sep="|"),sep="=");
+				retval[[new_name]] <- aux;
+				i <- new_name;
+
+				names_list <- c(new_name,names_list);
+				names_list <- names_list[-which(names_list==j)];
+				names_list <- names_list[-which(names_list==i)];
+			}
+		}
+	}
+	retval;
 }
 
 aloja_repress_tree_string <- function (stree)
