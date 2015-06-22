@@ -87,7 +87,7 @@ aloja_get_data <- function (fread, cds = FALSE, hds = FALSE, fproc = NULL)
 # Print summaries for each benchmark                                          #
 ###############################################################################
 
-aloja_print_summaries <- function (ds, sname = NULL, vin = NULL, ms = 10, fprint = NULL, fwidth = 1000)
+aloja_print_summaries <- function (ds, sname = NULL, vin = NULL, ms = 10, fprint = NULL, fwidth = 1000, html = 0)
 {
 	if (!is.null(fprint))
 	{
@@ -100,13 +100,32 @@ aloja_print_summaries <- function (ds, sname = NULL, vin = NULL, ms = 10, fprint
 
 	if (is.null(sname))
 	{
-		cat("Summary for Selected Data","\n");
-		print(summary(ds[,vin],maxsum=ms));
+		sry1 <- summary(ds[,vin],maxsum=ms);
+		if (html == 1)
+		{
+			cat("<div class='levelhead'>Summary for Selected Data</div>");
+			cat(aloja_print_summary_html(sry1));
+		}
+		if (html == 0)
+		{
+			cat("Summary for Selected Data","\n");
+			print(sry1);
+		}
+
 	} else	{
 		for (name in levels(ds[,sname]))
 		{
-			cat("\n","Summary per",sname,name,"\n");
-			print(summary(ds[ds[,sname]==name,vin],maxsum=ms));
+			sry1 <- summary(ds[ds[,sname]==name,vin],maxsum=ms);
+			if (html == 1)
+			{
+				cat("<div class='levelhead'>Summary per",sname,name,"</div>");
+				cat(aloja_print_summary_html(sry1));
+			}
+			if (html == 0)
+			{
+				cat("\n","Summary per",sname,name,"\n");
+				print(sry1);
+			}
 		}
 	}
 
@@ -117,7 +136,7 @@ aloja_print_summaries <- function (ds, sname = NULL, vin = NULL, ms = 10, fprint
 	}
 }
 
-aloja_print_individual_summaries <- function (ds, rval = NULL, cval = NULL, joined = 1, vin = NULL, ms = 10, fprint = NULL, fwidth = 1000)
+aloja_print_individual_summaries <- function (ds, rval = NULL, cval = NULL, joined = 1, vin = NULL, ms = 10, fprint = NULL, fwidth = 1000, html = 0)
 {
 	if (!is.null(fprint))
 	{
@@ -132,20 +151,47 @@ aloja_print_individual_summaries <- function (ds, rval = NULL, cval = NULL, join
 	{
 		if (joined == 1)
 		{
-			cat("\n","Summary for",cval,rval,"\n");
-			print(summary(ds[ds[,cval] %in% rval,vin],maxsum=ms))
+			sry1 <- summary(ds[ds[,cval] %in% rval,vin],maxsum=ms);
+			if (html == 1)
+			{
+				cat("<div class='levelhead'>Summary for",cval,rval,"</div>");
+				cat(aloja_print_summary_html(sry1));
+			}
+			if (html == 0)
+			{
+				cat("\n","Summary for",cval,rval,"\n");
+				print(sry1);
+			}
 		} else {
 			for(i in rval)
 			{
-				cat("\n","Summary for",cval,i,"\n");
-				print(summary(ds[ds[,cval]==i,vin],maxsum=ms))
+				sry1 <- summary(ds[ds[,cval]==i,vin],maxsum=ms);
+				if (html == 1)
+				{
+					cat("<div class='levelhead'>Summary for",cval,i,"</div>");
+					cat(aloja_print_summary_html(sry1));
+				}
+				if (html == 0)
+				{
+					cat("\n","Summary for",cval,i,"\n");
+					print(sry1);
+				}
 			}
 		}
 	} else {
 		for(i in levels(ds[,cval]))
 		{
-			cat("\n","Summary for",cval,i,"\n");
-			print(summary(ds[ds[,cval]==i,vin],maxsum=ms))
+			sry1 <- summary(ds[ds[,cval]==i,vin],maxsum=ms);
+			if (html == 1)
+			{
+				cat("<div class='levelhead'>Summary for",cval,i,"</div>");
+				cat(aloja_print_summary_html(sry1));
+			}
+			if (html == 0)
+			{
+				cat("\n","Summary for",cval,i,"\n");
+				print(sry1);
+			}
 		}
 	}
 
@@ -154,6 +200,39 @@ aloja_print_individual_summaries <- function (ds, rval = NULL, cval = NULL, join
 		sink(NULL);
 		options(width=aux_tmp);
 	}
+}
+
+aloja_print_summary_json <- function (ds)
+{
+	strout <- NULL;
+	df <- as.data.frame(ds);
+	for (i in levels(df$Var2))
+	{
+		strinfo <- paste(as.character(df[df$Var2 == i & !is.na(df$Freq),"Freq"]),collapse=",");
+		strinfo <- gsub(":", "=", strinfo);
+		straux <- paste("[",i," : {",strinfo,"}]",sep="");
+		straux <- gsub("\\s", "", straux);
+		strout <- paste(strout,straux,sep=',');
+	}
+	strout <- substring(strout, 2);
+	strout;
+}
+
+aloja_print_summary_html <- function (ds)
+{
+	strout <- "";
+	df <- as.data.frame(ds);
+	for (i in levels(df$Var2))
+	{
+		strinfo <- paste(as.character(df[df$Var2 == i & !is.na(df$Freq),"Freq"]),collapse="</td></tr><tr><td>");
+		strinfo <- gsub(":", "</td><td>", strinfo);
+		strinfo <- gsub("\\s", "", strinfo);
+		iaux <- gsub("\\s", "", i);
+		straux <- paste("<table class='summarytable'><tr><td class='level'>",iaux,"</td></tr><tr><td>","<table class='leveltable'><tr><td>",strinfo,"</td></tr></table>","</td></tr></table>",sep="");
+		strout <- paste(strout,straux,sep='');
+	}
+	strout <- paste("<div class='benchtable'>",strout,"</div><br/>",sep='');
+	strout;
 }
 
 aloja_crossvariables <- function (ds, pnglabel = "cross", jfactor = 0)
