@@ -89,6 +89,8 @@ aloja_get_data <- function (fread, cds = FALSE, hds = FALSE, fproc = NULL)
 
 aloja_print_summaries <- function (ds, sname = NULL, vin = NULL, ms = 10, fprint = NULL, fwidth = 1000, html = 0)
 {
+	if (!is.integer(html)) html <- as.integer(html);
+
 	if (!is.null(fprint))
 	{
 		sink(file=paste(fprint,'-summary.data',sep=""),append=FALSE,type="output");
@@ -138,6 +140,8 @@ aloja_print_summaries <- function (ds, sname = NULL, vin = NULL, ms = 10, fprint
 
 aloja_print_individual_summaries <- function (ds, rval = NULL, cval = NULL, joined = 1, vin = NULL, ms = 10, fprint = NULL, fwidth = 1000, html = 0)
 {
+	if (!is.integer(html)) html <- as.integer(html);
+
 	if (!is.null(fprint))
 	{
 		sink(file=paste(fprint,'-summary.data',sep=""),append=FALSE,type="output");
