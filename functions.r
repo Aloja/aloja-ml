@@ -16,8 +16,10 @@ set.seed(1234567890);
 
 source_url('https://raw.githubusercontent.com/Aloja/aloja-ml/master/models.r');
 source_url('https://raw.githubusercontent.com/Aloja/aloja-ml/master/searchalgs.r');
+source_url('https://raw.githubusercontent.com/Aloja/aloja-ml/master/precision.r');
 #source('models.r');
 #source('searchalgs.r');
+#source('precision.r');
 
 ###############################################################################
 # Read datasets and prepare them for usage                                    #

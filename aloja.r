@@ -247,6 +247,37 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 	m5p4 <- aloja_regtree(ds=dataset[dataset$Benchmark=="terasort",],vin=varin,vout=varout,saveall="m5p4");
 	mi1 <- aloja_minimal_instances(learned_model=m5p4,quiet=0,kmax=200,step=10);
 
+
+###############################################################################
+# Example for comparision and statistics per cluster
+
+	#######################################################################
+	## Precision
+
+	vin_ord <- c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster","Cl.Name","Datanodes","Headnodes","VM.OS","VM.Cores","VM.RAM","Provider","VM.Size","Type");
+	vout_ord <- "Exe.Time";
+	aloja_precision(dataset[dataset[,"Cl.Name"]=="rl-06",],vin_ord,vout_ord,noout=1);
+	aloja_precision(dataset[dataset[,"Cl.Name"]=="rl-16",],vin_ord,vout_ord,noout=1);
+	aloja_precision(dataset[dataset[,"Cl.Name"]=="rl-19",],vin_ord,vout_ord,noout=1);
+	aloja_precision(dataset[dataset[,"Cl.Name"]=="rl-30",],vin_ord,vout_ord,noout=1);
+	aloja_precision(dataset[dataset[,"Cl.Name"]=="rl-33",],vin_ord,vout_ord,noout=1);
+
+	aloja_precision_split(dataset,vin_ord,vout_ord,"Cl.Name",noout=1);
+
+	#######################################################################
+	## Reunion of Executions
+
+	vin_ord2 <- c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size");
+	vout_ord <- "Exe.Time";
+	aloja_reunion(dataset,vin_ord2,vout_ord);
+
+	#######################################################################
+	## Diversity Analysis
+
+	vdisc <- "Cl.Name";
+	aloja_diversity(dataset,vin_ord2,vout_ord,vdisc);
+	aloja_diversity_json(dataset,vin_ord2,vout_ord,vdisc);
+
 ###############################################################################
 # Classification of New Benchmarks
 
