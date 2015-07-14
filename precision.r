@@ -70,25 +70,32 @@ aloja_reunion <- function (ds, vin, vout, ...)
 {
 	retval <- list();
 
-	ds_ord <- ds[do.call("order", ds[vin]),];
-
-	numsets <- 0;
-	auxid1 <- NULL;
-	for (i in 2:nrow(ds_ord))
+	if (nrow(ds) > 1)
 	{
-		if (all(ds_ord[i-1,vin] == ds_ord[i,vin]))
+		ds_ord <- ds[do.call("order", ds[vin]),];
+
+		numsets <- 0;
+		auxid1 <- NULL;
+		for (i in 2:nrow(ds_ord))
 		{
-			auxid1 <- c(auxid1,ds_ord[i,"ID"]);
-		} else {
-			if (length(auxid1) > 1)
+			if (all(ds_ord[i-1,vin] == ds_ord[i,vin]))
 			{
-				numsets <- numsets + 1;
-				retval[[numsets]] <- auxid1;
+				auxid1 <- c(auxid1,ds_ord[i,"ID"]);
+				if (i == nrow(ds))
+				{
+					numsets <- numsets + 1;
+					retval[[numsets]] <- auxid1;
+				}
+			} else {
+				if (length(auxid1) > 1)
+				{
+					numsets <- numsets + 1;
+					retval[[numsets]] <- auxid1;
+				}
+				auxid1 <- NULL;
 			}
-			auxid1 <- NULL;
 		}
 	}
-
 	retval;
 }
 
