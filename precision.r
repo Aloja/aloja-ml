@@ -14,6 +14,7 @@ aloja_precision <- function (ds, vin, vout, noout = 0, sigma = 3)
 	if (!is.integer(noout)) noout <- as.integer(noout);
 
 	if (noout > 0) ds <- ds[ds[,vout] < mean(ds[,vout]) + sigma * sd(ds[,vout]) & ds[,vout] > mean(ds[,vout]) - sigma * sd(ds[,vout]),];
+	ds <- ds[complete.cases(ds),];
 
 	if (nrow(ds) > 1)
 	{
@@ -23,8 +24,7 @@ aloja_precision <- function (ds, vin, vout, noout = 0, sigma = 3)
 		auxvar1 <- NULL;
 		for (i in 2:nrow(ds_ord))
 		{
-			cond <- all(ds_ord[i-1,vin] == ds_ord[i,vin]);
-			if (!is.na(cond) && cond)
+			if (all(ds_ord[i-1,vin] == ds_ord[i,vin]))
 			{
 				auxset1 <- c(auxset1,ds_ord[i,vout]);
 				if (i == nrow(ds_ord)) auxvar1 <- c(auxvar1,var(auxset1));
@@ -51,7 +51,7 @@ aloja_precision_split <- function (ds, vin, vout, vdisc, noout = 0, sigma = 3, j
 	if (!is.integer(json)) json <- as.integer(json);
 
 	auxlist <- list();
-	for (i in levels(ds[[vdisc]]))
+	for (i in unique(ds[[vdisc]]))
 	{
 		auxlist[[i]] <- aloja_precision(ds[ds[,vdisc]==i,],vin,vout,noout=noout, sigma=sigma);	
 	}
@@ -71,6 +71,8 @@ aloja_reunion <- function (ds, vin, vout, ...)
 {
 	retval <- list();
 
+	ds <- ds[complete.cases(ds),];
+
 	if (nrow(ds) > 1)
 	{
 		ds_ord <- ds[do.call("order", ds[vin]),];
@@ -79,8 +81,7 @@ aloja_reunion <- function (ds, vin, vout, ...)
 		auxid1 <- NULL;
 		for (i in 2:nrow(ds_ord))
 		{
-			cond <- all(ds_ord[i-1,vin] == ds_ord[i,vin]);
-			if (!is.na(cond) && cond)
+			if (all(ds_ord[i-1,vin] == ds_ord[i,vin]))
 			{
 				auxid1 <- c(auxid1,ds_ord[i,"ID"]);
 				if (i == nrow(ds_ord))
@@ -130,9 +131,9 @@ aloja_diversity <- function (ds, vin, vout, vdisc, json = 0)
 		{
 			a <- apply(auxvar1[[i]],1,function(x) paste(as.character(x),collapse=","));
 			auxinst <- paste("[",paste("[",paste(a,collapse="],["),"]",sep=""),"]",sep="");
-			retval <- paste(retval,auxinst,sep=",");
+			retval <- c(retval,auxinst);
 		}
-		retval <- paste("[",retval,"]",sep="");
+		retval <- paste("[",paste(retval,collapse=","),"]",sep="");
 	}
 
 	retval;
