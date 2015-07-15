@@ -59,8 +59,8 @@ aloja_precision_split <- function (ds, vin, vout, vdisc, noout = 0, sigma = 3, j
 
 	if (json > 0)
 	{
-		h <- apply(retval,1,function(i) paste(i,collapse=","));
-		j <- sapply(names(h),function(i) paste("[",i,",",h[i],"]",sep=""));
+		h <- apply(retval,1,function(i) paste("'",paste(i,collapse="','"),"'",sep=""));
+		j <- sapply(names(h),function(i) paste("['",i,"',",h[i],"]",sep=""));
 		retval <- paste("[",paste(j,collapse=","),"]",sep="");
 	}
 
@@ -131,7 +131,7 @@ aloja_diversity <- function (ds, vin, vout, vdisc, json = 0)
 			retval <- NULL;
 			for (i in 1:length(auxvar1))
 			{
-				a <- apply(auxvar1[[i]],1,function(x) paste(as.character(x),collapse=","));
+				a <- apply(auxvar1[[i]],1,function(x) paste("'",paste(as.character(x),collapse="','"),"'",sep=""));
 				auxinst <- paste("[",paste("[",paste(a,collapse="],["),"]",sep=""),"]",sep="");
 				retval <- c(retval,auxinst);
 			}
