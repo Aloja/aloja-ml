@@ -23,20 +23,21 @@ aloja_precision <- function (ds, vin, vout, noout = 0, sigma = 3)
 		auxvar1 <- NULL;
 		for (i in 2:nrow(ds_ord))
 		{
-			if (all(ds_ord[i-1,vin] == ds_ord[i,vin]))
+			cond <- all(ds_ord[i-1,vin] == ds_ord[i,vin]);
+			if (!is.na(cond) && cond)
 			{
 				auxset1 <- c(auxset1,ds_ord[i,vout]);
-				if (i == nrow(ds)) auxvar1 <- c(auxvar1,var(auxset1));
+				if (i == nrow(ds_ord)) auxvar1 <- c(auxvar1,var(auxset1));
 			} else {
 				if (length(auxset1) > 1) auxvar1 <- c(auxvar1,var(auxset1));
 				auxset1 <- ds_ord[i,vout];
 			}
 		}
-		diversity <- (nrow(unique(ds_ord[,vin])) - 1) / (nrow(ds) - 1);
+		diversity <- (nrow(unique(ds_ord[,vin])) - 1) / (nrow(ds_ord) - 1);
 
 		if (!is.null(auxvar1)) { unprec <- sqrt(mean(auxvar1)); } else { unprec <- NA; }
 
-		retval <- cbind(diversity,nrow(ds),unprec);
+		retval <- cbind(diversity,nrow(ds_ord),unprec);
 	} else {
 		retval <- cbind(0,1,1);
 	}
@@ -78,10 +79,11 @@ aloja_reunion <- function (ds, vin, vout, ...)
 		auxid1 <- NULL;
 		for (i in 2:nrow(ds_ord))
 		{
-			if (all(ds_ord[i-1,vin] == ds_ord[i,vin]))
+			cond <- all(ds_ord[i-1,vin] == ds_ord[i,vin]);
+			if (!is.na(cond) && cond)
 			{
 				auxid1 <- c(auxid1,ds_ord[i,"ID"]);
-				if (i == nrow(ds))
+				if (i == nrow(ds_ord))
 				{
 					numsets <- numsets + 1;
 					retval[[numsets]] <- auxid1;
