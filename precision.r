@@ -125,15 +125,20 @@ aloja_diversity <- function (ds, vin, vout, vdisc, json = 0)
 
 	if (json > 0)
 	{
-		auxvar1 <- retval;
-		retval <- NULL;
-		for (i in 1:length(auxvar1))
+		if (length(retval) > 0)
 		{
-			a <- apply(auxvar1[[i]],1,function(x) paste(as.character(x),collapse=","));
-			auxinst <- paste("[",paste("[",paste(a,collapse="],["),"]",sep=""),"]",sep="");
-			retval <- c(retval,auxinst);
+			auxvar1 <- retval;
+			retval <- NULL;
+			for (i in 1:length(auxvar1))
+			{
+				a <- apply(auxvar1[[i]],1,function(x) paste(as.character(x),collapse=","));
+				auxinst <- paste("[",paste("[",paste(a,collapse="],["),"]",sep=""),"]",sep="");
+				retval <- c(retval,auxinst);
+			}
+			retval <- paste("[",paste(retval,collapse=","),"]",sep="");
+		} else {
+			retval <- "[]";
 		}
-		retval <- paste("[",paste(retval,collapse=","),"]",sep="");
 	}
 
 	retval;
