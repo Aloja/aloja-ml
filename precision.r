@@ -37,11 +37,16 @@ aloja_precision <- function (ds, vin, vout, noout = 0, sigma = 3)
 
 		if (!is.null(auxvar1)) { unprec <- sqrt(mean(auxvar1)); } else { unprec <- NA; }
 
-		retval <- cbind(diversity,nrow(ds_ord),unprec);
+		stats_mean <- mean(ds[,vout]);
+		stats_stdev <- sd(ds[,vout]);
+		stats_max <- max(ds[,vout]);
+		stats_min <- min(ds[,vout]);
+
+		retval <- cbind(diversity,nrow(ds_ord),unprec,stats_mean,stats_stdev,stats_max,stats_min);
 	} else {
 		retval <- cbind(0,1,1);
 	}
-	colnames(retval) <- c("Diversity","Population","Unprecision");
+	colnames(retval) <- c("Diversity","Population","Unprecision","Stats [Mean]","Stats [StDev]","Stats [Max]","Stats [Min]");
 
 	retval;
 }
@@ -113,10 +118,10 @@ aloja_diversity <- function (ds, vin, vout, vdisc, json = 0)
 		if (length(unique(ds[ds$ID %in% a[[i]],vdisc])) > 1)
 		{
 			aux_common <- unique(ds[ds$ID %in% a[[i]],vin]);
-			aux_new <- t(sapply(unique(ds[ds$ID %in% a[[i]],vdisc]), function(x) c(as.character(x),mean(ds[ds$ID %in% a[[i]] & ds[[vdisc]] == x,vout]))));
+			aux_new <- t(sapply(unique(ds[ds$ID %in% a[[i]],vdisc]), function(x) c(as.character(x),mean(ds[ds$ID %in% a[[i]] & ds[[vdisc]] == x,vout]),nrow(ds[ds$ID %in% a[[i]] & ds[[vdisc]] == x,]))));
 
 			res <- cbind(aux_common, aux_new);
-			colnames(res) <- c(vin,vdisc,vout);
+			colnames(res) <- c(vin,vdisc,vout,"Support");
 
 			icount <- icount + 1;
 			retval[[icount]] <- res;
