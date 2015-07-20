@@ -53,7 +53,7 @@ aloja_precision_split <- function (ds, vin, vout, vdisc, noout = 0, sigma = 3, j
 	auxlist <- list();
 	for (i in unique(ds[[vdisc]]))
 	{
-		auxlist[[i]] <- aloja_precision(ds[ds[,vdisc]==i,],vin,vout,noout=noout, sigma=sigma);	
+		auxlist[[as.character(i)]] <- aloja_precision(ds[ds[,vdisc]==i,],vin,vout,noout=noout, sigma=sigma);	
 	}
 	retval <- do.call(rbind.data.frame, auxlist);
 
