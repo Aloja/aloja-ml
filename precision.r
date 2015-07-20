@@ -128,6 +128,8 @@ aloja_diversity <- function (ds, vin, vout, vdisc, json = 0)
 		}
 	}
 
+	retval <- retval[order(sapply(1:length(retval),function(x) max(as.numeric(as.character(retval[[x]]$Support)))),decreasing=T)];
+
 	if (json > 0)
 	{
 		if (length(retval) > 0)
