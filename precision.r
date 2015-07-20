@@ -107,8 +107,13 @@ aloja_reunion <- function (ds, vin, vout, ...)
 	retval;
 }
 
-aloja_diversity <- function (ds, vin, vout, vdisc, json = 0)
+aloja_diversity <- function (ds, vin, vout, vdisc, json = 0, noout = 0, sigma = 3)
 {
+	if (!is.integer(sigma)) sigma <- as.integer(sigma);
+	if (!is.integer(noout)) noout <- as.integer(noout);
+
+	if (noout > 0) ds <- ds[ds[,vout] < mean(ds[,vout]) + sigma * sd(ds[,vout]) & ds[,vout] > mean(ds[,vout]) - sigma * sd(ds[,vout]),];
+
 	retval <- list();
 
 	icount <- 0;
