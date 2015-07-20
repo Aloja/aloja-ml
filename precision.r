@@ -118,10 +118,10 @@ aloja_diversity <- function (ds, vin, vout, vdisc, json = 0)
 		if (length(unique(ds[ds$ID %in% a[[i]],vdisc])) > 1)
 		{
 			aux_common <- unique(ds[ds$ID %in% a[[i]],vin]);
-			aux_new <- t(sapply(unique(ds[ds$ID %in% a[[i]],vdisc]), function(x) c(as.character(x),nrow(ds[ds$ID %in% a[[i]] & ds[[vdisc]] == x,]),mean(ds[ds$ID %in% a[[i]] & ds[[vdisc]] == x,vout]))));
+			aux_new <- t(sapply(unique(ds[ds$ID %in% a[[i]],vdisc]), function(x) c(as.character(x),mean(ds[ds$ID %in% a[[i]] & ds[[vdisc]] == x,vout]),nrow(ds[ds$ID %in% a[[i]] & ds[[vdisc]] == x,]))));
 
 			res <- cbind(aux_common, aux_new);
-			colnames(res) <- c(vin,vdisc,"Support",vout);
+			colnames(res) <- c(vin,vdisc,vout,"Support");
 
 			icount <- icount + 1;
 			retval[[icount]] <- res;
