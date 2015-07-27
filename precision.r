@@ -83,7 +83,7 @@ aloja_reunion <- function (ds, vin, vout, ...)
 		ds_ord <- ds[do.call("order", ds[vin]),];
 
 		numsets <- 0;
-		auxid1 <- NULL;
+		auxid1 <- ds_ord[1,vout];
 		for (i in 2:nrow(ds_ord))
 		{
 			if (all(ds_ord[i-1,vin] == ds_ord[i,vin]))
@@ -100,7 +100,7 @@ aloja_reunion <- function (ds, vin, vout, ...)
 					numsets <- numsets + 1;
 					retval[[numsets]] <- auxid1;
 				}
-				auxid1 <- NULL;
+				auxid1 <- ds_ord[i,vout];
 			}
 		}
 	}
