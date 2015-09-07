@@ -39,6 +39,11 @@
 #	 ./aloja_cli.r -m aloja_precision_split -d aloja-dataset.csv -p vdisc="Cl.Name":noout=1:sigma=1:json=0 -v
 #	 ./aloja_cli.r -m aloja_reunion -d aloja-dataset.csv -v
 #	 ./aloja_cli.r -m aloja_diversity -d aloja-dataset.csv -p json=0 -v
+#
+#	 ./aloja_cli.r -m aloja_bestrules_single -d aloja-dataset.csv -p bench="terasort":cluster="al-05":percent="20%":minval=50:filename="test":quiet=0 -v
+#	 ./aloja_cli.r -m aloja_bestrules_pairs -d aloja-dataset.csv -p bench="terasort":cluster="al-05":percent="20%":minval=50:filename="test":quiet=0 -v
+#	 ./aloja_cli.r -m aloja_bestrules_relations -d aloja-dataset.csv -p bench="terasort":cluster="al-05":percent="20%":minval=50:filename="test":quiet=0 -v
+
 
 library(devtools);
 source_url('https://raw.githubusercontent.com/Aloja/aloja-ml/master/functions.r');
@@ -117,6 +122,12 @@ source_url('https://raw.githubusercontent.com/Aloja/aloja-ml/master/functions.r'
 		if (is.null(params$vin)) params[["vin"]] <- c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size");
 		if (is.null(params$vdisc)) params[["vdisc"]] <- "Cl.Name";
 		if (is.null(params$vout)) params[["vout"]] <- "Exe.Time";
+	}
+
+	if (opt$method  %in% c("aloja_bestrules_single","aloja_bestrules_pairs","aloja_bestrules_relations"))
+	{
+		if (is.null(params$vin)) params[["vin"]] <- c("Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size");
+		options(width=1000);
 	}
 
 	if (!is.null(opt$learned))

@@ -279,6 +279,21 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 	aloja_diversity_json(dataset,vin_ord2,vout_ord,vdisc);
 
 ###############################################################################
+# Extraction of Rules
+
+	varin_rr <- c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster","Cl.Name","Datanodes","Headnodes","VM.OS","VM.Cores","VM.RAM","Provider","VM.Size","Type","Bench.Type");
+
+	# Most Frequent Patterns for Single Attributes
+	r1 <- aloja_bestrules_single(dataset,varin_rr[2:9],bench="terasort",cluster="al-05",percent="20%",minval=50,filename=NULL);
+
+	# Most Frequent Patterns for Paired Attributes
+	r2 <- aloja_bestrules_pairs(dataset,varin_rr[2:9],bench="terasort",cluster="al-05",percent="20%",minval=50,filename=NULL);
+
+	# Most Frequent Patterns for Paired Attributes (Only Numerics)
+	r3 <- aloja_bestrules_relations(dataset,varin_rr[2:9],bench="terasort",cluster="al-05",percent="20%",minval=50,filename=NULL);
+
+
+###############################################################################
 # Classification of New Benchmarks
 
 # TODO FIXME - Refactor the following code:
