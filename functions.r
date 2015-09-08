@@ -1019,9 +1019,9 @@ aloja_regtree <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = 
 	}
 	if (weka.tree == 0)
 	{
-		rt[["model"]] <- m5pq.tree(formula=vout~.,dataset=data.frame(rt$trainset[,c(vout,vin)]),m=mparam)
+		rt[["model"]] <- qrt.tree(formula=vout~.,dataset=data.frame(rt$trainset[,c(vout,vin)]),m=mparam)
 		rt[["predtrain"]] <- rt$model$fitted.values;
-		rt[["predval"]] <- m5pq.predict(model=rt$model,newdata=data.frame(rt$validset[,c(vout,vin)]));
+		rt[["predval"]] <- qrt.predict(model=rt$model,newdata=data.frame(rt$validset[,c(vout,vin)]));
 	} else {
 		rt[["model"]] <- M5P(formula=rt$trainset[,vout] ~ .,data=data.frame(rt$trainset[,vin]), control = Weka_control(M = mparam));
 		rt[["predtrain"]] <- rt$model$predictions;
@@ -1055,7 +1055,7 @@ aloja_regtree <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = 
 	# Testing and evaluation
 	if (weka.tree == 0)
 	{
-		rt[["predtest"]] <- m5pq.predict(model=rt$model,newdata=data.frame(rt$testset[,c(vout,vin)]));
+		rt[["predtest"]] <- qrt.predict(model=rt$model,newdata=data.frame(rt$testset[,c(vout,vin)]));
 	} else {
 		rt[["predtest"]] <- predict(rt$model,newdata=data.frame(rt$testset));
 	}
@@ -1303,7 +1303,7 @@ aloja_predict_individual_instance <- function (learned_model, vin, inst_predict)
 
 	if (class(model_aux)[1]=="list")
 	{
-		retval <- m5pq.predict(model=model_aux,newdata=data.frame(datamodel));
+		retval <- qrt.predict(model=model_aux,newdata=data.frame(datamodel));
 	} else {
 		retval <- predict(model_aux,newdata=data.frame(datamodel));
 	}
@@ -1329,7 +1329,7 @@ aloja_m5p_select <- function (vout, vin, traux, tvaux, mintervals, weka.tree = 0
 	{
 		if (weka.tree == 0)
 		{
-			ml <- m5pq.tree(formula=vout~.,dataset=data.frame(traux[,c(vout,vin)]),m=i);
+			ml <- qrt.tree(formula=vout~.,dataset=data.frame(traux[,c(vout,vin)]),m=i);
 			trmae <- c(trmae, ml$mae);
 		} else {
 			ml <- M5P(formula=traux[,vout] ~ .,data=data.frame(traux[,vin]), control = Weka_control(M = i));
@@ -1339,7 +1339,7 @@ aloja_m5p_select <- function (vout, vin, traux, tvaux, mintervals, weka.tree = 0
 
 		if (weka.tree == 0)
 		{
-			prediction <- m5pq.predict(model=ml,newdata=data.frame(tvaux[,c(vout,vin)]));
+			prediction <- qrt.predict(model=ml,newdata=data.frame(tvaux[,c(vout,vin)]));
 		} else {
 			prediction <- predict(ml,newdata=data.frame(tvaux));
 		}
@@ -1977,7 +1977,7 @@ aloja_minimal_instances <- function (learned_model, quiet = 0, kmax = 200, step 
 
 		# Testing and comparing
 		if ("M5P" %in% class(learned_model$model)) model_new <- aloja_regtree(dsdbin,vin=vin,vout=vout,ttaux=learned_model$testset,vsplit=0.99,quiet=1); # By default, the vsplit is 0.9 training and 0.1 validation
-		if ("m5pq" %in% class(learned_model$model)) model_new <- aloja_regtree(dsdbin,vin=vin,vout=vout,ttaux=learned_model$testset,vsplit=0.99,quiet=1,weka.tree=0);
+		if ("qrt" %in% class(learned_model$model)) model_new <- aloja_regtree(dsdbin,vin=vin,vout=vout,ttaux=learned_model$testset,vsplit=0.99,quiet=1,weka.tree=0);
 		if ("IBk" %in% class(learned_model$model)) model_new <- aloja_nneighbors(dsdbin,vin=vin,vout=vout,ttaux=learned_model$testset,vsplit=0.99,quiet=1);
 		if ("nnet" %in% class(learned_model$model)) model_new <- aloja_nnet(dsdbin,vin=vin,vout=vout,ttaux=learned_model$testset,vsplit=0.99,quiet=1);
 		if ("lm" %in% class(learned_model$model)) model_new <- aloja_linreg(dsdbin,vin=vin,vout=vout,ttaux=learned_model$testset,vsplit=0.99,quiet=1);

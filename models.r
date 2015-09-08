@@ -2,12 +2,12 @@
 # Josep Ll. Berral-García
 # ALOJA-BSC-MSR hadoop.bsc.es
 # 2015-01-14
-# Implementation of M5-Prediction-like method with Quadratic Regression
+# Implementation of Quadratic Regression Tree method recursive-partition-like
 
 # Usage:
-#	mtree <- m5pq.tree(formula = target ~ .,dataset = dataframe);
-#	prediction <- m5pq.predict(model = mtree, newdata = dataframe);
-#	m5pq.plot.tree(mtree);
+#	mtree <- qrt.tree(formula = target ~ .,dataset = dataframe);
+#	prediction <- qrt.predict(model = mtree, newdata = dataframe);
+#	qrt.plot.tree(mtree);
 
 library(rpart);
 
@@ -15,7 +15,7 @@ library(rpart);
 # Regression Tree M5-Prediction-like with Quadratic Regression                #
 ###############################################################################
 
-m5pq.tree <- function (formula, dataset, m = 30, cp = 0.001)
+qrt.tree <- function (formula, dataset, m = 30, cp = 0.001)
 {
 	colnames(dataset) <- gsub(" ",".",colnames(dataset));
 
@@ -66,12 +66,12 @@ m5pq.tree <- function (formula, dataset, m = 30, cp = 0.001)
 	preds <- unlist(preds);
 	retval[["fitted.values"]] <- preds[order(as.integer(names(preds)))];
 
-	class(retval) <- c(class(retval),"m5pq");
+	class(retval) <- c(class(retval),"qrt");
 
 	retval;
 }
 
-m5pq.predict <- function (model, newdata)
+qrt.predict <- function (model, newdata)
 {
 	retval <- NULL;
 	colnames(newdata) <- gsub(" ",".",colnames(newdata));
@@ -90,7 +90,7 @@ m5pq.predict <- function (model, newdata)
 	retval;
 }
 
-m5pq.plot.tree <- function (model, uniform = TRUE, main = "Classification Tree", use.n = FALSE, all = FALSE)
+qrt.plot.tree <- function (model, uniform = TRUE, main = "Classification Tree", use.n = FALSE, all = FALSE)
 {
 	fit_node <- model$rpart;
 	fit_node$frame$yval <- as.numeric(rownames(fit_node$frame));
@@ -99,19 +99,19 @@ m5pq.plot.tree <- function (model, uniform = TRUE, main = "Classification Tree",
 	text(fit_node, use.n=use.n, all=all, cex=.8);
 }
 
-m5pq.regressions <- function (model)
+qrt.regressions <- function (model)
 {
 	retval <- list()
 	for (i in sort(model$index)) retval[[paste("Reg-",i,sep="")]] <- model$regs[[i]]$coefficients[!is.na(model$regs[[i]]$coefficients)];
 	retval;
 }
 
-m5pq.regression.coefficients <- function (model, index)
+qrt.regression.coefficients <- function (model, index)
 {
 	model$regs[[index]]$coefficients[!is.na(model$regs[[index]]$coefficients)];
 }
 
-m5pq.regression.model <- function (model, index)
+qrt.regression.model <- function (model, index)
 {
 	model$regs[[index]]$model;
 }
