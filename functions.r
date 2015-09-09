@@ -16,11 +16,11 @@ set.seed(1234567890);
 
 source_url('https://raw.githubusercontent.com/Aloja/aloja-ml/master/models.r');
 source_url('https://raw.githubusercontent.com/Aloja/aloja-ml/master/searchalgs.r');
-source_url('https://raw.githubusercontent.com/Aloja/aloja-ml/master/searchrules.r');
+#source_url('https://raw.githubusercontent.com/Aloja/aloja-ml/master/searchrules.r');
 source_url('https://raw.githubusercontent.com/Aloja/aloja-ml/master/precision.r');
 #source('models.r');
 #source('searchalgs.r');
-#source('searchrules.r');
+#source('searchrules.r'); #FIXME - For next update...
 #source('precision.r');
 
 ###############################################################################
@@ -1189,7 +1189,7 @@ aloja_unfold_expression <- function (expression, vin, reference_model)
 	{
 		if (class(reference_model$ds_original[,cname])=="integer") instances[,cname] <- as.integer(as.character(instances[,cname]));
 		if (class(reference_model$ds_original[,cname])=="numeric") instances[,cname] <- as.numeric(as.character(instances[,cname]));
-		if (class(reference_model$ds_original[,cname])=="factor") instances[,cname] <- factor(instances[,cname],levels=levels(reference_model$ds_original[,cname]));
+		if (class(reference_model$ds_original[,cname])=="factor") instances[,cname] <- as.character(instances[,cname]);
 	}
 
 	instances;
