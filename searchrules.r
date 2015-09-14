@@ -11,14 +11,19 @@ library(methods);
 # Pattern mining tools                                                        #
 ###############################################################################
 
-aloja_bestrules_single <- function (ds, vin, bench, cluster, percent = "20%", minval = 50, filename = NULL, quiet = 1)
+aloja_bestrules_single_select <- function (ds, vin, bench, cluster, percent = "20%", minval = 50, saveall = NULL, quiet = 1)
+{
+	dsaux <- ds[ds$Exe.Time > minval & ds$Benchmark %in% c(bench) & ds$Cl.Name %in% c(cluster),];
+	aloja_bestrules_single(dsaux, vin, percent, saveall, quiet);
+}
+
+aloja_bestrules_single <- function (ds, vin, percent = "20%", saveall = NULL, quiet = 1)
 {
 	if (!is.numeric(quiet)) quiet <- as.numeric(quiet);
 
 	# Selected "Best" Executions
-	dsaux <- ds[ds$Exe.Time > minval & ds$Benchmark %in% c(bench) & ds$Cl.Name %in% c(cluster),];
-	q1 <- as.numeric(quantile(dsaux$Exe.Time,probs=seq(0,1,0.05))[percent]);
-	dsauxq1 <- dsaux[dsaux$Exe.Time <= q1,vin];
+	q1 <- as.numeric(quantile(ds$Exe.Time,probs=seq(0,1,0.05))[percent]);
+	dsauxq1 <- ds[ds$Exe.Time <= q1,vin];
 
 	# Most Frequent Patterns for Single Attributes
 	if (quiet == 1) sink("/dev/null");
@@ -32,13 +37,13 @@ aloja_bestrules_single <- function (ds, vin, bench, cluster, percent = "20%", mi
 	retval <- cbind(dfaux1,dfaux2);
 
 	# Dump to file
-	if (!is.null(filename))
+	if (!is.null(saveall))
 	{
-		sink(paste("rules-",filename,".data",sep=""));
+		sink(paste("rules-",saveall,".data",sep=""));
 		inspect(sort(rules1, by = "support"));
 		sink();
 
-		sink(paste("rules-",filename,"-ns.data",sep=""));
+		sink(paste("rules-",saveall,"-ns.data",sep=""));
 		inspect(rules1);
 		sink();
 	}
@@ -46,14 +51,19 @@ aloja_bestrules_single <- function (ds, vin, bench, cluster, percent = "20%", mi
 	retval[,c("precedent","consequent","support","confidence","lift")];
 }
 
-aloja_bestrules_pairs <- function (ds, vin, bench, cluster, percent = "20%", minval = 50, filename = NULL, singles = FALSE, simplified = FALSE)
+aloja_bestrules_pairs_select <- function (ds, vin, bench, cluster, percent = "20%", minval = 50, saveall = NULL, singles = FALSE, simplified = FALSE, quiet = 1)
+{
+	dsaux <- ds[ds$Exe.Time > minval & ds$Benchmark %in% c(bench) & ds$Cl.Name %in% c(cluster),];
+	aloja_bestrules_pairs(dsaux, vin, percent, saveall, singles, simplified, quiet);
+}
+
+aloja_bestrules_pairs <- function (ds, vin, percent = "20%", saveall = NULL, singles = FALSE, simplified = FALSE, quiet = 1)
 {
 	if (!is.numeric(quiet)) quiet <- as.numeric(quiet);
 
 	# Selected "Best" Executions
-	dsaux <- ds[ds$Exe.Time > minval & ds$Benchmark %in% c(bench) & ds$Cl.Name %in% c(cluster),];
-	q1 <- as.numeric(quantile(dsaux$Exe.Time,probs=seq(0,1,0.05))[percent]);
-	dsauxq1 <- dsaux[dsaux$Exe.Time <= q1,vin];
+	q1 <- as.numeric(quantile(ds$Exe.Time,probs=seq(0,1,0.05))[percent]);
+	dsauxq1 <- ds[ds$Exe.Time <= q1,vin];
 
 	# Generation of Paired Attributes
 	translist <- list();
@@ -115,13 +125,13 @@ aloja_bestrules_pairs <- function (ds, vin, bench, cluster, percent = "20%", min
 	retval <- cbind(dfaux1,dfaux2);
 
 	# Dump to file
-	if (!is.null(filename))
+	if (!is.null(saveall))
 	{
-		sink(paste("rulespair-",filename,".data",sep=""));
+		sink(paste("rulespair-",saveall,".data",sep=""));
 		inspect(sort(rules2, by = "support"));
 		sink();
 
-		sink(paste("rulespair-",filename,"-ns.data",sep=""));
+		sink(paste("rulespair-",saveall,"-ns.data",sep=""));
 		inspect(rules2);
 		sink();
 	}
@@ -129,15 +139,19 @@ aloja_bestrules_pairs <- function (ds, vin, bench, cluster, percent = "20%", min
 	retval[,c("precedent","consequent","support","confidence","lift")];
 }
 
+aloja_bestrules_relations_select <- function (ds, vin, bench, cluster, percent = "20%", minval = 50, saveall = NULL, quiet = 1)
+{
+	dsaux <- ds[ds$Exe.Time > minval & ds$Benchmark %in% c(bench) & ds$Cl.Name %in% c(cluster),];
+	aloja_bestrules_relations(dsaux, vin, percent, saveall, quiet);
+}
 
-aloja_bestrules_relations <- function (ds, vin, bench, cluster, percent = "20%", minval = 50, filename = NULL, quiet = 1)
+aloja_bestrules_relations <- function (ds, vin, percent = "20%", saveall = NULL, quiet = 1)
 {
 	if (!is.numeric(quiet)) quiet <- as.numeric(quiet);
 
 	# Selected "Best" Executions
-	dsaux <- ds[ds$Exe.Time > minval & ds$Benchmark %in% c(bench) & ds$Cl.Name %in% c(cluster),];
-	q1 <- as.numeric(quantile(dsaux$Exe.Time,probs=seq(0,1,0.05))[percent]);
-	dsauxq1 <- dsaux[dsaux$Exe.Time <= q1,vin];
+	q1 <- as.numeric(quantile(ds$Exe.Time,probs=seq(0,1,0.05))[percent]);
+	dsauxq1 <- ds[ds$Exe.Time <= q1,vin];
 
 	# Generation of Paired Attributes
 	translist <- list();
@@ -187,13 +201,13 @@ aloja_bestrules_relations <- function (ds, vin, bench, cluster, percent = "20%",
 	retval <- cbind(dfaux1,dfaux2);
 
 	# Dump to file
-	if (!is.null(filename))
+	if (!is.null(saveall))
 	{
-		sink(paste("relations-",filename,".data",sep=""));
+		sink(paste("relations-",saveall,".data",sep=""));
 		inspect(sort(rules2, by = "support"));
 		sink();
 
-		sink(paste("relations-",filename,"-ns.data",sep=""));
+		sink(paste("relations-",saveall,"-ns.data",sep=""));
 		inspect(rules2);
 		sink();
 	}

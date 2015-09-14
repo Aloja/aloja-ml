@@ -40,9 +40,12 @@
 #	 ./aloja_cli.r -m aloja_reunion -d aloja-dataset.csv -v
 #	 ./aloja_cli.r -m aloja_diversity -d aloja-dataset.csv -p json=0 -v
 #
-#	 ./aloja_cli.r -m aloja_bestrules_single -d aloja-dataset.csv -p bench="terasort":cluster="al-05":percent="20%":minval=50:filename="test":quiet=0 -v
-#	 ./aloja_cli.r -m aloja_bestrules_pairs -d aloja-dataset.csv -p bench="terasort":cluster="al-05":percent="20%":minval=50:filename="test":quiet=0 -v
-#	 ./aloja_cli.r -m aloja_bestrules_relations -d aloja-dataset.csv -p bench="terasort":cluster="al-05":percent="20%":minval=50:filename="test":quiet=0 -v
+#	 ./aloja_cli.r -m aloja_bestrules_single -d aloja-dataset.csv -p percent="20%":filename="test":quiet=0 -v
+#	 ./aloja_cli.r -m aloja_bestrules_pairs -d aloja-dataset.csv -p percent="20%":filename="test":quiet=0 -v
+#	 ./aloja_cli.r -m aloja_bestrules_relations -d aloja-dataset.csv -p percent="20%":filename="test":quiet=0 -v
+#	 ./aloja_cli.r -m aloja_bestrules_single_select -d aloja-dataset.csv -p bench="terasort":cluster="al-05":percent="20%":minval=50:filename="test":quiet=0 -v
+#	 ./aloja_cli.r -m aloja_bestrules_pairs_select -d aloja-dataset.csv -p bench="terasort":cluster="al-05":percent="20%":minval=50:filename="test":quiet=0 -v
+#	 ./aloja_cli.r -m aloja_bestrules_relations_select -d aloja-dataset.csv -p bench="terasort":cluster="al-05":percent="20%":minval=50:filename="test":quiet=0 -v
 
 
 library(devtools);
@@ -107,14 +110,14 @@ source_url('https://raw.githubusercontent.com/Aloja/aloja-ml/master/functions.r'
 			} else if (!is.null(opt$numvars)) {
 				params[["vin"]] = (colnames(dataset)[!(colnames(dataset) %in% c("ID",params$vout))])[1:opt$numvars];
 			} else {
-				params[["vin"]] = c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster","Cl.Name","Datanodes","Headnodes","VM.OS","VM.Cores","VM.RAM","Provider","VM.Size","Type","Bench.Type","Hadoop.Version");
+				params[["vin"]] = c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster","Datanodes","VM.OS","VM.Cores","VM.RAM","Provider","VM.Size","Type","Bench.Type","Hadoop.Version");
 			}
 		}
 	}
 
 	if (opt$method  %in% c("aloja_print_individual_summaries","aloja_print_summaries"))
 	{
-		params[["vin"]] <- c("Exe.Time","Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster","Cl.Name","Datanodes","Headnodes","VM.OS","VM.Cores","VM.RAM","Provider","VM.Size","Type","Bench.Type","Hadoop.Version");
+		params[["vin"]] <- c("Exe.Time","Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster","Cl.Name","Datanodes","VM.OS","VM.Cores","VM.RAM","Provider","VM.Size","Type","Bench.Type","Hadoop.Version");
 	}
 
 	if (opt$method  %in% c("aloja_reunion","aloja_diversity"))
@@ -124,7 +127,7 @@ source_url('https://raw.githubusercontent.com/Aloja/aloja-ml/master/functions.r'
 		if (is.null(params$vout)) params[["vout"]] <- "Exe.Time";
 	}
 
-	if (opt$method  %in% c("aloja_bestrules_single","aloja_bestrules_pairs","aloja_bestrules_relations"))
+	if (opt$method  %in% c("aloja_bestrules_single","aloja_bestrules_single_select","aloja_bestrules_pairs","aloja_bestrules_pairs_select","aloja_bestrules_relations","aloja_bestrules_relations_select"))
 	{
 		if (is.null(params$vin)) params[["vin"]] <- c("Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size");
 		options(width=1000);
@@ -155,7 +158,7 @@ source_url('https://raw.githubusercontent.com/Aloja/aloja-ml/master/functions.r'
 		{
 			params[["vin"]] <- params$learned_model$varin;
 		} else {
-			params[["vin"]] <- c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster","Cl.Name","Datanodes","Headnodes","VM.OS","VM.Cores","VM.RAM","Provider","VM.Size","Type","Bench.Type","Hadoop.Version");
+			params[["vin"]] <- c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster","Datanodes","VM.OS","VM.Cores","VM.RAM","Provider","VM.Size","Type","Bench.Type","Hadoop.Version");
 		}
 	}
 	if (is.null(params$vin) && opt$method  == "aloja_predict_dataset")
@@ -164,7 +167,7 @@ source_url('https://raw.githubusercontent.com/Aloja/aloja-ml/master/functions.r'
 		{
 			params[["vin"]] <- params$learned_model$varin;
 		} else {
-			params[["vin"]] <- c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster","Cl.Name","Datanodes","Headnodes","VM.OS","VM.Cores","VM.RAM","Provider","VM.Size","Type","Bench.Type","Hadoop.Version");
+			params[["vin"]] <- c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster","Datanodes","VM.OS","VM.Cores","VM.RAM","Provider","VM.Size","Type","Bench.Type","Hadoop.Version");
 		}
 	}
 
