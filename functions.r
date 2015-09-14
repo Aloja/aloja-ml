@@ -1187,7 +1187,7 @@ aloja_unfold_expression <- function (expression, vin, reference_model)
 	{
 		if (class(reference_model$ds_original[,cname])=="integer") instances[,cname] <- as.integer(as.character(instances[,cname]));
 		if (class(reference_model$ds_original[,cname])=="numeric") instances[,cname] <- as.numeric(as.character(instances[,cname]));
-		if (class(reference_model$ds_original[,cname])=="factor") instances[,cname] <- factor(instances[,cname],levels=levels(reference_model$ds_original[,cname]));
+		if (class(reference_model$ds_original[,cname])=="factor") instances[,cname] <- as.character(instances[,cname]);
 	}
 
 	instances;
