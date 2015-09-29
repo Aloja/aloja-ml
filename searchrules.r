@@ -24,6 +24,7 @@ aloja_bestrules_single <- function (ds, vin, percent = "20%", saveall = NULL, qu
 	# Selected "Best" Executions
 	q1 <- as.numeric(quantile(ds$Exe.Time,probs=seq(0,1,0.05))[percent]);
 	dsauxq1 <- ds[ds$Exe.Time <= q1,vin];
+	for (fck in names(dsauxq1)) if (!is.factor(dsauxq1[[fck]])) dsauxq1[[fck]] <- as.factor(dsauxq1[[fck]]);
 
 	# Most Frequent Patterns for Single Attributes
 	if (quiet == 1) sink("/dev/null");
@@ -48,7 +49,12 @@ aloja_bestrules_single <- function (ds, vin, percent = "20%", saveall = NULL, qu
 		sink();
 	}
 
-	retval[,c("precedent","consequent","support","confidence","lift")];
+	# Add extra information
+	auxnump <- nchar(as.character(retval$precedent)) - nchar(as.character(gsub("=","",retval$precedent)));
+	retval <- cbind(auxnump,retval);
+	colnames(retval)[1] <- "numprecs";
+
+	retval[order(retval$numprecs,-retval$support,-retval$confidence),c("numprecs","precedent","consequent","support","confidence","lift")];
 }
 
 aloja_bestrules_pairs_select <- function (ds, vin, bench, cluster, percent = "20%", minval = 50, saveall = NULL, singles = FALSE, simplified = FALSE, quiet = 1)
@@ -136,7 +142,12 @@ aloja_bestrules_pairs <- function (ds, vin, percent = "20%", saveall = NULL, sin
 		sink();
 	}
 
-	retval[,c("precedent","consequent","support","confidence","lift")];
+	# Add extra information
+	auxnump <- nchar(as.character(retval$precedent)) - nchar(as.character(gsub("=","",retval$precedent)));
+	retval <- cbind(auxnump,retval);
+	colnames(retval)[1] <- "numprecs";
+
+	retval[order(retval$numprecs,-retval$support,-retval$confidence),c("numprecs","precedent","consequent","support","confidence","lift")];
 }
 
 aloja_bestrules_relations_select <- function (ds, vin, bench, cluster, percent = "20%", minval = 50, saveall = NULL, quiet = 1)
@@ -212,6 +223,11 @@ aloja_bestrules_relations <- function (ds, vin, percent = "20%", saveall = NULL,
 		sink();
 	}
 
-	retval[,c("precedent","consequent","support","confidence","lift")];
+	# Add extra information
+	auxnump <- nchar(as.character(retval$precedent)) - nchar(as.character(gsub("=","",retval$precedent)));
+	retval <- cbind(auxnump,retval);
+	colnames(retval)[1] <- "numprecs";
+
+	retval[order(retval$numprecs,-retval$support,-retval$confidence),c("numprecs","precedent","consequent","support","confidence","lift")];
 }
 
