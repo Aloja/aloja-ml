@@ -190,10 +190,10 @@ aloja_bestrules_relations <- function (ds, vin, percent = "20%", saveall = NULL,
 					intj <- as.numeric(auxvj);
 					if (inti != 1 && intj != 1)
 					{
-						if (inti < intj) patternlist <- c(patternlist,paste(vin[i],1,vin[j],round((intj / inti),digits=2),sep=":"));
-						if (inti >= intj) patternlist <- c(patternlist,paste(vin[i],round((inti / intj),digits=2),vin[j],1,sep=":"));
+						if (inti < intj) patternlist <- c(patternlist,paste(paste(vin[i],1,sep=":"),paste(vin[j],round((intj / inti),digits=2),sep=":"),sep="~"));
+						if (inti >= intj) patternlist <- c(patternlist,paste(paste(vin[i],round((inti / intj),digits=2),sep=":"),paste(vin[j],1,sep=":"),sep="~"));
 					} else {
-						patternlist <- c(patternlist,paste(vin[i],auxvi,vin[j],auxvj,sep=":"));
+						patternlist <- c(patternlist,paste(paste(vin[i],auxvi,sep=":"),paste(vin[j],auxvj,sep=":"),sep="~"));
 					}
 				}
 			}
@@ -226,7 +226,7 @@ aloja_bestrules_relations <- function (ds, vin, percent = "20%", saveall = NULL,
 	}
 
 	# Add extra information
-	auxnump <- (nchar(as.character(retval$precedent)) - nchar(as.character(gsub(":","",retval$precedent))))/3;
+	auxnump <- (nchar(as.character(retval$precedent)) - nchar(as.character(gsub("~","",retval$precedent))));
 	retval <- cbind(auxnump,retval);
 	colnames(retval)[1] <- "numprecs";
 

@@ -18,7 +18,8 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 
 	varout <- "Exe.Time";
 	#varin <- c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster");
-	varin <- c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster","Cl.Name","Datanodes","Headnodes","VM.OS","VM.Cores","VM.RAM","Provider","VM.Size","Type","Bench.Type");
+	#varin <- c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster","Cl.Name","Datanodes","Headnodes","VM.OS","VM.Cores","VM.RAM","Provider","VM.Size","Type","Bench.Type");
+	varin <- c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster","Datanodes","VM.OS","VM.Cores","VM.RAM","Provider","VM.Size","Type","Bench.Type","Hadoop.Version");
 
 	aloja_print_summaries(fprint="output", ds=dataset, fwidth = 1000, ms = 10, sname = "Benchmark");
 
@@ -281,17 +282,18 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 ###############################################################################
 # Extraction of Rules
 
+	dataset <- aloja_get_data("aloja-dataset5.csv");
 	varin_rr <- c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster","Cl.Name","Datanodes","Headnodes","VM.OS","VM.Cores","VM.RAM","Provider","VM.Size","Type","Bench.Type");
 
-	# Most Frequent Patterns for Single Attributes
-	r1 <- aloja_bestrules_single(dataset,varin_rr[2:9],bench="terasort",cluster="al-05",percent="20%",minval=50,filename=NULL);
+	# Most Frequent Patterns for Single Attributes [< 1 second]
+	daux1 <- dataset[dataset$Benchmark %in% c("terasort") & dataset$Cl.Name %in% c("al-05") & dataset$Exe.Time > 50,];
+	r1 <- aloja_bestrules_single(daux1,varin_rr[2:9],percent="20%",saveall=NULL);
 
-	# Most Frequent Patterns for Paired Attributes
-	r2 <- aloja_bestrules_pairs(dataset,varin_rr[2:9],bench="terasort",cluster="al-05",percent="20%",minval=50,filename=NULL);
+	# Most Frequent Patterns for Paired Attributes [~24 seconds]
+	r2 <- aloja_bestrules_pairs(daux1,varin_rr[2:9],percent="20%",saveall=NULL);
 
-	# Most Frequent Patterns for Paired Attributes (Only Numerics)
-	r3 <- aloja_bestrules_relations(dataset,varin_rr[2:9],bench="terasort",cluster="al-05",percent="20%",minval=50,filename=NULL);
-
+	# Most Frequent Patterns for Paired Attributes (Only Numerics) [< 1 second]
+	r3 <- aloja_bestrules_relations(daux1,varin_rr[2:9],percent="20%",saveall=NULL);
 
 ###############################################################################
 # Classification of New Benchmarks
