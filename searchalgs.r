@@ -132,6 +132,7 @@ aloja_representative_tree <- function (predicted_instances = NULL, vin, method =
 		retval <- NULL;
 		if (nrow(baux) > 1)
 		{
+			var1 <- NULL;
 			if (method == "ordered") # Using "ordered changes" method
 			{
 				ns <- colnames(baux)[!colnames(baux) %in% "Prediction"];
@@ -151,7 +152,7 @@ aloja_representative_tree <- function (predicted_instances = NULL, vin, method =
 						chnames <- c(chnames,i);
 					}
 				}
-				var1 <- chnames[(which(changes==min(changes)))[1]];
+				if (!is.null(changes)) var1 <- chnames[(which(changes==min(changes)))[1]];
 
 			} else if (method == "information") # Using information gain
 			{
@@ -164,12 +165,23 @@ aloja_representative_tree <- function (predicted_instances = NULL, vin, method =
 				daux <- sapply(ns, function(x) gini_improvement(baux,x,"Prediction"));
 				var1 <- (names(daux)[which(daux==max(daux))])[1];
 			}
-		
-			retval <- list();
-			for (i in levels(baux[,var1])) # TODO - Executar en Ordre
+
+			if (!is.null(var1))
 			{
-				bnext <- baux[baux[,var1]==i,];
-				retval[[paste(var1,i,sep="=")]] <- attrib_search(bnext,level=level+1,method=method);
+				retval <- list();
+				for (i in levels(baux[,var1])) # TODO - Executar en Ordre
+				{
+					bnext <- baux[baux[,var1]==i,];
+					retaux <- attrib_search(bnext,level=level+1,method=method);
+
+					if (!is.list(retaux)) # FIXME - R is.nan() can't handle lists... :(
+					{
+						if (!is.nan(retaux)) retval[[paste(var1,i,sep="=")]] <- retaux;
+					} else retval[[paste(var1,i,sep="=")]] <- retaux;
+				}
+				if (length(retval) == 0) retval <- NaN;
+			} else {
+				retval <- round(mean(baux$Prediction));
 			}
 		} else {
 			retval <- round(mean(baux$Prediction));
