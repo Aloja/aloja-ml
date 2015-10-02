@@ -14,13 +14,13 @@ library(session);
 
 set.seed(1234567890);
 
-source_url('https://raw.githubusercontent.com/Aloja/aloja-ml/master/models.r');
-source_url('https://raw.githubusercontent.com/Aloja/aloja-ml/master/searchalgs.r');
-#source_url('https://raw.githubusercontent.com/Aloja/aloja-ml/master/searchrules.r');
-source_url('https://raw.githubusercontent.com/Aloja/aloja-ml/master/precision.r');
+source_url('https://raw.githubusercontent.com/Aloja/aloja-ml/test/models.r');
+source_url('https://raw.githubusercontent.com/Aloja/aloja-ml/test/searchalgs.r');
+source_url('https://raw.githubusercontent.com/Aloja/aloja-ml/test/searchrules.r');
+source_url('https://raw.githubusercontent.com/Aloja/aloja-ml/test/precision.r');
 #source('models.r');
 #source('searchalgs.r');
-#source('searchrules.r'); #FIXME - For next update...
+#source('searchrules.r');
 #source('precision.r');
 
 ###############################################################################
@@ -611,7 +611,7 @@ aloja_debinarize_instance <- function (ds, vin, binstance)
 # Learning methods                                                            #
 ###############################################################################
 
-aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE, pngval = NULL, pngtest = NULL, saveall = NULL, ttaux = NULL, ntaux = NULL, traux = NULL, tvaux = NULL, sigma = 3, ttfile = NULL, trfile = NULL, tvfile = NULL, decay = 5e-4, hlayers = 3, maxit = 1000, prange = NULL, quiet = 0)
+aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE, pngval = NULL, pngtest = NULL, saveall = NULL, ttaux = NULL, ntaux = NULL, traux = NULL, tvaux = NULL, sigma = 3, ttfile = NULL, trfile = NULL, tvfile = NULL, decay = 5e-4, neurons = 3, maxit = 1000, prange = NULL, quiet = 0)
 {
 	# Fix parameter class in case of CLI string input
 	if (!is.null(prange)) prange <- as.numeric(prange);
@@ -619,7 +619,7 @@ aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TR
 	if (!is.numeric(vsplit)) vsplit <- as.numeric(vsplit);
 	if (!is.integer(sigma)) sigma <- as.integer(sigma);
 	if (!is.null(decay)) decay <- as.numeric(decay);
-	if (!is.integer(hlayers)) hlayers <- as.integer(hlayers);
+	if (!is.integer(neurons)) neurons <- as.integer(neurons);
 	if (!is.integer(maxit)) maxit <- as.integer(maxit);
 
 	# Binarization of variables
@@ -682,7 +682,7 @@ aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TR
 	rt[["varout"]] <- vout;
 	
 	# Training and Validation
-	rt[["model"]] <- nnet(y=rt$normtrainset[,vout],x=rt$normtrainset[,vin],size=hlayers,decay=decay,maxit=maxit);
+	rt[["model"]] <- nnet(y=rt$normtrainset[,vout],x=rt$normtrainset[,vin],size=neurons,decay=decay,maxit=maxit);
 	rt[["predtrain"]] <- rt$model$fitted.values;
 	rt[["predval"]] <- predict(rt$model,newdata=rt$normvalidset[,vin]);
 	if (!is.null(prange))

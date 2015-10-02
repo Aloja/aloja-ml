@@ -49,7 +49,7 @@
 
 
 library(devtools);
-source_url('https://raw.githubusercontent.com/Aloja/aloja-ml/master/functions.r');
+source_url('https://raw.githubusercontent.com/Aloja/aloja-ml/test/functions.r');
 #source("functions.r");
 
 ###############################################################################

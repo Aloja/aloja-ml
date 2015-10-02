@@ -195,6 +195,7 @@ aloja_representative_tree <- function (predicted_instances = NULL, vin, method =
 	if (!is.null(output) && output=="string") retval <- aloja_repress_tree_string (ctree);
 	if (!is.null(output) && output=="ascii") retval <- aloja_repress_tree_ascii (ctree);
 	if (!is.null(output) && output=="html") retval <- aloja_repress_tree_html (ctree);
+	if (!is.null(output) && output=="nodejson") retval <- aloja_repress_tree_nodejson (ctree);
 
 	retval;	
 }
@@ -254,6 +255,25 @@ aloja_repress_tree_string <- function (stree)
 		retval <- paste("{",levelval,"}",sep="");
 	} else {
 		retval <- stree;
+	}
+	retval;
+}
+
+aloja_repress_tree_nodejson <- function (stree)
+{
+	if (!is.numeric(stree))
+	{
+		levelval <- '';
+		for(i in names(stree))
+		{
+			plevelval <- aloja_repress_tree_nodejson (stree[[i]]);
+			if (levelval != '') levelval <- paste(levelval,",",sep="");
+			isplit <- unlist(strsplit(i,"="));
+			levelval <- paste(levelval,'{text:{name: "',isplit[1],'",desc:"',isplit[2],'"},children:[',plevelval,']}',sep="");
+		}
+		retval <- levelval;
+	} else {
+		retval <- paste('{text:{name:"',stree,' seconds",desc:""}}',sep="");
 	}
 	retval;
 }
