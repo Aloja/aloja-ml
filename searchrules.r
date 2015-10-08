@@ -4,8 +4,9 @@
 # 2015-09-07
 # Pattern mining functions library for ALOJA-ML
 
-library(arules);
-library(methods);
+suppressMessages(library(arules));
+suppressMessages(library(methods));
+options(max.print=10000000);
 
 ###############################################################################
 # Pattern mining tools                                                        #
