@@ -583,7 +583,7 @@ aloja_debinarize_ds <- function (dsbin, vin, ds_ref)
 aloja_debinarize_instance <- function (ds, vin, binstance)
 {
 	dsdbin <- ds[0,vin];									# DS headers, attributes and levels
-	levs1 <- sapply(colnames(dsdbin),function(x) levels(ds[,x]));				# Levels
+	levs1 <- sapply(vin,function(x) levels(ds[,x]));					# Levels
 
 	instance <- NULL;
 	for (i in names(levs1))
@@ -627,14 +627,14 @@ aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TR
 	if (!is.integer(maxit)) maxit <- as.integer(maxit);
 
 	# Binarization of variables
+	vinorig <- vin;
 	if (is.null(ds))
 	{
 		auxset <- aloja_binarize_mixsets(vin,vout,traux=traux,ntaux=ntaux,tvaux=tvaux,ttaux=ttaux);
-		vinorig <- vin;
-		vin <- unique(c(colnames(auxset$trset),colnames(auxset$tvset),colnames(auxset$ttset)));
+		vaux <- unique(c(colnames(auxset$trset),colnames(auxset$tvset),colnames(auxset$ttset)));
+		vin <- vaux[!(vaux %in% c("ID",vout))];
 	} else {
 		dsbaux <- aloja_binarize_ds(ds[,c(vout,vin)]);
-		vinorig <- vin;
 		vin <- colnames(dsbaux[!(colnames(dsbaux) %in% vout)]);
 	}
 
@@ -696,7 +696,7 @@ aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TR
 	rownames(rt[["maxout"]]) <- c(vout,vin);
 	rownames(rt[["minout"]]) <- c(vout,vin);
 
-	rt[["ds_original"]] <- ds[,c("ID",vout,vinorig)];
+	rt[["ds_original"]] <- ifelse(!is.null(ds),ds[,c("ID",vout,vinorig)],aloja_dbind(aloja_dbind(auxset$trset,auxset$tvset),aloja_dbind(auxset$ttset,auxset$ntset)));
 	rt[["varin"]] <- vin;
 	rt[["varout"]] <- vout;
 	
@@ -776,14 +776,14 @@ aloja_linreg <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = T
 	options(warn=-1);
 
 	# Binarization of variables
+	vinorig <- vin;
 	if (is.null(ds))
 	{
 		auxset <- aloja_binarize_mixsets(vin,vout,traux=traux,ntaux=ntaux,tvaux=tvaux,ttaux=ttaux);
-		vinorig <- vin;
-		vin <- unique(c(colnames(auxset$trset),colnames(auxset$tvset),colnames(auxset$ttset)));
+		vaux <- unique(c(colnames(auxset$trset),colnames(auxset$tvset),colnames(auxset$ttset)));
+		vin <- vaux[!(vaux %in% c("ID",vout))];
 	} else {
 		dsbaux <- aloja_binarize_ds(ds[,c(vout,vin)]);
-		vinorig <- vin;
 		vin <- colnames(dsbaux[!(colnames(dsbaux) %in% vout)]);
 	}
 
@@ -799,8 +799,8 @@ aloja_linreg <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = T
 		auxset$ttset <- NULL;
 		auxset$ntset <- NULL;
 	}
-	rt <- aloja_load_datasets (dsid,vin,vout,tsplit,vsplit,auxset$ttaux,auxset$ntaux,auxset$traux,auxset$tvaux,ttfile,trfile,tvfile);
-	rt[["ds_original"]] <- ds[,c("ID",vout,vinorig)];
+	rt <- aloja_load_datasets (dsid,vin,vout,tsplit,vsplit,auxset$ttset,auxset$ntset,auxset$trset,auxset$tvset,ttfile,trfile,tvfile);
+	rt[["ds_original"]] <- ifelse(!is.null(ds),ds[,c("ID",vout,vinorig)],aloja_dbind(aloja_dbind(auxset$trset,auxset$tvset),aloja_dbind(auxset$ttset,auxset$ntset)));
 	rt[["varin"]] <- vin;
 	rt[["varout"]] <- vout;
 
@@ -996,22 +996,37 @@ aloja_regtree <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = 
 		options(warn=-1);
 
 		# Binarization of variables
-		dsbaux <- aloja_binarize_ds(ds[,c(vout,vin)]);
-		auxset <- aloja_binarize_mixsets(vin,vout,traux=traux,ntaux=ntaux,tvaux=tvaux,ttaux=ttaux);
 		vinorig <- vin;
-		vin <- colnames(dsbaux[!(colnames(dsbaux) %in% vout)]);
+		if (is.null(ds))
+		{
+			auxset <- aloja_binarize_mixsets(vin,vout,traux=traux,ntaux=ntaux,tvaux=tvaux,ttaux=ttaux);
+			vaux <- unique(c(colnames(auxset$trset),colnames(auxset$tvset),colnames(auxset$ttset)));
+			vin <- vaux[!(vaux %in% c("ID",vout))];
+		} else {
+			dsbaux <- aloja_binarize_ds(ds[,c(vout,vin)]);
+			vin <- colnames(dsbaux[!(colnames(dsbaux) %in% vout)]);
+		}
 	}
 
 	# Load and split datasets
 	if (weka.tree == 0)
 	{
-		dsid <- cbind(ds[,"ID"],dsbaux);
-		colnames(dsid) <- c("ID",vout,vin);
-		rt <- aloja_load_datasets (dsid,vin,vout,tsplit,vsplit,auxset$ttaux,auxset$ntaux,auxset$traux,auxset$tvaux,ttfile,trfile,tvfile);
-		rt[["ds_original"]] <- ds[,c("ID",vout,vinorig)];	
+		dsid <- NULL;
+		if (!is.null(ds))
+		{
+			dsid <- cbind(ds[,"ID"],dsbaux);
+			colnames(dsid) <- c("ID",vout,vin);
+			auxset <- list();
+			auxset$trset <- NULL;
+			auxset$tvset <- NULL;
+			auxset$ttset <- NULL;
+			auxset$ntset <- NULL;
+		}
+		rt <- aloja_load_datasets (dsid,vin,vout,tsplit,vsplit,auxset$ttset,auxset$ntset,auxset$trset,auxset$tvset,ttfile,trfile,tvfile);
+		rt[["ds_original"]] <- ifelse(!is.null(ds),ds[,c("ID",vout,vinorig)],aloja_dbind(aloja_dbind(auxset$trset,auxset$tvset),aloja_dbind(auxset$ttset,auxset$ntset)));
 	} else {
 		rt <- aloja_load_datasets (ds,vin,vout,tsplit,vsplit,ttaux,ntaux,traux,tvaux,ttfile,trfile,tvfile);
-		rt[["ds_original"]] <- ds[,c("ID",vout,vin)];	
+		rt[["ds_original"]] <- ifelse(!is.null(ds),ds[,c("ID",vout,vin)],aloja_dbind(aloja_dbind(traux,tvaux),aloja_dbind(ttaux,ntaux)));
 	}
 	rt[["varin"]] <- vin;
 	rt[["varout"]] <- vout;
@@ -1048,7 +1063,8 @@ aloja_regtree <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = 
 	# Training and Validation
 	if (is.null(mparam))
 	{
-		rt[["selected_model"]] <- aloja_m5p_select(vout, vin, rt$trainset, rt$validset, c("1","2","5","10","25","50","75","100","150","200"),weka.tree=weka.tree,quiet=quiet);
+#		rt[["selected_model"]] <- aloja_m5p_select(vout, vin, rt$trainset, rt$validset, c("1","2","5","10","25","50","75","100","150","200"),weka.tree=weka.tree,quiet=quiet);
+		rt[["selected_model"]] <- aloja_m5p_select(vout, vin, rt$trainset, rt$validset, c("1","2","5","10"),weka.tree=weka.tree,quiet=quiet);
 		mparam <- rt$selected_model$mmin;
 	}
 	if (weka.tree == 0)
@@ -2228,6 +2244,9 @@ aloja_save_status <- function ()
 
 aloja_dbind <- function (dataframe_1, dataframe_2)
 {
+	if (is.null(dataframe_1)) return (dataframe_2);
+	if (is.null(dataframe_2)) return (dataframe_1);
+
 	retval <- data.frame(rep(0,nrow(dataframe_1) + nrow(dataframe_2)));
 	cnames <- NULL;
 	for (name_1 in colnames(dataframe_1))
