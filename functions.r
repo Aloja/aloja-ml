@@ -572,12 +572,8 @@ aloja_binarize_instance <- function (instance, vin, vout, datamodel = NULL, data
 aloja_debinarize_ds <- function (dsbin, vin, ds_ref)
 {
 	dsdbin <- ds_ref[0,vin];
-	for (i in 1:nrow(dsbin))
-	{
-		daux <- aloja_debinarize_instance(ds_ref,vin,dsbin[i,]);
-		dsdbin <- rbind(dsdbin,daux);
-	}
-	dsdbin;
+	daux <- do.call("rbind", lapply(1:nrow(dsbin), function(i) aloja_debinarize_instance(ds_ref,vin,dsbin[i,])))
+	rbind(dsdbin,daux);
 }
 
 aloja_debinarize_instance <- function (ds, vin, binstance)
@@ -588,7 +584,6 @@ aloja_debinarize_instance <- function (ds, vin, binstance)
 	instance <- NULL;
 	for (i in names(levs1))
 	{
-
 		if (is.null(levs1[[i]]))
 		{
 			instance <- c(instance,ceiling(binstance[i]));
@@ -696,12 +691,31 @@ aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TR
 	rownames(rt[["maxout"]]) <- c(vout,vin);
 	rownames(rt[["minout"]]) <- c(vout,vin);
 
-	rt[["ds_original"]] <- ifelse(!is.null(ds),ds[,c("ID",vout,vinorig)],aloja_dbind(aloja_dbind(auxset$trset,auxset$tvset),aloja_dbind(auxset$ttset,auxset$ntset)));
+	if (is.null(ds))
+	{
+		auxds <- aloja_dbind(aloja_dbind(traux,tvaux),aloja_dbind(ttaux,ntaux));
+		rt[["ds_original"]] <- auxds[,c("ID",vout,vinorig)];
+	} else {
+		rt[["ds_original"]] <- ds[,c("ID",vout,vinorig)];
+	}
 	rt[["varin"]] <- vin;
 	rt[["varout"]] <- vout;
 	
 	# Training and Validation
-	rt[["model"]] <- nnet(y=rt$normtrainset[,vout],x=rt$normtrainset[,vin],size=neurons,decay=decay,maxit=maxit);
+	if (FALSE)
+	{
+		rt[["model"]] <- nnet(y=rt$normtrainset[,vout],x=rt$normtrainset[,vin],size=neurons,decay=decay,maxit=maxit);
+	} else {
+		library(RSNNS);
+		rt[["model"]] <- mlp(rt$normtrainset[,vin],rt$normtrainset[,vout],size=c(neurons),
+#			learnFunc="Std_Backpropagation",
+			learnFUnc="BackpropMomentum",
+			hiddenActFunc="Act_TanH",
+#			learnFunc="BackpropWeightDecay",
+#			learnFunc="SCG",
+#			learnFunc="Quickprop",
+			learnFuncParams=c(decay, 0),maxit=maxit,metric="RSME",linOut=FALSE);
+	}
 	rt[["predtrain"]] <- rt$model$fitted.values;
 	rt[["predval"]] <- predict(rt$model,newdata=rt$normvalidset[,vin]);
 	if (!is.null(prange))
@@ -800,7 +814,13 @@ aloja_linreg <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = T
 		auxset$ntset <- NULL;
 	}
 	rt <- aloja_load_datasets (dsid,vin,vout,tsplit,vsplit,auxset$ttset,auxset$ntset,auxset$trset,auxset$tvset,ttfile,trfile,tvfile);
-	rt[["ds_original"]] <- ifelse(!is.null(ds),ds[,c("ID",vout,vinorig)],aloja_dbind(aloja_dbind(auxset$trset,auxset$tvset),aloja_dbind(auxset$ttset,auxset$ntset)));
+	if (is.null(ds))
+	{
+		auxds <- aloja_dbind(aloja_dbind(traux,tvaux),aloja_dbind(ttaux,ntaux));
+		rt[["ds_original"]] <- auxds[,c("ID",vout,vinorig)];
+	} else {
+		rt[["ds_original"]] <- ds[,c("ID",vout,vinorig)];
+	}
 	rt[["varin"]] <- vin;
 	rt[["varout"]] <- vout;
 
@@ -1023,10 +1043,22 @@ aloja_regtree <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = 
 			auxset$ntset <- NULL;
 		}
 		rt <- aloja_load_datasets (dsid,vin,vout,tsplit,vsplit,auxset$ttset,auxset$ntset,auxset$trset,auxset$tvset,ttfile,trfile,tvfile);
-		rt[["ds_original"]] <- ifelse(!is.null(ds),ds[,c("ID",vout,vinorig)],aloja_dbind(aloja_dbind(auxset$trset,auxset$tvset),aloja_dbind(auxset$ttset,auxset$ntset)));
+		if (is.null(ds))
+		{
+			auxds <- aloja_dbind(aloja_dbind(traux,tvaux),aloja_dbind(ttaux,ntaux));
+			rt[["ds_original"]] <- auxds[,c("ID",vout,vinorig)];
+		} else {
+			rt[["ds_original"]] <- ds[,c("ID",vout,vinorig)];
+		}
 	} else {
 		rt <- aloja_load_datasets (ds,vin,vout,tsplit,vsplit,ttaux,ntaux,traux,tvaux,ttfile,trfile,tvfile);
-		rt[["ds_original"]] <- ifelse(!is.null(ds),ds[,c("ID",vout,vin)],aloja_dbind(aloja_dbind(traux,tvaux),aloja_dbind(ttaux,ntaux)));
+		if (is.null(ds))
+		{
+			auxds <- aloja_dbind(aloja_dbind(traux,tvaux),aloja_dbind(ttaux,ntaux));
+			rt[["ds_original"]] <- auxds[,c("ID",vout,vin)];
+		} else {
+			rt[["ds_original"]] <- ds[,c("ID",vout,vin)];
+		}
 	}
 	rt[["varin"]] <- vin;
 	rt[["varout"]] <- vout;
@@ -1130,6 +1162,14 @@ aloja_regtree <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = 
 
 	if (quiet == 0) print(c(rt$maeval,rt$raeval));
 	if (quiet == 0) print(c(rt$maetest,rt$raetest));
+
+	if (weka.tree == 0)
+	{
+		# Debinarize datasets
+		rt$trainset <- aloja_debinarize_ds(rt$trainset,colnames(rt$ds_original),rt$ds_original);
+		rt$validset <- aloja_debinarize_ds(rt$validset,colnames(rt$ds_original),rt$ds_original);
+		rt$testset <- aloja_debinarize_ds(rt$testset,colnames(rt$ds_original),rt$ds_original);
+	}
 
 	if (!is.null(saveall))
 	{
