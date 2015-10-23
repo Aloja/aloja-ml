@@ -571,9 +571,8 @@ aloja_binarize_instance <- function (instance, vin, vout, datamodel = NULL, data
 
 aloja_debinarize_ds <- function (dsbin, vin, ds_ref)
 {
-	dsdbin <- ds_ref[0,vin];
 	daux <- do.call("rbind", lapply(1:nrow(dsbin), function(i) aloja_debinarize_instance(ds_ref,vin,dsbin[i,])))
-	rbind(dsdbin,daux);
+	rbind(ds_ref[0,vin],daux);
 }
 
 aloja_debinarize_instance <- function (ds, vin, binstance)
@@ -581,12 +580,11 @@ aloja_debinarize_instance <- function (ds, vin, binstance)
 	dsdbin <- ds[0,vin];									# DS headers, attributes and levels
 	levs1 <- sapply(vin,function(x) levels(ds[,x]));					# Levels
 
-	instance <- NULL;
-	for (i in names(levs1))
+	instance <- sapply(names(levs1), function(i)
 	{
 		if (is.null(levs1[[i]]))
 		{
-			instance <- c(instance,ceiling(binstance[i]));
+			candidate <- ceiling(binstance[i]);
 		} else {
 			values <- binstance[levs1[[i]]];
 			if (length(levs1[[i]]) == 1 && values == 1)
@@ -597,12 +595,12 @@ aloja_debinarize_instance <- function (ds, vin, binstance)
 			} else {
 				candidate <- names(values[which(values==max(values))])[1];	# By default, in a draw, we pick the 1st
 			}
-			instance <- c(instance,candidate); 
 		}
-	}
+		candidate;
+	});
 	dsdbin[1,] <- data.frame(t(instance),stringsAsFactors=FALSE);
 
-	for (j in colnames(dsdbin)) class(dsdbin[,j]) <- class(ds[0,j]);
+	sapply(colnames(dsdbin), function(j) class(dsdbin[,j]) <- class(ds[0,j]));
 	dsdbin;
 }
 
@@ -2201,20 +2199,27 @@ aloja_best_configurations <- function (bvectors = NULL, bvec_name = NULL)
 
 aloja_save_predictions <- function (ds, dsorig, trdata, trpred, tvdata, tvpred, ttdata, ttpred, testname = "default")
 {
-	traux <- cbind(trdata,trpred);
-	tvaux <- cbind(tvdata,tvpred);
-	ttaux <- cbind(ttdata,ttpred);
+        if (length(trpred) == nrow(trdata)) traux <- cbind(trdata,trpred);
+        tvaux <- cbind(tvdata,tvpred);
+        ttaux <- cbind(ttdata,ttpred);
 
-	colnames(traux) <- c(colnames(trdata),"Pred.Exe.Time");
-	colnames(tvaux) <- c(colnames(tvdata),"Pred.Exe.Time");
-	colnames(ttaux) <- c(colnames(ttdata),"Pred.Exe.Time");
+        if (length(trpred) == nrow(trdata)) colnames(traux) <- c(colnames(trdata),"Pred.Exe.Time");
+        colnames(tvaux) <- c(colnames(tvdata),"Pred.Exe.Time");
+        colnames(ttaux) <- c(colnames(ttdata),"Pred.Exe.Time");
 
-	write.table(ds, file = paste(testname,"-ds.csv",sep=""), sep = ",", row.names=FALSE);
-	write.table(dsorig, file = paste(testname,"-dsorig.csv",sep=""), sep = ",", row.names=FALSE);
+        write.table(ds, file = paste(testname,"-ds.csv",sep=""), sep = ",", row.names=FALSE);
+        write.table(dsorig, file = paste(testname,"-dsorig.csv",sep=""), sep = ",", row.names=FALSE);
 
-	write.table(traux, file = paste(testname,"-tr.csv",sep=""), sep = ",", row.names=FALSE);
-	write.table(tvaux, file = paste(testname,"-tv.csv",sep=""), sep = ",", row.names=FALSE);
-	write.table(ttaux, file = paste(testname,"-tt.csv",sep=""), sep = ",", row.names=FALSE);
+        if (length(trpred) == nrow(trdata))
+        {
+                write.table(traux, file = paste(testname,"-tr.csv",sep=""), sep = ",", row.names=FALSE);
+        } else {
+                fileConn<-file(paste(testname,"-tr.csv",sep=""));
+                writeLines("", fileConn);
+                close(fileConn);
+        }
+        write.table(tvaux, file = paste(testname,"-tv.csv",sep=""), sep = ",", row.names=FALSE);
+        write.table(ttaux, file = paste(testname,"-tt.csv",sep=""), sep = ",", row.names=FALSE);
 }
 
 aloja_save_datasets <- function (traux_0, tvaux_0, ttaux_0, name_0, algor_0)

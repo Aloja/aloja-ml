@@ -98,7 +98,7 @@ source_url('https://raw.githubusercontent.com/Aloja/aloja-ml/test/functions.r');
 	params <- list();
 	params[["ds"]] <- dataset;
 
-	if (opt$method %in% c("aloja_regtree","aloja_nneighbors","aloja_linreg","aloja_nnet","aloja_pca","aloja_dataset_collapse","aloja_dataset_collapse_expand","aloja_outlier_dataset","aloja_outlier_instance","aloja_binarize_instance","aloja_representative_tree","aloja_precision","aloja_precision_split"))
+	if (opt$method %in% c("aloja_regtree","aloja_nneighbors","aloja_linreg","aloja_nnet","aloja_pca","aloja_dataset_collapse","aloja_dataset_collapse_expand","aloja_outlier_dataset","aloja_outlier_instance","aloja_binarize_instance"))
 	{
 		if (is.null(opt$vout)) params[["vout"]] <- "Exe.Time";
 
@@ -110,14 +110,20 @@ source_url('https://raw.githubusercontent.com/Aloja/aloja-ml/test/functions.r');
 			} else if (!is.null(opt$numvars)) {
 				params[["vin"]] = (colnames(dataset)[!(colnames(dataset) %in% c("ID",params$vout))])[1:opt$numvars];
 			} else {
-				params[["vin"]] = c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster","Datanodes","VM.OS","VM.Cores","VM.RAM","Provider","VM.Size","Type","Bench.Type","Hadoop.Version");
+				params[["vin"]] = c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster","Datanodes","VM.OS","VM.Cores","VM.RAM","Provider","VM.Size","Type","Bench.Type","Hadoop.Version","Datasize","Scale.Factor","Net.maxtxKB.s","Net.maxrxKB.s","Net.maxtxPck.s","Net.maxrxPck.s","Net.maxtxCmp.s","Net.maxrxCmp.s","Net.maxrxmsct.s","Disk.maxtps","Disk.maxsvctm","Disk.maxrd.s","Disk.maxwr.s","Disk.maxrqsz","Disk.maxqusz","Disk.maxawait","Disk.maxutil");
 			}
 		}
 	}
 
+	if (opt$method %in% c("aloja_precision","aloja_precision_split","aloja_representative_tree"))
+	{
+		if (is.null(opt$vout)) params[["vout"]] <- "Exe.Time";
+		if (is.null(params$vin)) params[["vin"]] = c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster","Datanodes","VM.OS","VM.Cores","VM.RAM","Provider","VM.Size","Type","Bench.Type","Hadoop.Version","Datasize","Scale.Factor");
+	}
+
 	if (opt$method  %in% c("aloja_print_individual_summaries","aloja_print_summaries"))
 	{
-		params[["vin"]] <- c("Exe.Time","Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster","Cl.Name","Datanodes","VM.OS","VM.Cores","VM.RAM","Provider","VM.Size","Type","Bench.Type","Hadoop.Version");
+		if (is.null(params$vin)) params[["vin"]] <- c("Exe.Time","Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster","Cl.Name","Datanodes","VM.OS","VM.Cores","VM.RAM","Provider","VM.Size","Type","Bench.Type","Hadoop.Version","Datasize","Scale.Factor");
 	}
 
 	if (opt$method  %in% c("aloja_reunion","aloja_diversity"))
@@ -158,7 +164,7 @@ source_url('https://raw.githubusercontent.com/Aloja/aloja-ml/test/functions.r');
 		{
 			params[["vin"]] <- params$learned_model$varin;
 		} else {
-			params[["vin"]] <- c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster","Datanodes","VM.OS","VM.Cores","VM.RAM","Provider","VM.Size","Type","Bench.Type","Hadoop.Version");
+			params[["vin"]] <- c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster","Datanodes","VM.OS","VM.Cores","VM.RAM","Provider","VM.Size","Type","Bench.Type","Hadoop.Version","Datasize","Scale.Factor","Net.maxtxKB.s","Net.maxrxKB.s","Net.maxtxPck.s","Net.maxrxPck.s","Net.maxtxCmp.s","Net.maxrxCmp.s","Net.maxrxmsct.s","Disk.maxtps","Disk.maxsvctm","Disk.maxrd.s","Disk.maxwr.s","Disk.maxrqsz","Disk.maxqusz","Disk.maxawait","Disk.maxutil");
 		}
 	}
 	if (is.null(params$vin) && opt$method  == "aloja_predict_dataset")
@@ -167,7 +173,7 @@ source_url('https://raw.githubusercontent.com/Aloja/aloja-ml/test/functions.r');
 		{
 			params[["vin"]] <- params$learned_model$varin;
 		} else {
-			params[["vin"]] <- c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster","Datanodes","VM.OS","VM.Cores","VM.RAM","Provider","VM.Size","Type","Bench.Type","Hadoop.Version");
+			params[["vin"]] <- c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster","Datanodes","VM.OS","VM.Cores","VM.RAM","Provider","VM.Size","Type","Bench.Type","Hadoop.Version","Datasize","Scale.Factor","Net.maxtxKB.s","Net.maxrxKB.s","Net.maxtxPck.s","Net.maxrxPck.s","Net.maxtxCmp.s","Net.maxrxCmp.s","Net.maxrxmsct.s","Disk.maxtps","Disk.maxsvctm","Disk.maxrd.s","Disk.maxwr.s","Disk.maxrqsz","Disk.maxqusz","Disk.maxawait","Disk.maxutil");
 		}
 	}
 

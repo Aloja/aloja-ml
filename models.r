@@ -78,21 +78,16 @@ qrt.tree <- function (formula, dataset, m = 30, cp = 0.001, simple = 0)
 
 qrt.predict <- function (model, newdata)
 {
-	retval <- NULL;
 	colnames(newdata) <- gsub(" ",".",colnames(newdata));
 
 	fit_node <- model$rpart;
 	fit_node$frame$yval <- as.numeric(rownames(fit_node$frame));
 
-	for (i in 1:nrow(newdata))
-	{
+	sapply(1:nrow(newdata), function(i) {
 		node <- as.numeric(predict(fit_node,newdata[i,]));
-
 		pred <- as.numeric(predict(model$regs[[node]],newdata[i,]));
-		retval <- c(retval,pred);
-	}
-
-	retval;
+		pred;
+	});
 }
 
 qrt.plot.tree <- function (model, uniform = TRUE, main = "Classification Tree", use.n = FALSE, all = FALSE)
