@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 
 # Josep Ll. Berral-García
-# ALOJA-BSC-MSR hadoop.bsc.es
+# ALOJA-BSC-MSR aloja.bsc.es
 # 2014-12-11
 # Launcher of ALOJA-ML
  
@@ -47,10 +47,7 @@
 #	 ./aloja_cli.r -m aloja_bestrules_pairs_select -d aloja-dataset.csv -p bench="terasort":cluster="al-05":percent="20%":minval=50:filename="test":quiet=0 -v
 #	 ./aloja_cli.r -m aloja_bestrules_relations_select -d aloja-dataset.csv -p bench="terasort":cluster="al-05":percent="20%":minval=50:filename="test":quiet=0 -v
 
-
-library(devtools);
-source_url('https://raw.githubusercontent.com/Aloja/aloja-ml/test/functions.r');
-#source("functions.r");
+source("functions.r");
 
 ###############################################################################
 # Read arguments from CLI
