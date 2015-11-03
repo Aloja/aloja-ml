@@ -165,15 +165,6 @@ source("functions.r");
 			params[["vin"]] <- c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster","Datanodes","VM.OS","VM.Cores","VM.RAM","Provider","VM.Size","Type","Bench.Type","Hadoop.Version","Datasize","Scale.Factor","Net.maxtxKB.s","Net.maxrxKB.s","Net.maxtxPck.s","Net.maxrxPck.s","Net.maxtxCmp.s","Net.maxrxCmp.s","Net.maxrxmsct.s","Disk.maxtps","Disk.maxsvctm","Disk.maxrd.s","Disk.maxwr.s","Disk.maxrqsz","Disk.maxqusz","Disk.maxawait","Disk.maxutil");
 		}
 	}
-	if (is.null(params$vin) && opt$method  == "aloja_predict_dataset")
-	{
-		if (all(colnames(params$ds) %in% params$learned_model$varin))
-		{
-			params[["vin"]] <- params$learned_model$varin;
-		} else {
-			params[["vin"]] <- c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster","Datanodes","VM.OS","VM.Cores","VM.RAM","Provider","VM.Size","Type","Bench.Type","Hadoop.Version","Datasize","Scale.Factor","Net.maxtxKB.s","Net.maxrxKB.s","Net.maxtxPck.s","Net.maxrxPck.s","Net.maxtxCmp.s","Net.maxrxCmp.s","Net.maxrxmsct.s","Disk.maxtps","Disk.maxsvctm","Disk.maxrd.s","Disk.maxwr.s","Disk.maxrqsz","Disk.maxqusz","Disk.maxawait","Disk.maxutil");
-		}
-	}
 
 ###############################################################################
 # Execute call

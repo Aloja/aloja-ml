@@ -694,6 +694,7 @@ aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TR
 	}
 	rt[["varin"]] <- vin;
 	rt[["varout"]] <- vout;
+	rt[["varin_orig"]] <- vinorig;
 	
 	# Training and Validation
 	if (FALSE)
@@ -817,6 +818,7 @@ aloja_linreg <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = T
 	}
 	rt[["varin"]] <- vin;
 	rt[["varout"]] <- vout;
+	rt[["varin_orig"]] <- vinorig;
 
 	# Remove outliers (leap of faith, as vout may not be normal) (Minimum 100 instances to compute outliers)
 	if (rmols)
@@ -917,6 +919,7 @@ aloja_nneighbors <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols
 	rt[["ds_original"]] <- ds[,c("ID",vout,vin)];
 	rt[["varin"]] <- vin;
 	rt[["varout"]] <- vout;
+	rt[["varin_orig"]] <- vinorig;
 
 	# Remove outliers (leap of faith, as vout may not be normal) (Minimum 100 instances to compute outliers)
 	if (rmols)
@@ -1004,13 +1007,13 @@ aloja_regtree <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = 
 	if (!is.integer(quiet)) quiet <- as.integer(quiet);
 	if (!is.integer(weka.tree)) weka.tree <- as.integer(weka.tree);
 
+	vinorig <- vin;
 	if (weka.tree == 0)
 	{
 		# Prevent prediction startle because of singularities
 		options(warn=-1);
 
 		# Binarization of variables
-		vinorig <- vin;
 		if (is.null(ds))
 		{
 			auxset <- aloja_binarize_mixsets(vin,vout,traux=traux,ntaux=ntaux,tvaux=tvaux,ttaux=ttaux);
@@ -1056,6 +1059,7 @@ aloja_regtree <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = 
 	}
 	rt[["varin"]] <- vin;
 	rt[["varout"]] <- vout;
+	rt[["varin_orig"]] <- vinorig;
 
 	# Example selection from a threshold, balancing outputs
 	if (!is.null(exsel))
@@ -1199,7 +1203,7 @@ wrapper_predict_individual_instance <- function(idx,learned_model,vin,instances)
 	return (laux);
 }
 
-aloja_predict_dataset <- function (learned_model, vin, ds = NULL, data_file = NULL, sfCPU = 1, saveall = NULL)
+aloja_predict_dataset <- function (learned_model, ds = NULL, data_file = NULL, sfCPU = 1, saveall = NULL, ...)
 {
 	if (!is.integer(sfCPU)) sfCPU <- as.integer(sfCPU);
 
@@ -1209,13 +1213,11 @@ aloja_predict_dataset <- function (learned_model, vin, ds = NULL, data_file = NU
 		retval;
 	}
 
-	vin <- sub(' ','.',vin);
-
+	vin <- learned_model$varin_orig;
 	if (!is.null(data_file))
 	{
 		fileset <- read.table(file=data_file,header=T,sep=",");
-		daux <- aloja_dbind(learned_model$ds_original[,vin],fileset[,vin]);
-		ds <- daux[nrow(learned_model$ds_original):nrow(daux),];
+		ds <- aloja_dbind(learned_model$ds_original[0,vin],fileset[,vin]);
 	} else {
 		ds <- ds[,vin];
 	}
@@ -2016,7 +2018,7 @@ aloja_minimal_instances <- function (learned_model, quiet = 0, kmax = 200, step 
 	retval <- list();
 	ds <- learned_model$ds_original;
 	vout <- learned_model$varout;
-	vin <- colnames(learned_model$ds_original)[!(colnames(learned_model$ds_original) %in% c("ID",vout))];
+	vin <- learned_model$varin_orig;
 
 	# Binarization
 	dsbin <- aloja_binarize_ds(rbind(learned_model$trainset,learned_model$validset));
