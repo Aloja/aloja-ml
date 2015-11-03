@@ -150,6 +150,7 @@ source("functions.r");
 
 		for (i in 1:length(saux_2))
 		{
+			if (is.na(saux_2[[i]][1])) next;
 			params[[saux_2[[i]][1]]] <- strsplit(saux_2[[i]][2],",")[[1]];
 		}
 		rm(saux_1,saux_2);

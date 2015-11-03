@@ -1199,7 +1199,7 @@ wrapper_predict_individual_instance <- function(idx,learned_model,vin,instances)
 	return (laux);
 }
 
-aloja_predict_dataset <- function (learned_model, vin, ds = NULL, data_file = NULL, sfCPU = 1)
+aloja_predict_dataset <- function (learned_model, vin, ds = NULL, data_file = NULL, sfCPU = 1, saveall = NULL)
 {
 	if (!is.integer(sfCPU)) sfCPU <- as.integer(sfCPU);
 
@@ -1234,6 +1234,11 @@ aloja_predict_dataset <- function (learned_model, vin, ds = NULL, data_file = NU
 			pred_aux <- aloja_predict_individual_instance (learned_model, vin, ds[i,]);
 			retval <- c(retval, pred_aux);
 		}
+	}
+
+	if (!is.null(saveall))
+	{
+		write.table(retval, file = paste(saveall,"-predictions.data",sep=""), sep = ",", row.names=FALSE);
 	}
 	retval;
 }
