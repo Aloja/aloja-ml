@@ -1240,7 +1240,11 @@ aloja_predict_dataset <- function (learned_model, ds = NULL, data_file = NULL, s
 
 	if (!is.null(saveall))
 	{
-		write.table(retval, file = paste(saveall,"-predictions.data",sep=""), sep = ",", row.names=FALSE);
+		write.table(retval, file = paste(saveall,"-predictions.data",sep=""), sep = ",", row.names=FALSE); #DEPRECATED?
+
+		aux <- cbind(ds,retval);
+		colnames(aux) <- c(colnames(ds),"Prediction");
+		write.table(aux, file = paste(saveall,"-dataset.data",sep=""), sep = ",", row.names=FALSE);
 	}
 	retval;
 }
@@ -1328,8 +1332,8 @@ aloja_predict_instance <- function (learned_model, vin, inst_predict, sorted = N
 
 	if (!is.null(saveall))
 	{
-		write.table(retval, file = paste(saveall,"-predictions.data",sep=""), sep = ",", row.names=FALSE);
-		write.table(retval, file = paste(saveall,"-stdout.data",sep=""), sep = " ", row.names=TRUE);
+		write.table(retval, file = paste(saveall,"-predictions.data",sep=""), sep = ",", row.names=FALSE);	#DEPRECATED?
+		write.table(retval, file = paste(saveall,"-stdout.data",sep=""), sep = " ", row.names=TRUE);		#DEPRECATED?
 
 		aux <- do.call(rbind,strsplit(retval$Instance,","));
 		aux <- cbind(aux,retval$Prediction);
