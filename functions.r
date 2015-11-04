@@ -1203,7 +1203,7 @@ wrapper_predict_individual_instance <- function(idx,learned_model,vin,instances)
 	return (laux);
 }
 
-aloja_predict_dataset <- function (learned_model, ds = NULL, data_file = NULL, sfCPU = 1, saveall = NULL, ...)
+aloja_predict_dataset <- function (learned_model, vin = NULL, ds = NULL, data_file = NULL, sfCPU = 1, saveall = NULL, ...)
 {
 	if (!is.integer(sfCPU)) sfCPU <- as.integer(sfCPU);
 
@@ -1213,7 +1213,14 @@ aloja_predict_dataset <- function (learned_model, ds = NULL, data_file = NULL, s
 		retval;
 	}
 
-	vin <- learned_model$varin_orig;
+	if (is.null(vin)) vin <- learned_model$varin_orig;
+
+	# Check variable compatibility
+	if (!all(vin %in% learned_model$varin_orig) || !all(learned_model$varin_orig %in% vin))
+	{
+		retval;
+	}
+
 	if (!is.null(data_file))
 	{
 		fileset <- read.table(file=data_file,header=T,sep=",");
@@ -1240,11 +1247,10 @@ aloja_predict_dataset <- function (learned_model, ds = NULL, data_file = NULL, s
 
 	if (!is.null(saveall))
 	{
-		write.table(retval, file = paste(saveall,"-predictions.data",sep=""), sep = ",", row.names=FALSE); #DEPRECATED?
-
 		aux <- cbind(ds,retval);
 		colnames(aux) <- c(colnames(ds),"Prediction");
 		write.table(aux, file = paste(saveall,"-dataset.data",sep=""), sep = ",", row.names=FALSE);
+		write.table(retval, file = paste(saveall,"-predictions.data",sep=""), sep = ",", row.names=FALSE);
 	}
 	retval;
 }
@@ -1332,14 +1338,13 @@ aloja_predict_instance <- function (learned_model, vin, inst_predict, sorted = N
 
 	if (!is.null(saveall))
 	{
-		write.table(retval, file = paste(saveall,"-predictions.data",sep=""), sep = ",", row.names=FALSE);	#DEPRECATED?
-		write.table(retval, file = paste(saveall,"-stdout.data",sep=""), sep = " ", row.names=TRUE);		#DEPRECATED?
-
 		aux <- do.call(rbind,strsplit(retval$Instance,","));
 		aux <- cbind(aux,retval$Prediction);
 		aux <- cbind(seq(1:nrow(aux)),aux);
 		colnames(aux) <- c("ID",vin,learned_model$varout);
 		write.table(aux, file = paste(saveall,"-dataset.data",sep=""), sep = ",", row.names=FALSE);
+		write.table(retval, file = paste(saveall,"-predictions.data",sep=""), sep = ",", row.names=FALSE);
+		write.table(retval, file = paste(saveall,"-stdout.data",sep=""), sep = " ", row.names=TRUE);		#DEPRECATED?
 	}
 	retval;
 }
@@ -1356,17 +1361,17 @@ aloja_predict_individual_instance <- function (learned_model, vin, inst_predict)
 		colnames(inst_aux) <- vin;
 	}
 
-	datamodel <- ds[1,learned_model$varin];
-	if (class(model_aux)[1]=="list" || class(model_aux)[1]=="lm" || class(model_aux)[1]=="nnet")
+	datamodel <- ds[0,learned_model$varin];
+	if ("list" %in% class(model_aux) || "lm" %in% class(model_aux) || "nnet" %in% class(model_aux))
 	{
 		for (name_1 in colnames(datamodel))
 		{
 			if (name_1 %in% colnames(inst_aux))
 			{
 				value_aux <- inst_aux[1,name_1];
-				class(value_aux) <- class(datamodel[1,name_1]);
+				class(value_aux) <- class(datamodel[0,name_1]);
 
-				if (class(model_aux)[1]=="nnet")
+				if ("nnet" %in% class(model_aux))
 				{
 					value_aux <- (value_aux - learned_model$minout[name_1,]) / learned_model$maxout[name_1,];
 				}
@@ -1383,12 +1388,12 @@ aloja_predict_individual_instance <- function (learned_model, vin, inst_predict)
 	} else {
 		for (name_1 in colnames(datamodel))
 		{
-			if (class(datamodel[1,name_1]) == "factor")
+			if (class(datamodel[0,name_1]) == "factor")
 			{
 				datamodel[1,name_1] <- factor(inst_aux[1,name_1],levels=levels(datamodel[,name_1]));
 			} else {
 				var_aux <- inst_aux[1,name_1];
-				class(var_aux) <- class(datamodel[1,name_1]);
+				class(var_aux) <- class(datamodel[0,name_1]);
 				datamodel[1,name_1] <- var_aux;
 			}
 		}
@@ -1396,13 +1401,13 @@ aloja_predict_individual_instance <- function (learned_model, vin, inst_predict)
 
 	options(warn=-1);
 
-	if (class(model_aux)[1]=="list")
+	if ("list" %in% class(model_aux))
 	{
 		retval <- qrt.predict(model=model_aux,newdata=data.frame(datamodel));
 	} else {
 		retval <- predict(model_aux,newdata=data.frame(datamodel));
 	}
-	if (class(model_aux)[1]=="nnet")
+	if ("nnet" %in% class(model_aux))
 	{
 		retval <- (retval * learned_model$maxout[learned_model$varout,]) + learned_model$minout[learned_model$varout,];
 	}
@@ -1530,11 +1535,23 @@ wrapper_outlier_dataset <- function(idx,ds,vin,vout,auxjoin,auxjoin_s,thres1,hdi
 	return(retval);
 }
 
-aloja_outlier_dataset <- function (learned_model, vin, vout, ds = NULL, sigma = 3, hdistance = 3, saveall = NULL, sfCPU = 1)
+aloja_outlier_dataset <- function (learned_model, vin = NULL, ds = NULL, sigma = 3, hdistance = 3, saveall = NULL, sfCPU = 1, ...)
 {
 	if (!is.integer(sigma)) sigma <- as.integer(sigma);
 	if (!is.integer(hdistance)) hdistance <- as.integer(hdistance);
 	if (!is.integer(sfCPU)) sfCPU <- as.integer(sfCPU);
+
+	if (is.null(vin)) vin <- learned_model$varin_orig;
+	vout <- learned_model$varout;
+
+	# Check variable compatibility
+	if (!all(vin %in% learned_model$varin_orig) || !all(learned_model$varin_orig %in% vin))
+	{
+		retval;
+	}
+
+	# If no DS, validate against itself
+	if (is.null(ds)) ds <- learned_model$ds_original;
 
 	retval <- list();
 	retval[["resolutions"]] <- NULL;
@@ -1544,28 +1561,14 @@ aloja_outlier_dataset <- function (learned_model, vin, vout, ds = NULL, sigma = 
 	retval[["vout"]] <- vout;
 	retval[["sigma"]] <- sigma;
 	retval[["hdistance"]] <- hdistance;
-
-	# If no DS, validate against itself
-	if (is.null(ds)) ds <- learned_model$ds_original;
-
 	retval[["dataset"]] <- ds;
-	retval[["predictions"]] <- aloja_predict_dataset(learned_model,vin,ds=ds,sfCPU=sfCPU);
+	retval[["predictions"]] <- aloja_predict_dataset(learned_model,vin=vin,ds=ds,sfCPU=sfCPU);
 
 	# Compilation of datasets
-	if (all(vin %in% learned_model$varin))
-	{
-		id_pred <- rbind(learned_model$trainset,learned_model$validset,learned_model$testset);
-		id_pred <- cbind(id_pred,c(learned_model$predtrain,learned_model$predval,learned_model$predtest));
-		colnames(id_pred) <- c(colnames(learned_model$trainset),"Pred");
-		auxjoin <- id_pred;
-	} else {
-		paux <- rbind(as.matrix(learned_model$predtrain),as.matrix(learned_model$predval),as.matrix(learned_model$predtest));
-		rownames(paux) <- c(rownames(learned_model$trainset),rownames(learned_model$validset),rownames(learned_model$testset));
-		a <- paux[order(as.numeric(rownames(paux))),];
-		b <- merge(learned_model$ds_original,as.matrix(a),by="row.names",all.x=TRUE);
-		colnames(b) <- c("Row.names",colnames(learned_model$ds_original),"Pred");
-		auxjoin <- b[,c("ID",vout,vin,"Pred")];
-	}
+	id_pred <- rbind(learned_model$trainset,learned_model$validset,learned_model$testset);
+	id_pred <- cbind(id_pred,c(learned_model$predtrain,learned_model$predval,learned_model$predtest));
+	colnames(id_pred) <- c(colnames(learned_model$trainset),"Pred");
+	auxjoin <- id_pred[,c("ID",vout,vin,"Pred")];
 
 	# Compilation of errors (learning)
 	trerr <- learned_model$trainset[,vout] - learned_model$predtrain;
@@ -1645,9 +1648,11 @@ aloja_outlier_dataset <- function (learned_model, vin, vout, ds = NULL, sigma = 
 	retval;
 }
 
-aloja_outlier_instance <- function (learned_model, vin, vout, instance, observed, display = 0, sfCPU = 1)
+aloja_outlier_instance <- function (learned_model, vin, instance, observed, display = 0, sfCPU = 1, saveall = NULL, ...)
 {
 	if (!is.integer(display)) display <- as.integer(display);
+
+	vout <- learned_model$varout;
 
 	if (length(grep(pattern="\\||\\*",instance)) > 0)
 	{
@@ -1658,7 +1663,7 @@ aloja_outlier_instance <- function (learned_model, vin, vout, instance, observed
 	}
 	colnames(comp_dataset) <- c(vin,vout);
 
-	result <- aloja_outlier_dataset (learned_model,vin,vout,ds=comp_dataset,sfCPU=sfCPU);
+	result <- aloja_outlier_dataset (learned_model,vin=vin,ds=comp_dataset,sfCPU=sfCPU,saveall=saveall);
 
 	retval <- NULL;
 	if (display == 0) retval <- result;
@@ -1761,13 +1766,13 @@ aloja_transform_instance <- function (inst_transform, pca_obj = NULL, pca_name =
 
 	if (!is.null(pca_name)) pca_obj <- aloja_load_object(pca_name);
 
-	datamodel <- pca_obj$dataset[1,pca_obj$vin];
+	datamodel <- pca_obj$dataset[0,pca_obj$vin];
 	for (name_1 in colnames(datamodel))
 	{
 		if (name_1 %in% pca_obj$vin_orig)
 		{
 			var_aux <- inst_transform[which(pca_obj$vin_orig==name_1)];
-			class(var_aux) <- class(datamodel[1,name_1]);
+			class(var_aux) <- class(datamodel[0,name_1]);
 			datamodel[1,name_1] <- var_aux;
 		} else {
 			if (length(which(inst_transform==name_1)) >= 1)
