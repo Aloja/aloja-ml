@@ -1393,7 +1393,7 @@ aloja_predict_individual_instance <- function (learned_model, vin, inst_predict)
 				datamodel[1,name_1] <- factor(inst_aux[1,name_1],levels=levels(datamodel[,name_1]));
 			} else {
 				var_aux <- inst_aux[1,name_1];
-				class(var_aux) <- class(datamodel[0,name_1]);
+				class(var_aux) <- class(datamodel[0,name_1]); #FIXME - This line produces 'inofensive' NAs...
 				datamodel[1,name_1] <- var_aux;
 			}
 		}

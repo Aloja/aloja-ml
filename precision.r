@@ -8,7 +8,7 @@
 # Precision and comparision tools                                             #
 ###############################################################################
 
-aloja_precision <- function (ds, vin, vout, noout = 0, sigma = 3)
+aloja_precision <- function (ds, vin, vout, noout = 0, sigma = 3, saveall = NULL, ...)
 {
 	if (!is.integer(sigma)) sigma <- as.integer(sigma);
 	if (!is.integer(noout)) noout <- as.integer(noout);
@@ -48,10 +48,15 @@ aloja_precision <- function (ds, vin, vout, noout = 0, sigma = 3)
 	}
 	colnames(retval) <- c("Diversity","Population","Unprecision","Stats [Mean]","Stats [StDev]","Stats [Max]","Stats [Min]");
 
+	if (!is.null(saveall))
+	{
+		write.table(retval, file = paste(saveall,"-precision.data",sep=""), sep = ",", row.names=FALSE);
+	}
+
 	retval;
 }
 
-aloja_precision_split <- function (ds, vin, vout, vdisc, noout = 0, sigma = 3, json = 0)
+aloja_precision_split <- function (ds, vin, vout, vdisc, noout = 0, sigma = 3, json = 0, saveall = NULL, ...)
 {
 	if (!is.integer(json)) json <- as.integer(json);
 
@@ -60,16 +65,19 @@ aloja_precision_split <- function (ds, vin, vout, vdisc, noout = 0, sigma = 3, j
 	{
 		auxlist[[as.character(i)]] <- aloja_precision(ds[ds[,vdisc]==i,],vin,vout,noout=noout, sigma=sigma);	
 	}
-	retval <- do.call(rbind.data.frame, auxlist);
+	prectable <- do.call(rbind.data.frame, auxlist);
 
-	if (json > 0)
+	h <- apply(prectable,1,function(i) paste("'",paste(i,collapse="','"),"'",sep=""));
+	j <- sapply(names(h),function(i) paste("['",i,"',",h[i],"]",sep=""));
+	precjson <- paste("[",paste(j,collapse=","),"]",sep="");
+
+	if (!is.null(saveall))
 	{
-		h <- apply(retval,1,function(i) paste("'",paste(i,collapse="','"),"'",sep=""));
-		j <- sapply(names(h),function(i) paste("['",i,"',",h[i],"]",sep=""));
-		retval <- paste("[",paste(j,collapse=","),"]",sep="");
+		write.table(prectable, file = paste(saveall,"-precsplit.data",sep=""), sep = ",", row.names=FALSE);
+		write.table(precjson, file = paste(saveall,"-precsplit.json",sep=""));
 	}
 
-	retval;
+	if (json > 0) { return(precjson); } else { return(prectable); }
 }
 
 aloja_reunion <- function (ds, vin, vout, ...)
