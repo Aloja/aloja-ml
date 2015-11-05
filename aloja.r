@@ -269,15 +269,13 @@ options(width=as.integer(Sys.getenv("COLUMNS")));
 	## Reunion of Executions
 
 	vin_ord2 <- c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size");
-	vout_ord <- "Exe.Time";
-	aloja_reunion(dataset,vin_ord2,vout_ord);
+	aloja_reunion(dataset,vin_ord2);
 
 	#######################################################################
 	## Diversity Analysis
 
 	vdisc <- "Cl.Name";
 	aloja_diversity(dataset,vin_ord2,vout_ord,vdisc);
-	aloja_diversity_json(dataset,vin_ord2,vout_ord,vdisc);
 
 ###############################################################################
 # Extraction of Rules

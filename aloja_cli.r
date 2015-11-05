@@ -128,11 +128,16 @@ source("functions.r");
 		params[["vin"]] <- c("Exe.Time","Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster","Cl.Name","Datanodes","VM.OS","VM.Cores","VM.RAM","Provider","VM.Size","Type","Bench.Type","Hadoop.Version","Datasize","Scale.Factor");
 	}
 
-	if (opt$method  %in% c("aloja_reunion","aloja_diversity"))
+	if (opt$method  == "aloja_diversity")
 	{
 		if (is.null(params$vin)) params[["vin"]] <- c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size");
 		if (is.null(params$vdisc)) params[["vdisc"]] <- "Cl.Name";
 		if (is.null(params$vout)) params[["vout"]] <- "Exe.Time";
+	}
+
+	if (is.null(params$vin) && opt$method  == "aloja_reunion")
+	{
+		params[["vin"]] <- c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size");
 	}
 
 	if (opt$method  %in% c("aloja_bestrules_single","aloja_bestrules_single_select","aloja_bestrules_pairs","aloja_bestrules_pairs_select","aloja_bestrules_relations","aloja_bestrules_relations_select"))
