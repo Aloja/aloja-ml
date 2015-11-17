@@ -12,13 +12,13 @@ options(max.print=10000000);
 # Pattern mining tools                                                        #
 ###############################################################################
 
-aloja_bestrules_single_select <- function (ds, vin, bench, cluster, percent = "20%", minval = 50, saveall = NULL, quiet = 1)
+aloja_bestrules_single_select <- function (ds, vin, bench, cluster, percent = "20%", minval = 50, saveall = NULL, savedata = NULL, quiet = 1, suppval = 0.1, confval = 0.1)
 {
 	dsaux <- ds[ds$Exe.Time > minval & ds$Benchmark %in% c(bench) & ds$Cl.Name %in% c(cluster),];
-	aloja_bestrules_single(dsaux, vin, percent, saveall, quiet);
+	aloja_bestrules_single(dsaux, vin, percent, saveall, savedata, quiet, suppval, confvall);
 }
 
-aloja_bestrules_single <- function (ds, vin, percent = "20%", saveall = NULL, quiet = 1)
+aloja_bestrules_single <- function (ds, vin, percent = "20%", saveall = NULL, savedata = NULL, quiet = 1, suppval = 0.1, confval = 0.1)
 {
 	if (!is.numeric(quiet)) quiet <- as.numeric(quiet);
 
@@ -30,16 +30,23 @@ aloja_bestrules_single <- function (ds, vin, percent = "20%", saveall = NULL, qu
 	# Most Frequent Patterns for Single Attributes
 	if (quiet == 1) sink("/dev/null");
 	trans1 <- as(dsauxq1, "transactions");
-	rules1 <- apriori(trans1, parameter= list(supp=0.1, conf=0.1));
+	rules1 <- apriori(trans1, parameter= list(supp=suppval, conf=confval));
 	if (quiet == 1) sink();
 
 	dfaux1 <- as(rules1, "data.frame");
 	dfaux2 <- do.call(rbind,strsplit(as.character(dfaux1$rules)," => "));
 	colnames(dfaux2) <- c("precedent","consequent");
-	retval <- cbind(dfaux1,dfaux2);
+	retaux <- cbind(dfaux1,dfaux2);
 
-	# Dump to file
-	if (!is.null(saveall))
+	# Add extra information
+	auxnump <- nchar(as.character(retaux$precedent)) - nchar(as.character(gsub("=","",retaux$precedent)));
+	retaux <- cbind(auxnump,retaux);
+	colnames(retaux)[1] <- "numprecs";
+
+	retval <- retaux[order(retaux$numprecs,-retaux$support,-retaux$confidence),c("numprecs","precedent","consequent","support","confidence","lift")];
+
+	# Dump data to file
+	if (!is.null(savedata))
 	{
 		sink(paste("rules-",saveall,".data",sep=""));
 		inspect(sort(rules1, by = "support"));
@@ -50,21 +57,21 @@ aloja_bestrules_single <- function (ds, vin, percent = "20%", saveall = NULL, qu
 		sink();
 	}
 
-	# Add extra information
-	auxnump <- nchar(as.character(retval$precedent)) - nchar(as.character(gsub("=","",retval$precedent)));
-	retval <- cbind(auxnump,retval);
-	colnames(retval)[1] <- "numprecs";
+	if (!is.null(saveall))
+	{
+		write.table(retval, file = paste(saveall,"-brs.csv",sep=""), sep = " ");
+	}
 
-	retval[order(retval$numprecs,-retval$support,-retval$confidence),c("numprecs","precedent","consequent","support","confidence","lift")];
+	retval;
 }
 
-aloja_bestrules_pairs_select <- function (ds, vin, bench, cluster, percent = "20%", minval = 50, saveall = NULL, singles = FALSE, simplified = FALSE, quiet = 1)
+aloja_bestrules_pairs_select <- function (ds, vin, bench, cluster, percent = "20%", minval = 50, saveall = NULL, savedata = NULL, singles = FALSE, simplified = FALSE, quiet = 1, suppval = 0.2, confval = 0.2)
 {
 	dsaux <- ds[ds$Exe.Time > minval & ds$Benchmark %in% c(bench) & ds$Cl.Name %in% c(cluster),];
-	aloja_bestrules_pairs(dsaux, vin, percent, saveall, singles, simplified, quiet);
+	aloja_bestrules_pairs(dsaux, vin, percent, saveall, savedata, singles, simplified, quiet, suppval, confval);
 }
 
-aloja_bestrules_pairs <- function (ds, vin, percent = "20%", saveall = NULL, singles = FALSE, simplified = FALSE, quiet = 1)
+aloja_bestrules_pairs <- function (ds, vin, percent = "20%", saveall = NULL, savedata = NULL, singles = FALSE, simplified = FALSE, quiet = 1, suppval = 0.2, confval = 0.2)
 {
 	if (!is.numeric(quiet)) quiet <- as.numeric(quiet);
 
@@ -124,13 +131,20 @@ aloja_bestrules_pairs <- function (ds, vin, percent = "20%", saveall = NULL, sin
 	# Most Frequent Patterns for Paired Attributes
 	if (quiet == 1) sink("/dev/null");
 	trans2 <- as(translist, "transactions");
-	rules2 <- apriori(trans2, parameter= list(supp=0.2, conf=0.2));
+	rules2 <- apriori(trans2, parameter= list(supp=suppval, conf=confval));
 	if (quiet == 1) sink();
 
 	dfaux1 <- as(rules2, "data.frame");
 	dfaux2 <- do.call(rbind,strsplit(as.character(dfaux1$rules)," => "));
 	colnames(dfaux2) <- c("precedent","consequent");
-	retval <- cbind(dfaux1,dfaux2);
+	retaux <- cbind(dfaux1,dfaux2);
+
+	# Add extra information
+	auxnump <- nchar(as.character(retaux$precedent)) - nchar(as.character(gsub(":","",retaux$precedent)))/3;
+	retaux <- cbind(auxnump,retaux);
+	colnames(retaux)[1] <- "numprecs";
+
+	retval <- retaux[order(retaux$numprecs,-retaux$support,-retaux$confidence),c("numprecs","precedent","consequent","support","confidence","lift")];
 
 	# Dump to file
 	if (!is.null(saveall))
@@ -144,21 +158,21 @@ aloja_bestrules_pairs <- function (ds, vin, percent = "20%", saveall = NULL, sin
 		sink();
 	}
 
-	# Add extra information
-	auxnump <- nchar(as.character(retval$precedent)) - nchar(as.character(gsub(":","",retval$precedent)))/3;
-	retval <- cbind(auxnump,retval);
-	colnames(retval)[1] <- "numprecs";
+	if (!is.null(saveall))
+	{
+		write.table(retval, file = paste(saveall,"-brp.csv",sep=""), sep = " ");
+	}
 
-	retval[order(retval$numprecs,-retval$support,-retval$confidence),c("numprecs","precedent","consequent","support","confidence","lift")];
+	retval;
 }
 
-aloja_bestrules_relations_select <- function (ds, vin, bench, cluster, percent = "20%", minval = 50, saveall = NULL, quiet = 1)
+aloja_bestrules_relations_select <- function (ds, vin, bench, cluster, percent = "20%", minval = 50, saveall = NULL, savedata = NULL, quiet = 1, suppval = 0.5, confval = 0.5)
 {
 	dsaux <- ds[ds$Exe.Time > minval & ds$Benchmark %in% c(bench) & ds$Cl.Name %in% c(cluster),];
-	aloja_bestrules_relations(dsaux, vin, percent, saveall, quiet);
+	aloja_bestrules_relations(dsaux, vin, percent, saveall, quiet, suppval, confval);
 }
 
-aloja_bestrules_relations <- function (ds, vin, percent = "20%", saveall = NULL, quiet = 1)
+aloja_bestrules_relations <- function (ds, vin, percent = "20%", saveall = NULL, savedata = NULL, quiet = 1, suppval = 0.5, confval = 0.5)
 {
 	if (!is.numeric(quiet)) quiet <- as.numeric(quiet);
 
@@ -206,13 +220,20 @@ aloja_bestrules_relations <- function (ds, vin, percent = "20%", saveall = NULL,
 	# Most Frequent Patterns for Paired Attributes
 	if (quiet == 1) sink("/dev/null");
 	trans2 <- as(translist, "transactions");
-	rules2 <- apriori(trans2, parameter= list(supp=0.2, conf=0.2));
+	rules2 <- apriori(trans2, parameter= list(supp=suppval, conf=confval));
 	if (quiet == 1) sink();
 
 	dfaux1 <- as(rules2, "data.frame");
 	dfaux2 <- do.call(rbind,strsplit(as.character(dfaux1$rules)," => "));
 	colnames(dfaux2) <- c("precedent","consequent");
-	retval <- cbind(dfaux1,dfaux2);
+	retaux <- cbind(dfaux1,dfaux2);
+
+	# Add extra information
+	auxnump <- (nchar(as.character(retaux$precedent)) - nchar(as.character(gsub("~","",retaux$precedent))));
+	retaux <- cbind(auxnump,retaux);
+	colnames(retaux)[1] <- "numprecs";
+
+	retval <- retaux[order(retaux$numprecs,-retaux$support,-retaux$confidence),c("numprecs","precedent","consequent","support","confidence","lift")];
 
 	# Dump to file
 	if (!is.null(saveall))
@@ -226,11 +247,11 @@ aloja_bestrules_relations <- function (ds, vin, percent = "20%", saveall = NULL,
 		sink();
 	}
 
-	# Add extra information
-	auxnump <- (nchar(as.character(retval$precedent)) - nchar(as.character(gsub("~","",retval$precedent))));
-	retval <- cbind(auxnump,retval);
-	colnames(retval)[1] <- "numprecs";
+	if (!is.null(saveall))
+	{
+		write.table(retval, file = paste(saveall,"-brp.csv",sep=""), sep = " ");
+	}
 
-	retval[order(retval$numprecs,-retval$support,-retval$confidence),c("numprecs","precedent","consequent","support","confidence","lift")];
+	retval;
 }
 
