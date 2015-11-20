@@ -3,7 +3,7 @@
 # 2015-11-17
 # Variable relation functions library for ALOJA-ML
 
-suppressMessages(library(rms));
+library(rms);
 
 ## EXAMPLES
 #
