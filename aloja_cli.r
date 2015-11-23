@@ -141,6 +141,12 @@ source("functions.r");
 		params[["vin"]] <- c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size");
 	}
 
+	if (opt$method  %in% c("aloja_variable_relations","aloja_variable_quicklm"))
+	{
+		if (is.null(opt$vout)) params[["vout"]] <- "Exe.Time";
+		if (is.null(opt$vin)) params[["vin"]] <- c("Net","Disk","Maps","IO.SFac","Rep","Comp","IO.FBuf","Blk.size","Datanodes","VM.Cores","VM.RAM");
+	}
+
 	if (opt$method  %in% c("aloja_bestrules_single","aloja_bestrules_single_select","aloja_bestrules_pairs","aloja_bestrules_pairs_select","aloja_bestrules_relations","aloja_bestrules_relations_select"))
 	{
 		if (is.null(params$vin)) params[["vin"]] <- c("Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Datanodes","VM.Cores","VM.RAM");
