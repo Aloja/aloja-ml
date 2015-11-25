@@ -934,7 +934,7 @@ aloja_regtree <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, s
 	}
 	if (weka.tree == 0)
 	{
-		rt[["model"]] <- qrt.tree(formula=varout~.,dataset=data.frame(temptr[,c(rt$varout,rt$varin)]),m=mparam,simple=1);
+		rt[["model"]] <- qrt.tree(formula=rt$varout~.,dataset=data.frame(temptr[,c(rt$varout,rt$varin)]),m=mparam,simple=1);
 		rt[["predtrain"]] <- as.data.frame(cbind(temptr[,"ID"],rt$model$fitted.values));
 		rt[["predval"]] <- as.data.frame(cbind(temptv[,"ID"],qrt.predict(model=rt$model,newdata=data.frame(temptv[,c(rt$varout,rt$varin)]))));
 	} else {
