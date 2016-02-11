@@ -18,13 +18,27 @@ aloja_bestrules_single_select <- function (ds, vin, bench, cluster, percent = "2
 	aloja_bestrules_single(dsaux, vin, percent, saveall, savedata, quiet, suppval, confvall);
 }
 
-aloja_bestrules_single <- function (ds, vin, percent = "20%", saveall = NULL, savedata = NULL, quiet = 1, suppval = 0.1, confval = 0.1)
+aloja_bestrules_single <- function (ds, vin, percent = "20%", saveall = NULL, savedata = NULL, quiet = 1, suppval = 0.1, confval = 0.1, splitkey = NULL)
 {
 	if (!is.numeric(quiet)) quiet <- as.numeric(quiet);
 
 	# Selected "Best" Executions
-	q1 <- as.numeric(quantile(ds$Exe.Time,probs=seq(0,1,0.05))[percent]);
-	dsauxq1 <- ds[ds$Exe.Time <= q1,vin];
+	if (!is.null(splitkey))
+	{
+		dsauxq1 <- ds[0,vin];
+		for (skey in levels(ds[,splitkey]))
+		{
+			dsplit <- ds[ds[,splitkey] == skey,];
+			if (nrow(dsplit) > 0)
+			{
+				q1 <- as.numeric(quantile(dsplit$Exe.Time,probs=seq(0,1,0.05),na.rm=TRUE)[percent]);
+				dsauxq1 <- rbind(dsauxq1,dsplit[dsplit$Exe.Time <= q1,vin]);
+			}
+		}
+	} else {
+		q1 <- as.numeric(quantile(ds$Exe.Time,probs=seq(0,1,0.05))[percent]);
+		dsauxq1 <- ds[ds$Exe.Time <= q1,vin];
+	}
 	for (fck in names(dsauxq1)) if (!is.factor(dsauxq1[[fck]])) dsauxq1[[fck]] <- as.factor(dsauxq1[[fck]]);
 
 	# Most Frequent Patterns for Single Attributes
@@ -71,13 +85,27 @@ aloja_bestrules_pairs_select <- function (ds, vin, bench, cluster, percent = "20
 	aloja_bestrules_pairs(dsaux, vin, percent, saveall, savedata, singles, simplified, quiet, suppval, confval);
 }
 
-aloja_bestrules_pairs <- function (ds, vin, percent = "20%", saveall = NULL, savedata = NULL, singles = FALSE, simplified = FALSE, quiet = 1, suppval = 0.2, confval = 0.2)
+aloja_bestrules_pairs <- function (ds, vin, percent = "20%", saveall = NULL, savedata = NULL, singles = FALSE, simplified = FALSE, quiet = 1, suppval = 0.2, confval = 0.2, splitkey = NULL)
 {
 	if (!is.numeric(quiet)) quiet <- as.numeric(quiet);
 
 	# Selected "Best" Executions
-	q1 <- as.numeric(quantile(ds$Exe.Time,probs=seq(0,1,0.05))[percent]);
-	dsauxq1 <- ds[ds$Exe.Time <= q1,vin];
+	if (!is.null(splitkey))
+	{
+		dsauxq1 <- ds[0,vin];
+		for (skey in levels(ds[,splitkey]))
+		{
+			dsplit <- ds[ds[,splitkey] == skey,];
+			if (nrow(dsplit) > 0)
+			{
+				q1 <- as.numeric(quantile(dsplit$Exe.Time,probs=seq(0,1,0.05),na.rm=TRUE)[percent]);
+				dsauxq1 <- rbind(dsauxq1,dsplit[dsplit$Exe.Time <= q1,vin]);
+			}
+		}
+	} else {
+		q1 <- as.numeric(quantile(ds$Exe.Time,probs=seq(0,1,0.05))[percent]);
+		dsauxq1 <- ds[ds$Exe.Time <= q1,vin];
+	}
 	for (fck in names(dsauxq1)) if (!is.factor(dsauxq1[[fck]])) dsauxq1[[fck]] <- as.factor(dsauxq1[[fck]]);
 
 	# Generation of Paired Attributes
@@ -172,13 +200,27 @@ aloja_bestrules_relations_select <- function (ds, vin, bench, cluster, percent =
 	aloja_bestrules_relations(dsaux, vin, percent, saveall, quiet, suppval, confval);
 }
 
-aloja_bestrules_relations <- function (ds, vin, percent = "20%", saveall = NULL, savedata = NULL, quiet = 1, suppval = 0.5, confval = 0.5)
+aloja_bestrules_relations <- function (ds, vin, percent = "20%", saveall = NULL, savedata = NULL, quiet = 1, suppval = 0.5, confval = 0.5, splitkey = NULL)
 {
 	if (!is.numeric(quiet)) quiet <- as.numeric(quiet);
 
 	# Selected "Best" Executions
-	q1 <- as.numeric(quantile(ds$Exe.Time,probs=seq(0,1,0.05))[percent]);
-	dsauxq1 <- ds[ds$Exe.Time <= q1,vin];
+	if (!is.null(splitkey))
+	{
+		dsauxq1 <- ds[0,vin];
+		for (skey in levels(ds[,splitkey]))
+		{
+			dsplit <- ds[ds[,splitkey] == skey,];
+			if (nrow(dsplit) > 0)
+			{
+				q1 <- as.numeric(quantile(dsplit$Exe.Time,probs=seq(0,1,0.05),na.rm=TRUE)[percent]);
+				dsauxq1 <- rbind(dsauxq1,dsplit[dsplit$Exe.Time <= q1,vin]);
+			}
+		}
+	} else {
+		q1 <- as.numeric(quantile(ds$Exe.Time,probs=seq(0,1,0.05))[percent]);
+		dsauxq1 <- ds[ds$Exe.Time <= q1,vin];
+	}
 	for (fck in names(dsauxq1)) if (!is.factor(dsauxq1[[fck]])) dsauxq1[[fck]] <- as.factor(dsauxq1[[fck]]);
 
 	# Generation of Paired Attributes
