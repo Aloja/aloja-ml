@@ -18,10 +18,10 @@
 #	 ./aloja_cli.r -m aloja_outlier_dataset -d m5p1-tt.csv -l m5p1 -p sigma=3:hdistance=3:saveall=m5p1outliers
 #	 ./aloja_cli.r -m aloja_outlier_instance -l m5p1 -p instance="sort,ETH,RR3,8,10,1,65536,None,32,Azure L":observed=100000:display=1 -v
 #
-#	 ./aloja_cli.r -m aloja_minimal_instances -l m5p1 -p saveall=mi1
+#	 ./aloja_cli.r -m aloja_minimal_instances -l m5p1 -p saveall=m5p1mi
 #	 ./aloja_cli.r -m aloja_minimal_instances -l m5p1 -p kmax=200:step=10:saveall=m5p1mi
 #
-#	 ./aloja_cli.r -m aloja_representative_tree -p method=ordered:pred_file="m5p1-instances":output="string" -v
+#	 ./aloja_cli.r -m aloja_representative_tree -p method=ordered:pred_file=instances.csv:output="string" -v
 #
 #	 ./aloja_cli.r -m aloja_precision -d aloja-dataset.csv -v
 #	 ./aloja_cli.r -m aloja_precision_split -d aloja-dataset.csv -p vdisc="Cl.Name":noout=1:sigma=1:json=0 -v

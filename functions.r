@@ -5,11 +5,11 @@
 # Function library for ALOJA-ML
 
 library(stringr);	# String management
-library(scales);	# ?
-library(reshape);	# ?
 library(nnet);		# NNets
 library(kknn);		# k-NN
 library(e1071);		# SVMs
+library(RSNNS);		# NNets (2)
+library(snowfall);	# Parallelism
 
 set.seed(1234567890);
 
@@ -17,7 +17,7 @@ source('models.r');		# Prediction, Outliers, MinConfs...
 source('searchtrees.r');	# Representative Trees
 source('precision.r');		# Precision and Comparison
 source('relations.r');		# Variable Relations
-source('deprecated.r');		# Legacy and Disused Functions
+#source('deprecated.r');	# Legacy and Disused Functions
 
 ###############################################################################
 # Read datasets and prepare them for usage                                    #
@@ -476,7 +476,6 @@ aloja_nnet <-  function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, sig
 	{
 		rt[["model"]] <- nnet(y=rt$normtrainset[,rt$varout],x=rt$normtrainset[,rt$varin],size=neurons,decay=decay,maxit=maxit);
 	} else {
-		library(RSNNS);
 		rt[["model"]] <- mlp(rt$normtrainset[,rt$varin],rt$normtrainset[,rt$varout],size=c(neurons),
 #			learnFunc="Std_Backpropagation",
 			learnFUnc="BackpropMomentum",
@@ -936,7 +935,6 @@ aloja_predict_dataset <- function (learned_model, vin = NULL, ds = NULL, data_fi
 
 	if ("snowfall" %in% installed.packages() && sfCPU > 1)
 	{
-		library(snowfall);
 		sfInit(parallel=TRUE, cpus=sfCPU);
 		sfExport(list=c("vin","ds","learned_model","aloja_predict_individual_instance"),local=TRUE);
 		fyr <- sfLapply(1:nrow(ds), wrapper_predict_dataset,learned_model=learned_model,vin=vin,ds=ds);
@@ -1011,9 +1009,8 @@ aloja_predict_instance <- function (learned_model, vin, inst_predict, sorted = N
 		instances <- aloja_unfold_expression(inst_predict,vin,learned_model);
 
 		laux <- list();
-		if ("snowfall" %in% installed.packages() && sfCPU > 1)
+		if (sfCPU > 1)
 		{
-			library(snowfall);
 			sfInit(parallel=TRUE, cpus=sfCPU);
 			sfExport(list=c("instances","learned_model","vin","aloja_predict_individual_instance"),local=TRUE);
 			laux <- sfLapply(1:nrow(instances), wrapper_predict_individual_instance,learned_model=learned_model,vin=vin,instances=instances);
@@ -1214,9 +1211,8 @@ aloja_outlier_dataset <- function (learned_model, vin = NULL, ds = NULL, sigma =
 	colnames(retval$resolutions) <- c("Resolution","Model","Observed",paste(vin,collapse=":"),"ID");
 
 	# Check the far points for outliers
-	if ("snowfall" %in% installed.packages() && sfCPU > 1)
+	if (sfCPU > 1)
 	{
-		library(snowfall);
 		sfInit(parallel=TRUE, cpus=sfCPU);
 		sfExport(list=c("ds","vin","vout","auxjoin","auxjoin_s","thres1","hdistance"),local=TRUE);
 		rets <- sfLapply((1:length(paux))[cond1], wrapper_outlier_dataset,ds=ds,vin=vin,vout=vout,auxjoin=auxjoin,auxjoin_s=auxjoin_s,thres1=thres1,hdistance=hdistance);
