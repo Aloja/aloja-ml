@@ -6,21 +6,19 @@ This repo contains the scripts and tests done for the Machine Learning part of A
 ### Files
 
 * **aloja_cli.r** The wrapper/interface to call functions and run experiments from command line.
-* **functions.r** The library with all the ALOJA functions, like learning methods and data-set treatments, called from the diverse scripts and interfaces. You can call this file directly using "devtools" package and "source\_url()".
-* **models.r** Some implemented models (e.g. RPart+PolyReg Trees), used by _functions.r_.
+* **functions.r** The library with all the ALOJA functions, like learning methods and data-set treatments, called from the diverse scripts and interfaces.
+* **functions-azml.r** The library with all the ALOJA functions, adapted for be called from Microsoft AzureML (OLD)
+* **models.r** Some implemented models used by _functions.r_.
 * **precision.r** Functions for computing precision of executions, also compare providers by similar executions, used by _functions.r_.
 * **relations.r** Functions for computing simple relations between features of executions, used by _functions.r_.
 * **searchtrees.r** Functions for representing execution datasets as a tree, used by _functions.r_.
 * **deprecated.r** Functions in disuse or deprecated from _functions.r_, kept for legacy.
-* **functions-azml.r** The library with all the ALOJA functions, adapted for be called from Microsoft AzureML (OLD)
 * **aloja-dataset.csv** Example Datasets (mush check headers before using with _aloja\_cli.r_.
 
 ### Requirements
 
-* Rcran
+* R and required packages: base, arules, e1071, kknn, nnet, optparse, RSNNS, rms, rpart, session, snowfall, stringr ...and dependencies.
 * build-essential
-* R required packages: base, arules, e1071, kknn, nnet, optparse, RSNNS, rms, rpart, snowfall, stringr ...and dependencies.
-* R required packages (for legacy): session ...and dependencies.
 
 ### R Installation
 
@@ -46,7 +44,7 @@ This repo contains the scripts and tests done for the Machine Learning part of A
 #### Examples of Training and Prediction:
 >./aloja\_cli.r -m aloja\_regtree -d aloja-dataset.csv -p saveall=m5p1
 >
->./aloja\_cli.r -m aloja\_regtree -d aloja-dataset.csv -p saveall=m5p1:vin="Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size"
+>./aloja\_cli.r -m aloja\_regtree -d aloja-dataset.csv -p saveall=m5p1:vin="Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size":vout="Exe.Time"
 >
 >./aloja\_cli.r -m aloja\_predict\_dataset -l m5p1 -d m5p1-tt.csv -v
 >
@@ -58,9 +56,12 @@ This repo contains the scripts and tests done for the Machine Learning part of A
 
 #### Examples of Detecting Outliers in the Dataset:
 >./aloja\_cli.r -m aloja\_outlier\_dataset -d m5p1-tt.csv -l m5p1 -p sigma=3:hdistance=3:saveall=m5p1test
+>
+>./aloja\_cli.r -m aloja\_outlier\_instance -l m5p1 -p instance="sort,ETH,RR3,8,10,1,65536,None,32,Azure L":observed=100000:display=1 -v
 
 #### Examples of Minimal Instances defining the Dataset:
 >./aloja\_cli.r -m aloja\_minimal\_instances -l m5p1 -p saveall=m5p1mi
+>
 >./aloja\_cli.r -m aloja\_minimal\_instances -l m5p1 -p kmax=200:step=10:saveall=m5p1mi
 
 #### Examples of JSON Tree defining the Dataset:
