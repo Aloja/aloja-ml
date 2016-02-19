@@ -3,8 +3,6 @@
 # 2015-11-17
 # Variable relation functions library for ALOJA-ML
 
-library(rms);
-
 ## EXAMPLES
 #
 #vin <- c("Net","Disk","Maps","IO.SFac","IO.FBuf","Blk.size","Datanodes","VM.Cores","VM.RAM");
@@ -15,6 +13,8 @@ library(rms);
 #
 #ds <- aloja_get_data("test4-CL21.csv");
 #aloja_variable_relations (ds, vin, vout, minsamples = 100);
+
+library(rms);	# OLS Methods
 
 ###############################################################################
 # Variable relation tools                                                     #
