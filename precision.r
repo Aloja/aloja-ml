@@ -14,7 +14,7 @@ aloja_precision <- function (ds, vin, vout, noout = 0, sigma = 3, saveall = NULL
 	if (!is.integer(noout)) noout <- as.integer(noout);
 
 	if (noout > 0) ds <- ds[ds[,vout] < mean(ds[,vout]) + sigma * sd(ds[,vout]) & ds[,vout] > mean(ds[,vout]) - sigma * sd(ds[,vout]),];
-	ds <- ds[complete.cases(ds),];
+	ds <- ds[complete.cases(ds[,c(vin,vout)]),];
 
 	if (nrow(ds) > 1)
 	{
@@ -86,7 +86,7 @@ aloja_reunion <- function (ds, vin, ...)
 {
 	retval <- list();
 
-	ds <- ds[complete.cases(ds),];
+	ds <- ds[complete.cases(ds[,vin]),];
 
 	if (nrow(ds) > 1)
 	{
