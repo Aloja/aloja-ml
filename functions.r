@@ -639,7 +639,7 @@ aloja_nneighbors <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66
 
 	# Load and process datasets
 	rt <- aloja_prepare_datasets (vin,vout,tsplit=tsplit,vsplit=vsplit,ds=ds,ttaux=ttaux,traux=traux,tvaux=tvaux,
-		ttfile=ttfile,trfile=trfile,tvfile=tvfile,exclusion=0,binarize=FALSE,rm.outs=TRUE,normalize=FALSE,sigma=sigma);
+		ttfile=ttfile,trfile=trfile,tvfile=tvfile,exclusion=0,binarize=TRUE,rm.outs=TRUE,normalize=FALSE,sigma=sigma);
 
 	temptr <- rt$dataset[rt$dataset$ID %in% rt$trainset,];
 	temptv <- rt$dataset[rt$dataset$ID %in% rt$validset,];
@@ -712,7 +712,7 @@ aloja_supportvms <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66
 
 	# Load and process datasets
 	rt <- aloja_prepare_datasets (vin,vout,tsplit=tsplit,vsplit=vsplit,ds=ds,ttaux=ttaux,traux=traux,tvaux=tvaux,
-		ttfile=ttfile,trfile=trfile,tvfile=tvfile,exclusion=0,binarize=FALSE,rm.outs=TRUE,normalize=FALSE,sigma=sigma);
+		ttfile=ttfile,trfile=trfile,tvfile=tvfile,exclusion=0,binarize=TRUE,rm.outs=TRUE,normalize=FALSE,sigma=sigma);
 
 	temptr <- rt$dataset[rt$dataset$ID %in% rt$trainset,];
 	temptv <- rt$dataset[rt$dataset$ID %in% rt$validset,];
@@ -871,6 +871,7 @@ aloja_regtree <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, s
 aloja_predict_instance_slice <- function (learned_model, vin, vinst, inst_predict, sorted = NULL, sfCPU = 1, saveall = NULL)
 {
 	inst <- as.data.frame(t(unlist(strsplit(inst_predict,","))));
+	inst <- inst[,1:length(vinst)];
 	colnames(inst) <- vinst;
 
 	inst_aux <- inst[,vin];
@@ -1063,7 +1064,7 @@ aloja_predict_individual_instance <- function (learned_model, vin, inst_predict)
 	}
 
 	datamodel <- ds[0,learned_model$varin];
-	if ("list" %in% class(model_aux) || "lm" %in% class(model_aux) || "nnet" %in% class(model_aux))
+	if ("list" %in% class(model_aux) || "lm" %in% class(model_aux) || "nnet" %in% class(model_aux) || "kknn" %in% class(model_aux) || "svm" %in% class(model_aux))
 	{
 		for (name_1 in colnames(datamodel))
 		{
@@ -1105,6 +1106,10 @@ aloja_predict_individual_instance <- function (learned_model, vin, inst_predict)
 	if ("list" %in% class(model_aux))
 	{
 		retval <- qrt.predict(model=model_aux,newdata=data.frame(datamodel));
+	} else if ("kknn" %in% class(model_aux) || "svm" %in% class(model_aux)) {
+		newdata <- cbind(0,data.frame(datamodel));
+		colnames(newdata) <- c(learned_model$varout,colnames(datamodel));
+		retval <- predict(model_aux,newdata=newdata);
 	} else {
 		retval <- predict(model_aux,newdata=data.frame(datamodel));
 	}
