@@ -1325,7 +1325,7 @@ aloja_minimal_instances <- function (learned_model, quiet = 0, kmax = 200, step 
 	best.rae <- 9E15;
 	retval[["centers"]] <- retval[["raes"]] <- retval[["datasets"]] <- retval[["sizes"]] <- list();
 	retval[["best.k"]] <- count <- 0;
-	for (k in seq(10,min(kmax,nrow(dsbin)),by=step))
+	for (k in seq(10,min(kmax,(nrow(dsbin)-1)),by=step))
 	{
 		count <- count + 1;
 
@@ -1359,7 +1359,8 @@ aloja_minimal_instances <- function (learned_model, quiet = 0, kmax = 200, step 
 				}
 			}
 
-			dsrec <- dsaux[kassig == j,vrec]; #Get instances for such center
+			dsrec <- as.data.frame(dsaux[kassig == j,vrec]); #Get instances for such center
+			colnames(dsrec) <- vrec;
 			extra_vars <- NULL;
 			for (i in vrec)
 			{
@@ -1377,9 +1378,10 @@ aloja_minimal_instances <- function (learned_model, quiet = 0, kmax = 200, step 
 
 		# Testing and comparing
 		if ("qrt" %in% class(learned_model$model)) model_new <- aloja_regtree(dsdbin,vin=vin,vout=vout,ttaux=ttaux,vsplit=0.99,quiet=1);
-		if ("IBk" %in% class(learned_model$model)) model_new <- aloja_nneighbors(dsdbin,vin=vin,vout=vout,ttaux=ttaux,vsplit=0.99,quiet=1);
+		if ("kknn" %in% class(learned_model$model)) model_new <- aloja_nneighbors(dsdbin,vin=vin,vout=vout,ttaux=ttaux,vsplit=0.99,quiet=1);
 		if ("nnet" %in% class(learned_model$model)) model_new <- aloja_nnet(dsdbin,vin=vin,vout=vout,ttaux=ttaux,vsplit=0.99,quiet=1);
 		if ("lm" %in% class(learned_model$model)) model_new <- aloja_linreg(dsdbin,vin=vin,vout=vout,ttaux=ttaux,vsplit=0.99,quiet=1);
+		if ("svm" %in% class(learned_model$model)) model_new <- aloja_supportvms(dsdbin,vin=vin,vout=vout,ttaux=ttaux,vsplit=0.99,quiet=1);
 
 		if (quiet == 0) print(paste(k,model_new$raetest,retval$best.k,best.rae,sep=" "));
 
