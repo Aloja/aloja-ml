@@ -1201,8 +1201,8 @@ aloja_outlier_dataset <- function (learned_model, vin = NULL, ds = NULL, sigma =
 
 	# Compilation of errors (learning)
 	auxerror <- abs(auxjoin[,vout] - auxjoin[,"Pred"]);
-	stdev_err <- sd(auxerror);
-	mean_err <- mean(auxerror);
+	stdev_err <- sd(auxerror,na.rm=TRUE);
+	mean_err <- mean(auxerror,na.rm=TRUE);
 
 	# Vectorization and Pre-calculation [Optimization]
 	thres1 <- mean_err + (stdev_err * sigma);
@@ -1462,7 +1462,8 @@ aloja_load_model <- function (tagname = "default")
 	model_1 <- readRDS(paste(tagname,"-model.dat",sep=""));
 	model_1;
 }
-
++	stdev_err <- sd(auxerror,na.rm=TRUE);
++	mean_err <- mean(auxerror,na.rm=TRUE);
 aloja_load_object <- function (tagname = "default")
 {
 	object_1 <- readRDS(paste(tagname,"-object.rds",sep=""));
