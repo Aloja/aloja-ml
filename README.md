@@ -5,53 +5,34 @@ This repo contains the scripts and tests done for the Machine Learning part of A
 
 ### Files
 
-* **functions.r** The library with all the ALOJA functions, like learning methods and data-set treatments, called from the diverse scripts and interfaces. You can call this file directly using "devtools" package and "source\_url()".
-* **functions-azml.r** The library with all the ALOJA functions, adapted for be called from Microsoft AzureML.
-* **models.r** Some implemented models (e.g. RPart+PolyReg Trees) to be tested in ALOJA-ML.
 * **aloja_cli.r** The wrapper/interface to call functions and run experiments from command line.
-* **aloja.r** Scrapboard file for experimenting with functions.r. Contains R scripting and snippets for running experiments.
-* **aloja\_calls.r** Contains example commands for calling functions.r, in a more "procedure call" formatting \[Function\_name, Params\]
-* **aloja-dataset.csv** Contains the example dataset
-* **Directories** Contain the dataset partitions, recodifications and plots for each specific experiment or test
+* **functions.r** The library with all the ALOJA functions, like learning methods and data-set treatments, called from the diverse scripts and interfaces.
+* **functions-azml.r** The library with all the ALOJA functions, adapted for be called from Microsoft AzureML (OLD)
+* **models.r** Some implemented models used by _functions.r_.
+* **precision.r** Functions for computing precision of executions, also compare providers by similar executions, used by _functions.r_.
+* **relations.r** Functions for computing simple relations between features of executions, used by _functions.r_.
+* **searchtrees.r** Functions for representing execution datasets as a tree, used by _functions.r_.
+* **deprecated.r** Functions in disuse or deprecated from _functions.r_, kept for legacy.
+* **aloja-dataset.csv** Example Datasets (mush check headers before using with _aloja\_cli.r_.
 
 ### Requirements
 
-* Rcran
-* Java
+* R and required packages: base, arules, e1071, kknn, nnet, optparse, RSNNS, rms, rpart, session, snowfall, stringr ...and dependencies.
 * build-essential
-* R required packages: base, rpart, devtools, nnet, scales, session, stringr, reshape, RWeka, bitops, colorspace, digest, grid, httr, munshell, plyr, Rcpp, RCurl, rJava, RWekajars, tools (and their related dependencies)
 
 ### R Installation
 
-* If using Ubuntu 12.04:
-
->_Shell code_
->
->apt-get install "openjdk-7-jre-lib" "openjdk-7-jre-headless" "openjdk-7-jdk" "r-base" "r-base-core" "r-base-dev" "r-base-html" "r-cran-bitops" "r-cran-boot" "r-cran-class" "r-cran-cluster" "r-cran-codetools" "r-cran-foreign" "r-cran-kernsmooth" "r-cran-lattice" "r-cran-mass" "r-cran-matrix" "r-cran-mgcv" "r-cran-nlme" "r-cran-nnet" "r-cran-rpart" "r-cran-spatial" "r-cran-survival" "r-recommended" "r-cran-colorspace" "r-cran-getopt" "r-cran-rcolorbrewer" "r-cran-rcpp" "libcurl4-openssl-dev" "libxml2-dev" "gsettings-desktop-schemas" -y --force-yes
->
->R CMD javareconf
->
->_R code_
->
->update.packages(ask = FALSE,repos="http://cran.es.r-project.org",dependencies = c('Suggests'),quiet=TRUE);
->
->install.packages(c("rjson", "evaluate", "labeling", "memoise", "munsell", "stringr", "rJava"), repos="http://cran.es.r-project.org", dependencies=TRUE,quiet=TRUE);
->
->install.packages(c("devtools", "DiscriMiner", "emoa", "httr", "jsonlite", "optparse", "pracma", "rgp", "rstudioapi", "session", "whisker", "RWeka", "RWekajars"), repos="http://cran.es.r-project.org", dependencies=TRUE,quiet=TRUE);
-
-* If using Ubuntu 14.04:
+* Example for Ubuntu 14.04:
 
 >_Shell code_
 >
 >wget http://security.ubuntu.com/ubuntu/pool/main/t/tiff/libtiff4\_3.9.5-2ubuntu1.6\_amd64.deb; dpkg -i ./libtiff4\_3.9.5-2ubuntu1.6\_amd64.deb
 >
->apt-get install "openjdk-7-jre-lib" "openjdk-7-jre-headless" "openjdk-7-jdk" "r-base" "r-base-core" "r-base-dev" "r-base-html" "r-cran-bitops" "r-cran-boot" "r-cran-class" "r-cran-cluster" "r-cran-codetools" "r-cran-foreign" "r-cran-kernsmooth" "r-cran-lattice" "r-cran-mass" "r-cran-matrix" "r-cran-mgcv" "r-cran-nlme" "r-cran-nnet" "r-cran-rpart" "r-cran-spatial" "r-cran-survival" "r-recommended" "r-cran-rjson" "r-cran-rcurl" "r-cran-colorspace" "r-cran-dichromat" "r-cran-digest" "r-cran-evaluate" "r-cran-getopt" "r-cran-labeling" "r-cran-memoise" "r-cran-munsell" "r-cran-plyr" "r-cran-rcolorbrewer" "r-cran-rcpp" "r-cran-reshape" "r-cran-rjava" "r-cran-scales" "r-cran-stringr" "gsettings-desktop-schemas" -y --force-yes
->
->R CMD javareconf
+>apt-get install "r-base" "r-base-core" "r-base-dev" "r-base-html" "r-cran-bitops" "r-cran-boot" "r-cran-class" "r-cran-cluster" "r-doc-html" "r-cran-codetools" "r-cran-foreign" "r-cran-kernsmooth" "r-cran-lattice" "r-cran-mass" "r-cran-matrix" "r-cran-mgcv" "r-cran-nlme" "r-cran-nnet" "r-cran-rpart" "r-cran-spatial" "r-cran-survival" "r-recommended" "r-cran-colorspace" "r-cran-dichromat" "r-cran-digest" "r-cran-foreach" "r-cran-gtable" "r-cran-ggplot2" "r-cran-iterators" "r-cran-labeling" "r-cran-munsell" "r-cran-plyr" "r-cran-rcolorbrewer" "r-cran-rcpp" "r-cran-reshape" "r-cran-scales" "r-cran-stringr" "gsettings-desktop-schemas" -y --force-yes
 >
 >_R code_
 >
->install.packages(c("devtools", "DiscriMiner", "emoa", "httr", "jsonlite", "optparse", "pracma", "rgp", "rstudioapi", "session", "whisker", "RWeka", "RWekajars"), repos="http://cran.es.r-project.org", dependencies=TRUE,quiet=TRUE);
+>install.packages(c("arules","e1071","kknn","optparse","RSNNS","session","snowfall"), repos="http://cran.es.r-project.org", dependencies=TRUE,quiet=TRUE);
 
 ### CLI Functionalities
 
@@ -63,7 +44,7 @@ This repo contains the scripts and tests done for the Machine Learning part of A
 #### Examples of Training and Prediction:
 >./aloja\_cli.r -m aloja\_regtree -d aloja-dataset.csv -p saveall=m5p1
 >
->./aloja\_cli.r -m aloja\_regtree -d aloja-dataset.csv -p saveall=m5p1:vin="Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size"
+>./aloja\_cli.r -m aloja\_regtree -d aloja-dataset.csv -p saveall=m5p1:vin="Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size":vout="Exe.Time"
 >
 >./aloja\_cli.r -m aloja\_predict\_dataset -l m5p1 -d m5p1-tt.csv -v
 >
@@ -75,6 +56,19 @@ This repo contains the scripts and tests done for the Machine Learning part of A
 
 #### Examples of Detecting Outliers in the Dataset:
 >./aloja\_cli.r -m aloja\_outlier\_dataset -d m5p1-tt.csv -l m5p1 -p sigma=3:hdistance=3:saveall=m5p1test
+>
+>./aloja\_cli.r -m aloja\_outlier\_instance -l m5p1 -p instance="sort,ETH,RR3,8,10,1,65536,None,32,Azure L":observed=100000:display=1 -v
+
+#### Examples of Minimal Instances defining the Dataset:
+>./aloja\_cli.r -m aloja\_minimal\_instances -l m5p1 -p saveall=m5p1mi
+>
+>./aloja\_cli.r -m aloja\_minimal\_instances -l m5p1 -p kmax=200:step=10:saveall=m5p1mi
+
+#### Examples of JSON Tree defining the Dataset:
+>./aloja\_cli.r -m aloja\_representative\_tree -p method=ordered:pred\_file=instances.csv:output=string -v
+
+
+### Deprecated Functionalities
 
 #### Examples of Dimensionality Reduction:
 >./aloja\_cli.r -m aloja\_pca -d dataset.csv -p saveall=pca1
