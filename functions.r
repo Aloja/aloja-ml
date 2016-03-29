@@ -1462,8 +1462,7 @@ aloja_load_model <- function (tagname = "default")
 	model_1 <- readRDS(paste(tagname,"-model.dat",sep=""));
 	model_1;
 }
-+	stdev_err <- sd(auxerror,na.rm=TRUE);
-+	mean_err <- mean(auxerror,na.rm=TRUE);
+
 aloja_load_object <- function (tagname = "default")
 {
 	object_1 <- readRDS(paste(tagname,"-object.rds",sep=""));
