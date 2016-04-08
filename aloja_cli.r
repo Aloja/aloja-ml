@@ -2,7 +2,7 @@
 
 # Josep Ll. Berral-García
 # ALOJA-BSC-MSR aloja.bsc.es
-# 2016-02-20
+# 2016-04-08
 # Launcher of ALOJA-ML
  
 # usage: ./aloja_cli.r -m method [-d dataset] [-l learned model] [-p param1=aaaa:param2=bbbb:param3=cccc:...] [-v]
@@ -27,6 +27,8 @@
 #	 ./aloja_cli.r -m aloja_precision_split -d aloja-dataset.csv -p vdisc="Cl.Name":noout=1:sigma=1:json=0 -v
 #	 ./aloja_cli.r -m aloja_reunion -d aloja-dataset.csv -v
 #	 ./aloja_cli.r -m aloja_diversity -d aloja-dataset.csv -p json=0 -v
+#
+#	 ./aloja_cli.r -m aloja_print_summaries -d aloja-dataset.csv -p fprint="dataset-print":vin="Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size"
 
 source("functions.r");
 
@@ -46,33 +48,16 @@ source("functions.r");
 	opt = parse_args(OptionParser(option_list=option_list));
 
 ###############################################################################
-# Error and Warning messages on arguments
+# Parse Arguments
 
+	params <- list();
+
+	# Load Method
 	if (is.null(opt$method))
 	{
 		cat("[ERROR] No method selected. Aborting mission.\n");
 		quit(save="no", status=-1);
 	}
-
-###############################################################################
-# Read datasets
-
-	dataset <- NULL;
-
-	if (!is.null(opt$dataset))
-	{
-		# Call for aloja_get_data
-		params_1 <- list();
-		params_1[["fread"]] = opt$dataset;
-
-		dataset <- do.call(aloja_get_data,params_1);
-	}
-
-###############################################################################
-# Parse parameters
-
-	params <- list();
-	params[["ds"]] <- dataset;
 
 	# Default Parameters for ALOJA
 	if (opt$method %in% c("aloja_regtree","aloja_nneighbors","aloja_linreg","aloja_nnet","aloja_supportvms","aloja_binarize_instance"))
@@ -127,6 +112,15 @@ source("functions.r");
 	{
 		if (is.null(params$vout)) params[["vout"]] <- "Exe.Time";
 		if (is.null(params$vin)) params[["vin"]] <- c("Net","Disk","Maps","IO.SFac","Rep","Comp","IO.FBuf","Blk.size","Datanodes","VM.Cores","VM.RAM");
+	}
+
+	# Load Dataset
+	if (!is.null(opt$dataset))
+	{
+		# Call for aloja_get_data
+		params_1 <- list();
+		params_1[["fread"]] = opt$dataset;
+		params[["ds"]] <- do.call(aloja_get_data,params_1);
 	}
 
 	# Load Learned Model
