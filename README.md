@@ -32,7 +32,7 @@ This repo contains the scripts and tests done for the Machine Learning part of A
 >
 >_R code_
 >
->install.packages(c("arules","e1071","kknn","optparse","RSNNS","session","snowfall"), repos="http://cran.es.r-project.org", dependencies=TRUE,quiet=TRUE);
+>install.packages(c("arules","e1071","kknn","optparse","RSNNS","rms","session","snowfall"), repos="http://cran.es.r-project.org", dependencies=TRUE,quiet=TRUE);
 
 ### CLI Functionalities
 
