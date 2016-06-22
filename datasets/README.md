@@ -1,0 +1,19 @@
+Aloja-ML Data-Sets
+==================
+
+This repo contains the data-sets for the tests done in ALOJA-ML.
+
+### Files
+
+* **aloja-dataset** 4404 executions _ID,Benchmark,Exe.Time,Running.Cost,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Cluster,End.time_ (Lots of failures and outliers)
+* **aloja-dataset2** 2338 executions _ID,Benchmark,Exe.Time,Running.Cost,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Cluster,End.time_ (Clean ALOJA-dataset)
+* **aloja-dataset3** 3111 executions _ID,Exe.Time,Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Cluster,Cl.Name,Datanodes,Headnodes,VM.OS,VM.Cores,VM.RAM,Provider,VM.Size,Service.Type_ (Expanded dataset)
+* **aloja-dataset4** 37050 executions _ID,Benchmark,Exe.Time,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Cluster,Cl.Name,Datanodes,Headnodes,VM.OS,VM.Cores,VM.RAM,Provider,VM.Size,Service.Type,Bench.Type_ (More executions)
+* **aloja-dataset5** 43650 executions _ID,Benchmark,Exe.Time,Net,Disk,Bench.Type,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Valid,Filter,Cl.Name,Datanodes,Headnodes,VM.OS,VM.Cores,VM.RAM,Provider,VM.Size,Type,Hadoop.Version,Cluster_ (More executions)
+
+### Soon
+
+**aloja-dataset6-single** with aggregated performance per instance _ID,Benchmark,Exe.Time,Net,Disk,Bench.Type,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Valid,Filter,Cl.Name,Datanodes,Headnodes,VM.OS,VM.Cores,VM.RAM,Provider,VM.Size,Service.Type,Hadoop.Version,Datasize,Scale.Factor,Cluster,Start.Time,End.Time,Outlier,Perf.Details,Exec.Type_
+**aloja-dataset6-complete** with aggregated performance per instance _ID,Benchmark,Exe.Time,Start.Time,End.Time,Net,Disk,Bench.Type,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.Size,Hadoop.Version,Valid,Filter,Outlier,Perf.Details,Exec.Type,Datasize,Scale.Factor,Java.XMS,Java.XMX,Run.Num,Cluster,Cl.Name,Cost.Hour,Service.Type,Datanodes,Headnodes,VM.Size,VM.OS,VM.Cores,VM.RAM,Provider,Cost.Remote,Cost.SSD,Cost.IB,avg.user,max.user,min.user,stddev_pop.user,var_pop.user,avg.nice,max.nice,min.nice,stddev_pop.nice,var_pop.nice,avg.system,max.system,min.system,stddev_pop.system,var_pop.system,avg.iowait,max.iowait,min.iowait,stddev_pop.iowait,var_pop.iowait,avg.steal,max.steal,min.steal,stddev_pop.steal,var_pop.steal,avg.idle,max.idle,min.idle,stddev_pop.idle,var_pop.idle,avgkbmemfree,maxkbmemfree,minkbmemfree,stddev_popkbmemfree,var_popkbmemfree,avgkbmemused,maxkbmemused,minkbmemused,stddev_popkbmemused,var_popkbmemused,avg.memused,max.memused,min.memused,stddev_pop.memused,var_pop.memused,avgkbbuffers,maxkbbuffers,minkbbuffers,stddev_popkbbuffers,var_popkbbuffers,avgkbcached,maxkbcached,minkbcached,stddev_popkbcached,var_popkbcached,avgkbcommit,maxkbcommit,minkbcommit,stddev_popkbcommit,var_popkbcommit,avg.commit,max.commit,min.commit,stddev_pop.commit,var_pop.commit,avgkbactive,maxkbactive,minkbactive,stddev_popkbactive,var_popkbactive,avgkbinact,maxkbinact,minkbinact,stddev_popkbinact,var_popkbinact,avgrxpck.s,maxrxpck.s,minrxpck.s,stddev_poprxpck.s,var_poprxpck.s,sumrxpck.s,avgtxpck.s,maxtxpck.s,mintxpck.s,stddev_poptxpck.s,var_poptxpck.s,sumtxpck.s,avgrxkB.s,maxrxkB.s,minrxkB.s,stddev_poprxkB.s,var_poprxkB.s,sumrxkB.s,avgtxkB.s,maxtxkB.s,mintxkB.s,stddev_poptxkB.s,var_poptxkB.s,sumtxkB.s,avgrxcmp.s,maxrxcmp.s,minrxcmp.s,stddev_poprxcmp.s,var_poprxcmp.s,sumrxcmp.s,avgtxcmp.s,maxtxcmp.s,mintxcmp.s,stddev_poptxcmp.s,var_poptxcmp.s,sumtxcmp.s,avgrxmcst.s,maxrxmcst.s,minrxmcst.s,stddev_poprxmcst.s,var_poprxmcst.s,sumrxmcst.s,avgtps,maxtps,mintps,avgrd_sec.s,maxrd_sec.s,minrd_sec.s,stddev_poprd_sec.s,var_poprd_sec.s,sumrd_sec.s,avgwr_sec.s,maxwr_sec.s,minwr_sec.s,stddev_popwr_sec.s,var_popwr_sec.s,sumwr_sec.s,avgrq_sz,maxrq_sz,minrq_sz,stddev_poprq_sz,var_poprq_sz,avgqu_sz,maxqu_sz,minqu_sz,stddev_popqu_sz,var_popqu_sz,avgawait,maxawait,minawait,stddev_popawait,var_popawait,avg.util,max.util,min.util,stddev_pop.util,var_pop.util,avgsvctm,maxsvctm,minsvctm,stddev_popsvctm,var_popsvctm_
+
+

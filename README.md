@@ -7,13 +7,16 @@ This repo contains the scripts and tests done for the Machine Learning part of A
 
 * **aloja_cli.r** The wrapper/interface to call functions and run experiments from command line.
 * **functions.r** The library with all the ALOJA functions, like learning methods and data-set treatments, called from the diverse scripts and interfaces.
-* **functions-azml.r** The library with all the ALOJA functions, adapted for be called from Microsoft AzureML (OLD)
 * **models.r** Some implemented models used by _functions.r_.
 * **precision.r** Functions for computing precision of executions, also compare providers by similar executions, used by _functions.r_.
 * **relations.r** Functions for computing simple relations between features of executions, used by _functions.r_.
 * **searchtrees.r** Functions for representing execution datasets as a tree, used by _functions.r_.
 * **deprecated.r** Functions in disuse or deprecated from _functions.r_, kept for legacy.
-* **aloja-dataset.csv** Example Datasets (mush check headers before using with _aloja\_cli.r_.
+
+### Directories
+
+* **azure-ml** Version of ALOJA-ML for Microsoft AZURE-ML
+* **datasets** ALOJA Data-sets
 
 ### Requirements
 
