@@ -214,6 +214,9 @@ aloja_prepare_datasets <- function (vin, vout, tsplit = NULL, vsplit = NULL,
 	if (!is.null(tvfile)) tvaux <- read.table(tvfile,header=T,sep=",");
 	if (!is.null(ttfile)) ttaux <- read.table(ttfile,header=T,sep=",");
 
+	# If No ID -> Create ID
+	if (!("ID" %in% colnames(ds))) ds <- cbind(ID=seq(1:nrow(ds)),ds);
+
 	# Load DATASET & Split
 	if (!is.null(ds) & is.null(tvaux) & is.null(traux) & is.null(ttaux))
 	{
@@ -221,12 +224,12 @@ aloja_prepare_datasets <- function (vin, vout, tsplit = NULL, vsplit = NULL,
 		retval[["varin_orig"]] <- vin;
 		retval[["varout"]] <- vout;
 
-		samples <- min(nrow(ds)*tsplit,nrow(ds)-1);
+		samples <- trunc(min(nrow(ds)*tsplit,nrow(ds)-1));
 		selected <- sample(1:nrow(ds),samples);
 		ttaux <- ds$ID[selected];
 		ntaux <- ds$ID[-selected];
 
-		samples <- min(length(ntaux)*vsplit,length(ntaux)-1);
+		samples <- trunc(min(length(ntaux)*vsplit,length(ntaux)-1));
 		selected <- sample(1:length(ntaux),samples);
 		traux <- ntaux[selected];
 		tvaux <- ntaux[-selected];
@@ -278,7 +281,7 @@ aloja_prepare_datasets <- function (vin, vout, tsplit = NULL, vsplit = NULL,
 		if (exclusion > 0) ntaux <- dsaux$ID[!(dsaux$ID %in% ttaux$ID)];
 		if (exclusion == 0) ntaux <- dsaux$ID;
 
-		samples <- min(length(ntaux)*vsplit,length(ntaux)-1);
+		samples <- trunc(min(length(ntaux)*vsplit,length(ntaux)-1));
 		selected <- sample(1:length(ntaux),samples);
 		traux <- ntaux[selected];
 		tvaux <- ntaux[-selected];
