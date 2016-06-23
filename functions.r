@@ -1285,24 +1285,47 @@ aloja_outlier_instance <- function (learned_model, vin, instance, observed, disp
 # Example selection methods                                                   #
 ###############################################################################
 
-aloja_minimal_instances <- function (learned_model, quiet = 0, kmax = 200, step = 10, saveall = NULL)
+aloja_minimal_instances <- function (ds = NULL, vin = NULL, vout = NULL, model = "lm", tt.id = NULL, tsplit = 0.25, learned_model = NULL, quiet = 0, kmax = 200, step = 10, saveall = NULL)
 {
+	if (!is.null(learned_model)) # Legacy Wrapper TODO - Remove after ALOJA Refactor
+	{
+		ds <- learned_model$ds_original;
+		vout <- learned_model$varout;
+		vin <- learned_model$varin_orig;
+		tt.id <- learned_model$testset;
+		model <- class(learned_model$model);
+	}
+	retval <- aloja_minimal_instances_internal(ds=ds,vin=vin,vout=vout,model=model,tt.id=tt.id,quiet=quiet,kmax=kmax,step=step,saveall=saveall);
+	retval;
+}
+
+aloja_minimal_instances_internal <- function (ds, vin, vout, model = "lm", tt.id = NULL, tsplit = 0.25, quiet = 0, kmax = 200, step = 10, saveall = NULL)
+{
+	if (is.null(ds) || is.null(vin) || is.null(vout))
+	{
+		print("ERROR: No DS or variables introduced to Minimal Instances");
+		return(NULL);
+	}
+
 	if (!is.integer(kmax)) kmax <- as.integer(kmax);
 	if (!is.integer(step)) step <- as.integer(step);
 	if (!is.integer(quiet)) quiet <- as.integer(quiet);
 
+	if (is.null(tt.id))
+	{
+		samples <- trunc(min(nrow(ds)*tsplit,nrow(ds)-1));
+		tt.id <- sample(ds$ID,samples);
+	}
+
 	retval <- list();
-	ds <- learned_model$ds_original;
-	vout <- learned_model$varout;
-	vin <- learned_model$varin_orig;
 
 	# Binarization
-	dsaux <- ds[ds$ID %in% c(learned_model$trainset,learned_model$validset),];
+	dsaux <- ds[!(ds$ID %in% tt.id),];
 	dsbin <- aloja_binarize_ds(dsaux[,c("ID",vin,vout)]);
 	vbin <- colnames(dsbin)[!(colnames(dsbin) %in% c("ID",vout))];
 	vrec <- colnames(ds)[!(colnames(ds) %in% c("ID",vout,vin))]; # Variables left out of VIN/VOUT
 
-	ttaux <- ds[ds$ID %in% learned_model$testset,c("ID",vin,vout)];
+	ttaux <- ds[ds$ID %in% tt.id,c("ID",vin,vout)];
 
 	# Iteration over Clustering
 	best.rae <- 9E15;
@@ -1342,15 +1365,18 @@ aloja_minimal_instances <- function (learned_model, quiet = 0, kmax = 200, step 
 				}
 			}
 
-			dsrec <- as.data.frame(dsaux[kassig == j,vrec]); #Get instances for such center
-			colnames(dsrec) <- vrec;
 			extra_vars <- NULL;
-			for (i in vrec)
+			if (length(vrec) > 0)
 			{
-				value <- NA;
-				if (class(dsaux[0,i]) %in% c("factor","character")) value <- names(which.max(table(dsrec[,i])));
-				if (class(dsaux[0,i]) %in% c("numeric")) value <- mean(dsrec[,i]);
-				extra_vars <- c(extra_vars,value);
+				dsrec <- as.data.frame(dsaux[kassig == j,vrec]); #Get instances for such center
+				colnames(dsrec) <- vrec;
+				for (i in vrec)
+				{
+					value <- NA;
+					if (class(dsaux[0,i]) %in% c("factor","character")) value <- names(which.max(table(dsrec[,i])));
+					if (class(dsaux[0,i]) %in% c("numeric")) value <- mean(dsrec[,i]);
+					extra_vars <- c(extra_vars,value);
+				}
 			}
 
 			instance <- c(j,kcaux$centers[j,vout],instance,extra_vars);
@@ -1360,11 +1386,11 @@ aloja_minimal_instances <- function (learned_model, quiet = 0, kmax = 200, step 
 		for (j in colnames(dsdbin)) class(dsdbin[,j]) <- class(ds[0,j]);
 
 		# Testing and comparing
-		if ("qrt" %in% class(learned_model$model)) model_new <- aloja_regtree(dsdbin,vin=vin,vout=vout,ttaux=ttaux,vsplit=0.99,quiet=1);
-		if ("kknn" %in% class(learned_model$model)) model_new <- aloja_nneighbors(dsdbin,vin=vin,vout=vout,ttaux=ttaux,vsplit=0.99,quiet=1);
-		if ("nnet" %in% class(learned_model$model)) model_new <- aloja_nnet(dsdbin,vin=vin,vout=vout,ttaux=ttaux,vsplit=0.99,quiet=1);
-		if ("lm" %in% class(learned_model$model)) model_new <- aloja_linreg(dsdbin,vin=vin,vout=vout,ttaux=ttaux,vsplit=0.99,quiet=1);
-		if ("svm" %in% class(learned_model$model)) model_new <- aloja_supportvms(dsdbin,vin=vin,vout=vout,ttaux=ttaux,vsplit=0.99,quiet=1);
+		if ("qrt" %in% model) model_new <- aloja_regtree(dsdbin,vin=vin,vout=vout,ttaux=ttaux,vsplit=0.99,quiet=1);
+		if ("kknn" %in% model) model_new <- aloja_nneighbors(dsdbin,vin=vin,vout=vout,ttaux=ttaux,vsplit=0.99,quiet=1);
+		if ("nnet" %in% model) model_new <- aloja_nnet(dsdbin,vin=vin,vout=vout,ttaux=ttaux,vsplit=0.99,quiet=1);
+		if ("lm" %in% model) model_new <- aloja_linreg(dsdbin,vin=vin,vout=vout,ttaux=ttaux,vsplit=0.99,quiet=1);
+		if ("svm" %in% model) model_new <- aloja_supportvms(dsdbin,vin=vin,vout=vout,ttaux=ttaux,vsplit=0.99,quiet=1);
 
 		if (quiet == 0) print(paste(k,model_new$raetest,retval$best.k,best.rae,sep=" "));
 
@@ -1377,7 +1403,7 @@ aloja_minimal_instances <- function (learned_model, quiet = 0, kmax = 200, step 
 		# Save iteration
 		retval$centers[[count]] <- kcaux;
 		retval$raes[[count]] <- model_new$raetest;
-		retval$datasets[[count]] <- dsdbin[,colnames(ds)];
+		retval$datasets[[count]] <- dsdbin[,colnames(ds)]; 
 		retval$sizes[[count]] <- weights;
 	}
 
