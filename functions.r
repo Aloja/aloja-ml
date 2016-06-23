@@ -488,10 +488,8 @@ aloja_nnet <-  function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, sig
 #			learnFunc="Quickprop",
 			learnFuncParams=c(decay, 0),maxit=maxit,metric="RSME",linOut=FALSE);
 	}
-	rt[["predtrain"]] <- as.data.frame(cbind(temptr[,"ID"],rt$model$fitted.values));
-	rt[["predval"]] <- as.data.frame(cbind(temptv[,"ID"],predict(rt$model,newdata=rt$normvalidset[,rt$varin])));
-	colnames(rt$predtrain) <- c("ID","Pred");
-	colnames(rt$predval) <- c("ID","Pred");
+	rt[["predtrain"]] <- data.frame(ID=temptr[,"ID"],Pred=rt$model$fitted.values);
+	rt[["predval"]] <- data.frame(ID=temptv[,"ID"],Pred=predict(rt$model,newdata=rt$normvalidset[,rt$varin]));
 	if (!is.null(prange))
 	{
 		rt$predtrain$Pred[rt$predtrain$Pred < prange[1]] <- prange[1];
@@ -511,8 +509,7 @@ aloja_nnet <-  function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, sig
 	}
 
 	# Testing and evaluation
-	rt[["predtest"]] <- as.data.frame(cbind(temptt[,"ID"],predict(rt$model,newdata=rt$normtestset[,rt$varin])));
-	colnames(rt$predtest) <- c("ID","Pred");
+	rt[["predtest"]] <- data.frame(ID=temptt[,"ID"],Pred=predict(rt$model,newdata=rt$normtestset[,rt$varin]));
 	if (!is.null(prange))
 	{
 		rt$predtest$Pred[rt$predtest$Pred < prange[1]] <- prange[1];
@@ -576,10 +573,8 @@ aloja_linreg <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, si
 	if (ppoly == 1) rt[["model"]] <- lm(formula=temptr[,rt$varout] ~ ., data=data.frame(temptr[,rt$varin]));
 	if (ppoly == 2) rt[["model"]] <- lm(formula=temptr[,rt$varout] ~ . + (.)^2, data=data.frame(temptr[,rt$varin]));
 	if (ppoly == 3) rt[["model"]] <- lm(formula=temptr[,rt$varout] ~ . + (.)^2 + (.)^3, data=data.frame(temptr[,rt$varin]));
-	rt[["predtrain"]] <- as.data.frame(cbind(temptr[,"ID"],rt$model$fitted.values));
-	rt[["predval"]] <- as.data.frame(cbind(temptv[,"ID"],predict(rt$model,newdata=data.frame(temptv))));
-	colnames(rt$predtrain) <- c("ID","Pred");
-	colnames(rt$predval) <- c("ID","Pred");
+	rt[["predtrain"]] <- data.frame(ID=temptr[,"ID"],Pred=rt$model$fitted.values);
+	rt[["predval"]] <- data.frame(ID=temptv[,"ID"],Pred=predict(rt$model,newdata=data.frame(temptv)));
 	if (!is.null(prange))
 	{
 		rt$predtrain$Pred[rt$predtrain$Pred < prange[1]] <- prange[1];
@@ -599,8 +594,7 @@ aloja_linreg <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, si
 	}
 
 	# Testing and evaluation
-	rt[["predtest"]] <- as.data.frame(cbind(temptt[,"ID"],predict(rt$model,newdata=data.frame(temptt))));
-	colnames(rt$predtest) <- c("ID","Pred");
+	rt[["predtest"]] <- data.frame(ID=temptt[,"ID"],Pred=predict(rt$model,newdata=data.frame(temptt)));
 	if (!is.null(prange))
 	{
 		rt$predtest$Pred[rt$predtest$Pred < prange[1]] <- prange[1];
@@ -660,11 +654,8 @@ aloja_nneighbors <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66
 	rt[["model"]] <- train.kknn(formula=temptr[,rt$varout] ~ ., data=temptr[,c(rvarin,rt$varout)], kmax = rt$kparam, distance = 1, kernel = rt$kernel);
 	rt[["bestk"]] <- rt$model$best.parameters$k;
 
-	rt[["predtrain"]] <- as.data.frame(cbind(temptr[,"ID"],rt$model$fitted.values[[rt$bestk]][1:nrow(temptr)]));
-	rt[["predval"]] <- as.data.frame(cbind(temptv[,"ID"],predict(rt$model,newdata=temptv[,c(rvarin,rt$varout)])));
-	colnames(rt$predtrain) <- c("ID","Pred");
-	colnames(rt$predval) <- c("ID","Pred");
-
+	rt[["predtrain"]] <- data.frame(ID=temptr[,"ID"],Pred=rt$model$fitted.values[[rt$bestk]][1:nrow(temptr)]);
+	rt[["predval"]] <- data.frame(ID=temptv[,"ID"],Pred=predict(rt$model,newdata=temptv[,c(rvarin,rt$varout)]));
 	rt[["maeval"]] <- mean(abs(rt$predval$Pred - temptv[,rt$varout]));
 	rt[["raeval"]] <- mean(abs((rt$predval$Pred - temptv[,rt$varout])/temptv[,rt$varout]));
 
@@ -678,8 +669,7 @@ aloja_nneighbors <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66
 	}
 
 	# Testing and evaluation
-	rt[["predtest"]] <- as.data.frame(cbind(temptt[,"ID"],predict(rt$model,newdata=temptt[,c(rvarin,rt$varout)])));
-	colnames(rt$predtest) <- c("ID","Pred");
+	rt[["predtest"]] <- data.frame(ID=temptt[,"ID"],Pred=predict(rt$model,newdata=temptt[,c(rvarin,rt$varout)]));
 	rt[["maetest"]] <- mean(abs(rt$predtest$Pred - temptt[,rt$varout]));
 	rt[["raetest"]] <- mean(abs((rt$predtest$Pred - temptt[,rt$varout])/temptt[,rt$varout]));
 
@@ -727,11 +717,8 @@ aloja_supportvms <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66
 	rvarin <- rt$varin[!rt$varin %in% rcol];
 
 	rt[["model"]] <- svm(formula=temptr[,rt$varout] ~ ., data=temptr[,c(rvarin,rt$varout)]);
-	rt[["predtrain"]] <- as.data.frame(cbind(temptr[,"ID"],rt$model$fitted));
-	rt[["predval"]] <- as.data.frame(cbind(temptv[,"ID"],predict(rt$model,newdata=temptv[,c(rvarin,rt$varout)])));
-	colnames(rt$predtrain) <- c("ID","Pred");
-	colnames(rt$predval) <- c("ID","Pred");
-
+	rt[["predtrain"]] <- data.frame(ID=temptr[,"ID"],Pred=rt$model$fitted);
+	rt[["predval"]] <- data.frame(ID=temptv[,"ID"],Pred=predict(rt$model,newdata=temptv[,c(rvarin,rt$varout)]));
 	rt[["maeval"]] <- mean(abs(rt$predval$Pred - temptv[,rt$varout]));
 	rt[["raeval"]] <- mean(abs((rt$predval$Pred - temptv[,rt$varout])/temptv[,rt$varout]));
 
@@ -745,8 +732,7 @@ aloja_supportvms <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66
 	}
 
 	# Testing and evaluation
-	rt[["predtest"]] <- as.data.frame(cbind(temptt[,"ID"],predict(rt$model,newdata=temptt[,c(rvarin,rt$varout)])));
-	colnames(rt$predtest) <- c("ID","Pred");
+	rt[["predtest"]] <- data.frame(ID=temptt[,"ID"],Pred=predict(rt$model,newdata=temptt[,c(rvarin,rt$varout)]));
 	rt[["maetest"]] <- mean(abs(rt$predtest$Pred - temptt[,rt$varout]));
 	rt[["raetest"]] <- mean(abs((rt$predtest$Pred - temptt[,rt$varout])/temptt[,rt$varout]));
 
@@ -801,11 +787,8 @@ aloja_regtree <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, s
 		mparam <- rt$selected_model$mmin;
 	}
 	rt[["model"]] <- qrt.tree(varout=rt$varout,dataset=data.frame(temptr[,c(rt$varout,rt$varin)]),m=mparam,simple=1);
-	rt[["predtrain"]] <- as.data.frame(cbind(temptr[,"ID"],rt$model$fitted.values));
-	rt[["predval"]] <- as.data.frame(cbind(temptv[,"ID"],qrt.predict(model=rt$model,newdata=data.frame(temptv[,c(rt$varout,rt$varin)]))));
-
-	colnames(rt$predtrain) <- c("ID","Pred");
-	colnames(rt$predval) <- c("ID","Pred");
+	rt[["predtrain"]] <- data.frame(ID=temptr[,"ID"],Pred=rt$model$fitted.values);
+	rt[["predval"]] <- data.frame(ID=temptv[,"ID"],Pred=qrt.predict(model=rt$model,newdata=data.frame(temptv[,c(rt$varout,rt$varin)])));
 
 	if (!is.null(prange))
 	{
@@ -833,9 +816,7 @@ aloja_regtree <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, s
 	}
 
 	# Testing and evaluation
-	rt[["predtest"]] <- as.data.frame(cbind(temptt[,"ID"],qrt.predict(model=rt$model,newdata=data.frame(temptt[,c(rt$varout,rt$varin)]))));
-	colnames(rt$predtest) <- c("ID","Pred");
-
+	rt[["predtest"]] <- data.frame(ID=temptt[,"ID"],Pred=qrt.predict(model=rt$model,newdata=data.frame(temptt[,c(rt$varout,rt$varin)])));
 	if (!is.null(prange))
 	{
 		rt$predtest$Pred[rt$predtest$Pred < prange[1]] <- prange[1];
@@ -1056,7 +1037,7 @@ aloja_predict_instance <- function (learned_model, vin, inst_predict, sorted = N
 
 aloja_predict_individual_instance <- function (learned_model, vin, inst_predict)
 {
-	ds <- learned_model$dataset;
+	datamodel <- learned_model$dataset[0,learned_model$varin];
 	model_aux <- learned_model$model;
 
 	inst_aux <- inst_predict;
@@ -1066,7 +1047,6 @@ aloja_predict_individual_instance <- function (learned_model, vin, inst_predict)
 		colnames(inst_aux) <- vin;
 	}
 
-	datamodel <- ds[0,learned_model$varin];
 	if ("list" %in% class(model_aux) || "lm" %in% class(model_aux) || "nnet" %in% class(model_aux) || "kknn" %in% class(model_aux) || "svm" %in% class(model_aux))
 	{
 		for (name_1 in colnames(datamodel))
