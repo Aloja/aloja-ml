@@ -25,7 +25,7 @@ source('relations.r');		# Variable Relations
 
 aloja_get_data <- function (fread, cds = FALSE, hds = FALSE, fproc = NULL)
 {
-	ds <- read.table(fread,header=T,sep=",");
+	ds <- read.table(fread,header=T,sep=",",na.strings="NULL");
 
 	if ("End.time" %in% colnames(ds)) # LEGACY
 	{
@@ -217,12 +217,19 @@ aloja_prepare_datasets <- function (vin, vout, tsplit = NULL, vsplit = NULL,
 	# If No ID -> Create ID
 	if (!("ID" %in% colnames(ds))) ds <- cbind(ID=seq(1:nrow(ds)),ds);
 
+	# Basic Model Information (Pre-Process)
+	retval[["varin_orig"]] <- vin;
+	retval[["varout"]] <- vout;
+
+	retval[["dsorig.header"]] <- ds[0,];
+	retval[["varinorig.class"]] <- sapply(vin,function(x) class(ds[,x]));
+	retval[["varinorig.values"]] <- sapply(vin,function(x) if(class(ds[,x])=="factor") { levels(ds[,x]); } else { unique(ds[,x]) } );
+	names(retval[["varinorig.values"]]) <- vin;
+
 	# Load DATASET & Split
 	if (!is.null(ds) & is.null(tvaux) & is.null(traux) & is.null(ttaux))
 	{
 		retval[["ds_original"]] <- ds;
-		retval[["varin_orig"]] <- vin;
-		retval[["varout"]] <- vout;
 
 		samples <- trunc(min(nrow(ds)*tsplit,nrow(ds)-1));
 		selected <- sample(1:nrow(ds),samples);
@@ -248,8 +255,6 @@ aloja_prepare_datasets <- function (vin, vout, tsplit = NULL, vsplit = NULL,
 		commjoin <- aloja_dbind(aloja_dbind(ttaux[,commvar],traux[,commvar]),tvaux[,commvar]);
 
 		retval[["ds_original"]] <- commjoin;
-		retval[["varin_orig"]] <- vin;
-		retval[["varout"]] <- vout;
 
 		retval[["trainset"]] <- traux$ID;
 		retval[["validset"]] <- tvaux$ID;
@@ -261,9 +266,6 @@ aloja_prepare_datasets <- function (vin, vout, tsplit = NULL, vsplit = NULL,
 	# Load TESTSPLIT
 	if (!is.null(ds) & is.null(tvaux) & is.null(traux) & !is.null(ttaux))
 	{
-		retval[["varin_orig"]] <- vin;
-		retval[["varout"]] <- vout;
-
 		commvar <- intersect(colnames(ds),colnames(ttaux));
 
 		if (all(vin %in% commvar))
@@ -305,19 +307,12 @@ aloja_prepare_datasets <- function (vin, vout, tsplit = NULL, vsplit = NULL,
 	# Remove Outliers
 	if (rm.outs)
 	{
-		temptr <- retval$dataset[retval$dataset$ID %in% retval$trainset,c("ID",vout)];
-		temptv <- retval$dataset[retval$dataset$ID %in% retval$validset,c("ID",vout)];
-		temptt <- retval$dataset[retval$dataset$ID %in% retval$testset,c("ID",vout)];
-
-		if (nrow(temptr) > 100)
+		ds.temp <- retval$dataset[retval$dataset$ID %in% c(retval$trainset,retval$validset),];
+		if (nrow(ds.temp) > 100)
 		{
-			retval[["olstrain"]] <- temptr$ID[temptr[,vout] > mean(temptr[,vout]) + sigma * sd(temptr[,vout])];
-			retval$trainset <- retval$trainset[!(retval$trainset %in% retval$olstrain)];
-		}
-		if (nrow(temptv) > 100)
-		{
-			retval[["olsvalid"]] <- temptv$ID[temptv[,vout] > mean(temptv[,vout]) + sigma * sd(temptv[,vout])];
-			retval$validset <- retval$validset[!(retval$validset %in% retval$olsvalid)];
+			olsaux <-  ds.temp$ID[ds.temp[,vout] > mean(ds.temp[,vout],na.rm=TRUE) + sigma * sd(ds.temp[,vout],na.rm=TRUE)];
+			retval$trainset <- retval$trainset[!(retval$trainset %in% olsaux)];
+			retval$validset <- retval$validset[!(retval$validset %in% olsaux)];		
 		}
 	}
 
@@ -325,39 +320,37 @@ aloja_prepare_datasets <- function (vin, vout, tsplit = NULL, vsplit = NULL,
 	if (normalize)
 	{
 		cnames <- c(vout,vin);
+		ds.temp <- retval$dataset[retval$dataset$ID %in% c(retval$trainset,retval$validset),cnames];
 
-		temptr <- retval$dataset[retval$dataset$ID %in% retval$trainset,cnames];
-		temptv <- retval$dataset[retval$dataset$ID %in% retval$validset,cnames];
-		temptt <- retval$dataset[retval$dataset$ID %in% retval$testset,cnames];
+		options(warn=-1);
+		num.cnames <- sapply(cnames,function(x) is.numeric(ds.temp[,x]) || !is.na(as.numeric(as.character(ds.temp[,x]))));
 
-		trauxnorm <- NULL;
-		tvauxnorm <- NULL;
-		ttauxnorm <- NULL;
-		retval[["maxout"]] <- NULL;
-		retval[["minout"]] <- NULL;
-		for (i in cnames)
+		retval[["maxout"]] <- rep(0,length(cnames));
+		retval[["minout"]] <- rep(0,length(cnames));
+		for (i in cnames[num.cnames])
 		{
-			divisor <- max(c(temptr[,i],temptv[,i])); if (divisor == 0) divisor = 1e-15;
-			trauxnorm <- cbind(trauxnorm, (temptr[,i]-min(c(temptr[,i],temptv[,i])))/divisor);
-			tvauxnorm <- cbind(tvauxnorm, (temptv[,i]-min(c(temptr[,i],temptv[,i])))/divisor);
-			ttauxnorm <- cbind(ttauxnorm, (temptt[,i]-min(c(temptr[,i],temptv[,i])))/divisor); # Same Norm (tr,tv) as not seen before
-			retval[["maxout"]] <- c(retval[["maxout"]],divisor);
-			retval[["minout"]] <- c(retval[["minout"]],min(c(temptr[,i],temptv[,i])));
-			trauxnorm[is.na(trauxnorm)] <- 0;
-			tvauxnorm[is.na(tvauxnorm)] <- 0;
-			ttauxnorm[is.na(ttauxnorm)] <- 0;
+			divisor <- max(ds.temp[,i],na.rm=TRUE); if (is.na(divisor) || divisor == 0) divisor = 1e-15;
+			subtract <- min(ds.temp[,i],na.rm=TRUE); if (is.na(subtract)) subtract = 0;
+
+			retval$dataset[,i] <- as.double((retval$dataset[,i] - subtract) / divisor);
+
+			retval[["maxout"]][which(cnames==i)] <- divisor;
+			retval[["minout"]][which(cnames==i)] <- subtract;
 		}
-		retval[["normtrainset"]] <- trauxnorm;
-		retval[["normvalidset"]] <- tvauxnorm;
-		retval[["normtestset"]] <- ttauxnorm;
-		colnames(retval$normtrainset) <- cnames;
-		colnames(retval$normvalidset) <- cnames;
-		colnames(retval$normtestset) <- cnames;
 		retval[["maxout"]] <- matrix(retval[["maxout"]]);
 		retval[["minout"]] <- matrix(retval[["minout"]]);
 		rownames(retval[["maxout"]]) <- cnames;
 		rownames(retval[["minout"]]) <- cnames;
 	}
+
+	# Basic Model Information (Post-Process)
+	retval[["ds.header"]] <- retval$dataset[0,];
+	retval[["varin.class"]] <- sapply(retval$varin,function(x) class(retval$dataset[,x]))
+	retval[["varin.values"]] <- sapply(retval$varin,function(x) if(class(retval$dataset[,x])=="factor") { levels(retval$dataset[,x]); } else { unique(retval$dataset[,x]) } );
+	names(retval[["varin.values"]]) <- retval$varin;
+
+	# Screw you, R
+	retval[["dataset"]][is.na(retval[["dataset"]])] <- 0;
 
 	retval;
 }
@@ -477,9 +470,9 @@ aloja_nnet <-  function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, sig
 	# Training and Validation
 	if (TRUE)
 	{
-		rt[["model"]] <- nnet(y=rt$normtrainset[,rt$varout],x=rt$normtrainset[,rt$varin],size=neurons,decay=decay,maxit=maxit);
+		rt[["model"]] <- nnet(y=temptr[,rt$varout],x=temptr[,rt$varin],size=neurons,decay=decay,maxit=maxit);
 	} else {
-		rt[["model"]] <- mlp(rt$normtrainset[,rt$varin],rt$normtrainset[,rt$varout],size=c(neurons),
+		rt[["model"]] <- mlp(temptr[,rt$varin],temptr[,rt$varout],size=c(neurons),
 #			learnFunc="Std_Backpropagation",
 			learnFUnc="BackpropMomentum",
 			hiddenActFunc="Act_TanH",
@@ -489,7 +482,7 @@ aloja_nnet <-  function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, sig
 			learnFuncParams=c(decay, 0),maxit=maxit,metric="RSME",linOut=FALSE);
 	}
 	rt[["predtrain"]] <- data.frame(ID=temptr[,"ID"],Pred=rt$model$fitted.values);
-	rt[["predval"]] <- data.frame(ID=temptv[,"ID"],Pred=predict(rt$model,newdata=rt$normvalidset[,rt$varin]));
+	rt[["predval"]] <- data.frame(ID=temptv[,"ID"],Pred=predict(rt$model,newdata=temptv[,rt$varin]));
 	if (!is.null(prange))
 	{
 		rt$predtrain$Pred[rt$predtrain$Pred < prange[1]] <- prange[1];
@@ -503,13 +496,13 @@ aloja_nnet <-  function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, sig
 	if (!is.null(pngval))
 	{
 		png(paste(pngval,".png",sep=""),width=500,height=500);
-		plot(rt$predval$Pred,rt$normvalidset[,rt$varout],main=paste("NN",length(rt$varin),"-",neurons,"- 1, decay",decay,"maxit",maxit));
+		plot(rt$predval$Pred,temptv[,rt$varout],main=paste("NN",length(rt$varin),"-",neurons,"- 1, decay",decay,"maxit",maxit));
 		abline(0,1);
 		dev.off();
 	}
 
 	# Testing and evaluation
-	rt[["predtest"]] <- data.frame(ID=temptt[,"ID"],Pred=predict(rt$model,newdata=rt$normtestset[,rt$varin]));
+	rt[["predtest"]] <- data.frame(ID=temptt[,"ID"],Pred=predict(rt$model,newdata=temptt[,rt$varin]));
 	if (!is.null(prange))
 	{
 		rt$predtest$Pred[rt$predtest$Pred < prange[1]] <- prange[1];
@@ -522,9 +515,9 @@ aloja_nnet <-  function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, sig
 	{
 		png(paste(pngtest,".png",sep=""),width=1000,height=500);
 		par(mfrow=c(1,2));
-		plot(rt$predval$Pred,rt$normvalidset[,rt$varout],main=paste("NN",length(rt$varin),"-",neurons,"- 1, decay",decay,"maxit",maxit));
+		plot(rt$predval$Pred,temptv[,rt$varout],main=paste("NN",length(rt$varin),"-",neurons,"- 1, decay",decay,"maxit",maxit));
 		abline(0,1);
-		plot(rt$predtest$Pred,rt$normtestset[,rt$varout],main=paste("NN",length(rt$varin),"-",neurons,"- 1, decay",decay,"maxit",maxit));
+		plot(rt$predtest$Pred,temptt[,rt$varout],main=paste("NN",length(rt$varin),"-",neurons,"- 1, decay",decay,"maxit",maxit));
 		abline(0,1);
 		dev.off();
 	}
@@ -561,18 +554,12 @@ aloja_linreg <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, si
 	temptv <- rt$dataset[rt$dataset$ID %in% rt$validset,];
 	temptt <- rt$dataset[rt$dataset$ID %in% rt$testset,];
 
-	if (ppoly > 3 || ppoly < 1)
-	{
-		if (ppoly > 3) ppoly <- 3;
-		if (ppoly < 1) ppoly <- 1;
-		print(paste("[WARNING] Parameter ppoly not in [1,3]. ppoly=",ppoly," will be used instead",sep=""));
-	}
-	rt[["ppoly"]] <- ppoly;
+	rt[["ppoly"]] <- min(3,max(1,ppoly));
 
 	# Training and Validation
-	if (ppoly == 1) rt[["model"]] <- lm(formula=temptr[,rt$varout] ~ ., data=data.frame(temptr[,rt$varin]));
-	if (ppoly == 2) rt[["model"]] <- lm(formula=temptr[,rt$varout] ~ . + (.)^2, data=data.frame(temptr[,rt$varin]));
-	if (ppoly == 3) rt[["model"]] <- lm(formula=temptr[,rt$varout] ~ . + (.)^2 + (.)^3, data=data.frame(temptr[,rt$varin]));
+	if (rt$ppoly == 1) rt[["model"]] <- lm(formula=temptr[,rt$varout] ~ ., data=data.frame(temptr[,rt$varin]));
+	if (rt$ppoly == 2) rt[["model"]] <- lm(formula=temptr[,rt$varout] ~ . + (.)^2, data=data.frame(temptr[,rt$varin]));
+	if (rt$ppoly == 3) rt[["model"]] <- lm(formula=temptr[,rt$varout] ~ . + (.)^2 + (.)^3, data=data.frame(temptr[,rt$varin]));
 	rt[["predtrain"]] <- data.frame(ID=temptr[,"ID"],Pred=rt$model$fitted.values);
 	rt[["predval"]] <- data.frame(ID=temptv[,"ID"],Pred=predict(rt$model,newdata=data.frame(temptv)));
 	if (!is.null(prange))
@@ -892,31 +879,16 @@ wrapper_predict_individual_instance <- function(idx,learned_model,vin,instances)
 	return (laux);
 }
 
-aloja_predict_dataset <- function (learned_model, vin = NULL, ds = NULL, data_file = NULL, sfCPU = 1, saveall = NULL, ...)
+aloja_predict_dataset <- function (learned_model, ds, vin = NULL, sfCPU = 1, saveall = NULL, ...)
 {
 	if (!is.integer(sfCPU)) sfCPU <- as.integer(sfCPU);
+	if (is.null(vin)) vin <- learned_model$varin_orig;
+	if (!all(vin %in% learned_model$varin_orig) || !all(learned_model$varin_orig %in% vin)) return(NULL);
+
+	if (is.null(ds)) return(NULL);
+	ds <- ds[,vin];
 
 	retval <- NULL;
-	if (is.null(ds) && is.null(data_file))
-	{
-		retval;
-	}
-
-	if (is.null(vin)) vin <- learned_model$varin_orig;
-
-	# Check variable compatibility
-	if (!all(vin %in% learned_model$varin_orig) || !all(learned_model$varin_orig %in% vin))
-	{
-		retval;
-	}
-
-	if (!is.null(data_file))
-	{
-		fileset <- read.table(file=data_file,header=T,sep=",");
-		ds <- aloja_dbind(learned_model$ds_original[0,vin],fileset[,vin]);
-	} else {
-		ds <- ds[,vin];
-	}
 
 	if ("snowfall" %in% installed.packages() && sfCPU > 1)
 	{
@@ -943,26 +915,22 @@ aloja_predict_dataset <- function (learned_model, vin = NULL, ds = NULL, data_fi
 	retval;
 }
 
-aloja_unfold_expression <- function (expression, vin, reference_model)
+aloja_unfold_expression <- function (expression, vin, learned_model)
 {
 	plist <- list();
 	for (i in 1:length(expression))
 	{
 		if (expression[i]=="*")
 		{
-			if (vin[i] %in% colnames(reference_model$dataset))
+			if (vin[i] %in% learned_model$varin)
 			{
-				caux <- reference_model$dataset[,vin[i]];
+				plist[[i]] <- learned_model$varin.values[[vin[i]]]
+			} else if (vin[i] %in% learned_model$varin_orig) {
+				plist[[i]] <- learned_model$varinorig.values[[vin[i]]]
 			} else {
-				caux <- reference_model$ds_original[,vin[i]]; # When Vars are binarized but instance is not.
+				print(paste("ERROR: Variable",vin[i],"not present in learned_model",sep=" "));
+				plist[[i]] <- 0;
 			}
-			if (class(caux)=="factor") plist[[i]] <- levels(caux);
-			if (class(caux) %in% c("integer","numeric"))
-			{
-				#print(paste("[WARNING] * in",i,"is integer. Unique values from learned_model dataset will be used.",sep=" "));
-				plist[[i]] <- unique(caux);
-			}
-
 		} else if (grepl('[|]',expression[i]) == TRUE)
 		{
 			plist[[i]] <- strsplit(expression[i],split='\\|')[[1]];
@@ -976,9 +944,9 @@ aloja_unfold_expression <- function (expression, vin, reference_model)
 
 	for(cname in vin)
 	{
-		if (class(reference_model$ds_original[,cname])=="integer") instances[,cname] <- as.integer(as.character(instances[,cname]));
-		if (class(reference_model$ds_original[,cname])=="numeric") instances[,cname] <- as.numeric(as.character(instances[,cname]));
-		if (class(reference_model$ds_original[,cname])=="factor") instances[,cname] <- as.character(instances[,cname]);
+		if (learned_model$varinorig.class[[cname]]=="integer") instances[,cname] <- as.integer(as.character(instances[,cname]));
+		if (learned_model$varinorig.class[[cname]]=="numeric") instances[,cname] <- as.numeric(as.character(instances[,cname]));
+		if (learned_model$varinorig.class[[cname]]=="factor") instances[,cname] <- as.character(instances[,cname]);
 	}
 
 	instances;
@@ -1037,7 +1005,7 @@ aloja_predict_instance <- function (learned_model, vin, inst_predict, sorted = N
 
 aloja_predict_individual_instance <- function (learned_model, vin, inst_predict)
 {
-	datamodel <- learned_model$dataset[0,learned_model$varin];
+	datamodel <- learned_model$ds.header[0,learned_model$varin];
 	model_aux <- learned_model$model;
 
 	inst_aux <- inst_predict;
@@ -1157,14 +1125,18 @@ aloja_outlier_dataset <- function (learned_model, vin = NULL, ds = NULL, sigma =
 	vout <- learned_model$varout;
 
 	# Check variable compatibility
-	if (!all(vin %in% learned_model$varin_orig) || !all(learned_model$varin_orig %in% vin))
-	{
-		retval;
-	}
+	if (length(setdiff(vin,learned_model$varin_orig)) > 0) { print("ERROR: Variables and Dataset do not match"); return(NULL); }
+
+	# Must have a DS source
+	if (is.null(ds) && is.null(learned_model$ds_original)) { print("ERROR: No dataset introduced or available"); return(NULL); }
 
 	# If no DS, validate against itself
-	if (is.null(ds)) ds <- learned_model$ds_original;
-
+	if (is.null(ds))
+	{
+		lm.token <- TRUE;
+		ds <- learned_model$ds_original;
+	}
+	
 	retval <- list();
 	retval[["resolutions"]] <- NULL;
 	retval[["cause"]] <- NULL;
@@ -1176,11 +1148,16 @@ aloja_outlier_dataset <- function (learned_model, vin = NULL, ds = NULL, sigma =
 	retval[["dataset"]] <- ds;
 	retval[["predictions"]] <- aloja_predict_dataset(learned_model,vin=vin,ds=ds,sfCPU=sfCPU);
 
-	# Compilation of datasets
-	aux <- rbind(learned_model$predtrain, learned_model$predval); aux <- rbind(aux, learned_model$predtest);
-	aux <- merge(x = learned_model$ds_original, y = aux[,c("ID","Pred")], by = "ID", all.x = TRUE);
-	colnames(aux) <- c(colnames(learned_model$ds_original),"Pred");
-	auxjoin <- aux[,c("ID",vout,vin,"Pred")];
+	# Create reference DS
+	if (!is.null(lm.token))
+	{
+		aux <- rbind(learned_model$predtrain, learned_model$predval); aux <- rbind(aux, learned_model$predtest);
+		aux <- merge(x = learned_model$ds_original, y = aux[,c("ID","Pred")], by = "ID", all.x = TRUE);
+		colnames(aux) <- c(colnames(learned_model$ds_original),"Pred");
+		auxjoin <- aux[,c("ID",vout,vin,"Pred")];
+	} else {
+		auxjoin <- cbind(ds,Pred=retval$predictions);
+	}
 
 	# Compilation of errors (learning)
 	auxerror <- abs(auxjoin[,vout] - auxjoin[,"Pred"]);
@@ -1195,8 +1172,7 @@ aloja_outlier_dataset <- function (learned_model, vin = NULL, ds = NULL, sigma =
 	cond1 <- abs(paux-raux) > thres1;
 	auxjoin_s <- apply(auxjoin[,vin],2,function(x) sub("^\\s+","",x));
 
-	retval$resolutions <- data.frame(rep(0,nrow(ds)),paux,raux,apply(ds[,vin],1,function(x) paste(as.character(x),collapse=":")),iaux);
-	colnames(retval$resolutions) <- c("Resolution","Model","Observed",paste(vin,collapse=":"),"ID");
+	retval$resolutions <- data.frame(Resolution=rep(0,nrow(ds)),Model=paux,Observed=raux,Instance=apply(ds[,vin],1,function(x) paste(as.character(x),collapse=":")),ID=iaux);
 
 	# Check the far points for outliers
 	if (sfCPU > 1)
@@ -1287,7 +1263,7 @@ aloja_outlier_instance <- function (learned_model, vin, instance, observed, disp
 
 aloja_minimal_instances <- function (ds = NULL, vin = NULL, vout = NULL, model = "lm", tt.id = NULL, tsplit = 0.25, learned_model = NULL, quiet = 0, kmax = 200, step = 10, saveall = NULL)
 {
-	if (!is.null(learned_model)) # Legacy Wrapper TODO - Remove after ALOJA Refactor
+	if (!is.null(learned_model)) # Legacy Wrapper
 	{
 		ds <- learned_model$ds_original;
 		vout <- learned_model$varout;

@@ -14,7 +14,7 @@
 #ds <- aloja_get_data("test4-CL21.csv");
 #aloja_variable_relations (ds, vin, vout, minsamples = 100);
 
-library(rms);	# OLS Methods
+suppressMessages(library(rms));	# OLS Methods
 
 ###############################################################################
 # Variable relation tools                                                     #
