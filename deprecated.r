@@ -614,6 +614,24 @@ aloja_save_status <- function ()
 	system("rm RData Rhistory");
 }
 
+aloja_save_datasets <- function (traux_0, tvaux_0, ttaux_0, name_0, algor_0)
+{
+	write.table(tvaux_0, file = paste(algor_0,"-",name_0,"-tv.csv",sep=""), sep = ",");
+	write.table(traux_0, file = paste(algor_0,"-",name_0,"-tr.csv",sep=""), sep = ",");
+	write.table(ttaux_0, file = paste(algor_0,"-",name_0,"-tt.csv",sep=""), sep = ",");
+}
+
+aloja_save_model <- function (model_0, tagname = "default")
+{
+	saveRDS(model_0,file=paste(tagname,"-model.dat",sep=""));
+}
+
+aloja_load_model <- function (tagname = "default")
+{
+	model_1 <- readRDS(paste(tagname,"-model.dat",sep=""));
+	model_1;
+}
+
 ###############################################################################
 # R hacks and operators                                                       #
 ###############################################################################

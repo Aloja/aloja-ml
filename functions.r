@@ -448,7 +448,7 @@ aloja_debinarize_instance <- function (ds, vin, binstance)
 # Learning methods                                                            #
 ###############################################################################
 
-aloja_nnet <-  function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, sigma = 3, decay = 5e-4, neurons = 3, maxit = 1000, prange = NULL, saveall = NULL, pngval = NULL, pngtest = NULL, ttaux = NULL, traux = NULL, tvaux = NULL, ttfile = NULL, trfile = NULL, tvfile = NULL, quiet = 0, ...)
+aloja_nnet <-  function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, sigma = 3, decay = 5e-4, neurons = 3, maxit = 1000, prange = NULL, saveall = NULL, pngval = NULL, pngtest = NULL, ttaux = NULL, traux = NULL, tvaux = NULL, ttfile = NULL, trfile = NULL, tvfile = NULL, quiet = 0, min.output = NULL, ...)
 {
 	# Fix parameter class in case of CLI string input
 	if (!is.null(prange)) prange <- as.numeric(prange);
@@ -525,6 +525,12 @@ aloja_nnet <-  function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, sig
 	if (quiet == 0) print(c(rt$maeval,rt$raeval));
 	if (quiet == 0) print(c(rt$maetest,rt$raetest));
 
+	if (!is.null(min.output))
+	{
+		rt[["dataset"]] <- NULL;
+		rt[["ds_original"]] <- NULL;
+	}
+
 	if (!is.null(saveall))
 	{
 		aloja_save_object(rt,tagname=saveall);
@@ -534,7 +540,7 @@ aloja_nnet <-  function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, sig
 	rt;
 }
 
-aloja_linreg <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, sigma = 3, ppoly = 1, prange = NULL, saveall = NULL, pngval = NULL, pngtest = NULL, ttaux = NULL, traux = NULL, tvaux = NULL, ttfile = NULL, trfile = NULL, tvfile = NULL, quiet = 0, ...)
+aloja_linreg <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, sigma = 3, ppoly = 1, prange = NULL, saveall = NULL, pngval = NULL, pngtest = NULL, ttaux = NULL, traux = NULL, tvaux = NULL, ttfile = NULL, trfile = NULL, tvfile = NULL, quiet = 0, min.output = NULL, ...)
 {
 	# Fix parameter class in case of CLI string input
 	if (!is.null(prange)) prange <- as.numeric(prange);
@@ -604,6 +610,12 @@ aloja_linreg <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, si
 	if (quiet == 0) print(c(rt$maeval,rt$raeval));
 	if (quiet == 0) print(c(rt$maetest,rt$raetest));
 
+	if (!is.null(min.output))
+	{
+		rt[["dataset"]] <- NULL;
+		rt[["ds_original"]] <- NULL;
+	}
+
 	if (!is.null(saveall))
 	{
 		aloja_save_object(rt,tagname=saveall);
@@ -613,7 +625,7 @@ aloja_linreg <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, si
 	rt;
 }
 
-aloja_nneighbors <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, sigma = 3, kparam = 3, iparam = FALSE, kernel = "triangular", saveall = NULL, pngval = NULL, pngtest = NULL, ttaux = NULL, traux = NULL, tvaux = NULL, ttfile = NULL, trfile = NULL, tvfile = NULL, quiet = 0, ...)
+aloja_nneighbors <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, sigma = 3, kparam = 3, iparam = FALSE, kernel = "triangular", saveall = NULL, pngval = NULL, pngtest = NULL, ttaux = NULL, traux = NULL, tvaux = NULL, ttfile = NULL, trfile = NULL, tvfile = NULL, quiet = 0, min.output = NULL, ...)
 {
 	# Fix parameter class in case of CLI string input
 	if (!is.numeric(tsplit)) tsplit <- as.numeric(tsplit);
@@ -674,6 +686,12 @@ aloja_nneighbors <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66
 	if (quiet == 0) print(c(rt$maeval,rt$raeval));
 	if (quiet == 0) print(c(rt$maetest,rt$raetest));
 
+	if (!is.null(min.output))
+	{
+		rt[["dataset"]] <- NULL;
+		rt[["ds_original"]] <- NULL;
+	}
+
 	if (!is.null(saveall))
 	{
 		aloja_save_object(rt,tagname=saveall);
@@ -683,7 +701,7 @@ aloja_nneighbors <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66
 	rt;
 }
 
-aloja_supportvms <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, sigma = 3, saveall = NULL, pngval = NULL, pngtest = NULL, ttaux = NULL, traux = NULL, tvaux = NULL, ttfile = NULL, trfile = NULL, tvfile = NULL, quiet = 0, ...)
+aloja_supportvms <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, sigma = 3, saveall = NULL, pngval = NULL, pngtest = NULL, ttaux = NULL, traux = NULL, tvaux = NULL, ttfile = NULL, trfile = NULL, tvfile = NULL, quiet = 0, min.output = NULL, ...)
 {
 	# Fix parameter class in case of CLI string input
 	if (!is.numeric(tsplit)) tsplit <- as.numeric(tsplit);
@@ -737,6 +755,12 @@ aloja_supportvms <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66
 	if (quiet == 0) print(c(rt$maeval,rt$raeval));
 	if (quiet == 0) print(c(rt$maetest,rt$raetest));
 
+	if (!is.null(min.output))
+	{
+		rt[["dataset"]] <- NULL;
+		rt[["ds_original"]] <- NULL;
+	}
+
 	if (!is.null(saveall))
 	{
 		aloja_save_object(rt,tagname=saveall);
@@ -746,7 +770,7 @@ aloja_supportvms <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66
 	rt;
 }
 
-aloja_regtree <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, sigma = 3, mparam = NULL, prange = NULL, saveall = NULL, pngval = NULL, pngtest = NULL, ttaux = NULL, traux = NULL, tvaux = NULL, ttfile = NULL, trfile = NULL, tvfile = NULL, quiet = 0, ...)
+aloja_regtree <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, sigma = 3, mparam = NULL, prange = NULL, saveall = NULL, pngval = NULL, pngtest = NULL, ttaux = NULL, traux = NULL, tvaux = NULL, ttfile = NULL, trfile = NULL, tvfile = NULL, quiet = 0, min.output = NULL, ...)
 {
 	# Fix parameter class in case of CLI string input
 	if (!is.null(prange)) prange <- as.numeric(prange);
@@ -825,6 +849,12 @@ aloja_regtree <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, s
 
 	if (quiet == 0) print(c(rt$maeval,rt$raeval));
 	if (quiet == 0) print(c(rt$maetest,rt$raetest));
+
+	if (!is.null(min.output))
+	{
+		rt[["dataset"]] <- NULL;
+		rt[["ds_original"]] <- NULL;
+	}
 
 	if (!is.null(saveall))
 	{
@@ -1400,8 +1430,8 @@ aloja_minimal_instances_internal <- function (ds, vin, vout, model = "lm", tt.id
 
 aloja_save_predictions <- function (results, testname = "default")
 {
-	write.table(results$ds_original, file = paste(testname,"-dsorig.csv",sep=""), sep = ",", row.names=FALSE);
-	write.table(results$dataset, file = paste(testname,"-ds.csv",sep=""), sep = ",", row.names=FALSE);
+	if (!is.null(results$ds_original)) write.table(results$ds_original, file = paste(testname,"-dsorig.csv",sep=""), sep = ",", row.names=FALSE);
+	if (!is.null(results$dataset)) write.table(results$dataset, file = paste(testname,"-ds.csv",sep=""), sep = ",", row.names=FALSE);
 
 	traux <- merge(x = results$dataset[results$dataset$ID %in% results$trainset,c("ID",results$varout)], y = results$predtrain, by = "ID", all.x = TRUE);
 	colnames(traux) <- c("ID","Observed","Predicted");
@@ -1420,32 +1450,20 @@ aloja_save_predictions <- function (results, testname = "default")
 	fts2 <- cbind(results$predval,"tv"); colnames(fts2) <- c("ID","Pred","Code");
 	fts3 <- cbind(results$predtest,"tt"); colnames(fts3) <- c("ID","Pred","Code");
 	aux <- rbind(fts1, fts2); aux <- rbind(aux, fts3);
-	aux <- merge(x = results$ds_original, y = aux[,c("ID","Pred","Code")], by = "ID", all.x = TRUE);
-	colnames(aux) <- c(colnames(results$ds_original),"Predicted","Code");
+	if (!is.null(results$ds_original))
+	{
+		aux <- merge(x = results$ds_original, y = aux[,c("ID","Pred","Code")], by = "ID", all.x = TRUE);
+		colnames(aux) <- c(colnames(results$ds_original),"Predicted","Code");
+	} else {
+		aux <- merge(x = results$dataset[,c("ID",result$varout)], y = aux[,c("ID","Pred","Code")], by = "ID", all.x = TRUE);
+		colnames(aux) <- c("ID",result$varout,"Predicted","Code");
+	}
 	write.table(aux, file = paste(testname,"-predictions.csv",sep=""), sep = ",", row.names=FALSE);
-}
-
-aloja_save_datasets <- function (traux_0, tvaux_0, ttaux_0, name_0, algor_0)
-{
-	write.table(tvaux_0, file = paste(algor_0,"-",name_0,"-tv.csv",sep=""), sep = ",");
-	write.table(traux_0, file = paste(algor_0,"-",name_0,"-tr.csv",sep=""), sep = ",");
-	write.table(ttaux_0, file = paste(algor_0,"-",name_0,"-tt.csv",sep=""), sep = ",");
-}
-
-aloja_save_model <- function (model_0, tagname = "default")
-{
-	saveRDS(model_0,file=paste(tagname,"-model.dat",sep=""));
 }
 
 aloja_save_object <- function (object_1, tagname = "default")
 {
 	saveRDS(object_1,file=paste(tagname,"-object.rds",sep=""));
-}
-
-aloja_load_model <- function (tagname = "default")
-{
-	model_1 <- readRDS(paste(tagname,"-model.dat",sep=""));
-	model_1;
 }
 
 aloja_load_object <- function (tagname = "default")
