@@ -226,6 +226,9 @@ aloja_prepare_datasets <- function (vin, vout, tsplit = NULL, vsplit = NULL,
 	retval[["varinorig.values"]] <- sapply(vin,function(x) if(class(ds[,x])=="factor") { levels(ds[,x]); } else { unique(ds[,x]) } );
 	names(retval[["varinorig.values"]]) <- vin;
 
+	retval[["IDs"]] <- ds[,"ID"];
+	retval[["target"]] <- ds[,vout];
+
 	# Load DATASET & Split
 	if (!is.null(ds) & is.null(tvaux) & is.null(traux) & is.null(ttaux))
 	{
@@ -446,7 +449,7 @@ aloja_debinarize_instance <- function (ds, vin, binstance)
 # Learning methods                                                            #
 ###############################################################################
 
-aloja_nnet <-  function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, sigma = 3, decay = 5e-4, neurons = 3, maxit = 1000, prange = NULL, saveall = NULL, pngval = NULL, pngtest = NULL, ttaux = NULL, traux = NULL, tvaux = NULL, ttfile = NULL, trfile = NULL, tvfile = NULL, quiet = 0, min.output = NULL, ...)
+aloja_nnet <-  function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, sigma = 3, decay = 5e-4, neurons = 3, maxit = 1000, prange = NULL, saveall = NULL, pngval = NULL, pngtest = NULL, ttaux = NULL, traux = NULL, tvaux = NULL, ttfile = NULL, trfile = NULL, tvfile = NULL, quiet = 0, min.output = 0, ...)
 {
 	# Fix parameter class in case of CLI string input
 	if (!is.null(prange)) prange <- as.numeric(prange);
@@ -524,7 +527,7 @@ aloja_nnet <-  function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, sig
 	if (quiet == 0) print(c(rt$maeval,rt$raeval));
 	if (quiet == 0) print(c(rt$maetest,rt$raetest));
 
-	if (!is.null(min.output))
+	if (min.output > 0)
 	{
 		rt[["dataset"]] <- NULL;
 		rt[["ds_original"]] <- NULL;
@@ -539,7 +542,7 @@ aloja_nnet <-  function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, sig
 	rt;
 }
 
-aloja_linreg <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, sigma = 3, ppoly = 1, prange = NULL, saveall = NULL, pngval = NULL, pngtest = NULL, ttaux = NULL, traux = NULL, tvaux = NULL, ttfile = NULL, trfile = NULL, tvfile = NULL, quiet = 0, min.output = NULL, ...)
+aloja_linreg <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, sigma = 3, ppoly = 1, prange = NULL, saveall = NULL, pngval = NULL, pngtest = NULL, ttaux = NULL, traux = NULL, tvaux = NULL, ttfile = NULL, trfile = NULL, tvfile = NULL, quiet = 0, min.output = 0, ...)
 {
 	# Fix parameter class in case of CLI string input
 	if (!is.null(prange)) prange <- as.numeric(prange);
@@ -610,7 +613,7 @@ aloja_linreg <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, si
 	if (quiet == 0) print(c(rt$maeval,rt$raeval));
 	if (quiet == 0) print(c(rt$maetest,rt$raetest));
 
-	if (!is.null(min.output))
+	if (min.output > 0)
 	{
 		rt[["dataset"]] <- NULL;
 		rt[["ds_original"]] <- NULL;
@@ -625,7 +628,7 @@ aloja_linreg <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, si
 	rt;
 }
 
-aloja_nneighbors <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, sigma = 3, kparam = 3, iparam = FALSE, kernel = "triangular", saveall = NULL, pngval = NULL, pngtest = NULL, ttaux = NULL, traux = NULL, tvaux = NULL, ttfile = NULL, trfile = NULL, tvfile = NULL, quiet = 0, min.output = NULL, ...)
+aloja_nneighbors <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, sigma = 3, kparam = 3, iparam = FALSE, kernel = "triangular", saveall = NULL, pngval =NULL, pngtest = NULL, ttaux = NULL, traux = NULL, tvaux = NULL, ttfile = NULL, trfile = NULL, tvfile = NULL, quiet = 0, min.output = 0, ...)
 {
 	# Fix parameter class in case of CLI string input
 	if (!is.numeric(tsplit)) tsplit <- as.numeric(tsplit);
@@ -687,7 +690,7 @@ aloja_nneighbors <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66
 	if (quiet == 0) print(c(rt$maeval,rt$raeval));
 	if (quiet == 0) print(c(rt$maetest,rt$raetest));
 
-	if (!is.null(min.output))
+	if (min.output > 0)
 	{
 		rt[["dataset"]] <- NULL;
 		rt[["ds_original"]] <- NULL;
@@ -702,7 +705,7 @@ aloja_nneighbors <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66
 	rt;
 }
 
-aloja_supportvms <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, sigma = 3, saveall = NULL, pngval = NULL, pngtest = NULL, ttaux = NULL, traux = NULL, tvaux = NULL, ttfile = NULL, trfile = NULL, tvfile = NULL, quiet = 0, min.output = NULL, ...)
+aloja_supportvms <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, sigma = 3, saveall = NULL, pngval = NULL, pngtest = NULL, ttaux = NULL, traux = NULL, tvaux = NULL, ttfile = NULL, trfile = NULL, tvfile = NULL, quiet = 0, min.output = 0, ...)
 {
 	# Fix parameter class in case of CLI string input
 	if (!is.numeric(tsplit)) tsplit <- as.numeric(tsplit);
@@ -757,7 +760,7 @@ aloja_supportvms <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66
 	if (quiet == 0) print(c(rt$maeval,rt$raeval));
 	if (quiet == 0) print(c(rt$maetest,rt$raetest));
 
-	if (!is.null(min.output))
+	if (min.output > 0)
 	{
 		rt[["dataset"]] <- NULL;
 		rt[["ds_original"]] <- NULL;
@@ -772,7 +775,7 @@ aloja_supportvms <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66
 	rt;
 }
 
-aloja_regtree <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, sigma = 3, mparam = NULL, prange = NULL, saveall = NULL, pngval = NULL, pngtest = NULL, ttaux = NULL, traux = NULL, tvaux = NULL, ttfile = NULL, trfile = NULL, tvfile = NULL, quiet = 0, min.output = NULL, ...)
+aloja_regtree <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, sigma = 3, mparam = NULL, prange = NULL, saveall = NULL, pngval = NULL, pngtest = NULL, ttaux = NULL, traux = NULL, tvaux = NULL, ttfile = NULL, trfile = NULL, tvfile = NULL, quiet = 0, min.output = 0, ...)
 {
 	# Fix parameter class in case of CLI string input
 	if (!is.null(prange)) prange <- as.numeric(prange);
@@ -853,7 +856,7 @@ aloja_regtree <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, s
 	if (quiet == 0) print(c(rt$maeval,rt$raeval));
 	if (quiet == 0) print(c(rt$maetest,rt$raetest));
 
-	if (!is.null(min.output))
+	if (min.output > 0)
 	{
 		rt[["dataset"]] <- NULL;
 		rt[["ds_original"]] <- NULL;
@@ -1148,7 +1151,7 @@ wrapper_outlier_dataset <- function(idx,ds,vin,vout,auxjoin,auxjoin_s,thres1,hdi
 	return(retval);
 }
 
-aloja_outlier_dataset <- function (learned_model, vin = NULL, ds = NULL, sigma = 3, hdistance = 3, saveall = NULL, sfCPU = 1, cross.val = NULL, min.output = NULL, ...)
+aloja_outlier_dataset <- function (learned_model, vin = NULL, ds = NULL, sigma = 3, hdistance = 3, saveall = NULL, sfCPU = 1, cross.val = NULL, min.output = 0, ...)
 {
 	if (!is.integer(sigma)) sigma <- as.integer(sigma);
 	if (!is.integer(hdistance)) hdistance <- as.integer(hdistance);
@@ -1256,7 +1259,7 @@ aloja_outlier_dataset <- function (learned_model, vin = NULL, ds = NULL, sigma =
 		}
 	}
 
-	if (!is.null(min.output))
+	if (min.output > 0)
 	{
 		retval[["dataset"]] <- NULL;
 		retval[["learned_model"]] <- NULL;
@@ -1271,7 +1274,7 @@ aloja_outlier_dataset <- function (learned_model, vin = NULL, ds = NULL, sigma =
 	retval;
 }
 
-aloja_outlier_instance <- function (learned_model, vin, instance, observed, display = 0, sfCPU = 1, saveall = NULL, ds_ref = NULL, sigma = 3, min.output = NULL, ...)
+aloja_outlier_instance <- function (learned_model, vin, instance, observed, display = 0, sfCPU = 1, saveall = NULL, ds = NULL, sigma = 3, min.output = 0, ...)
 {
 	if (!is.integer(display)) display <- as.integer(display);
 
@@ -1282,7 +1285,7 @@ aloja_outlier_instance <- function (learned_model, vin, instance, observed, disp
 	colnames(comp_dataset) <- c("ID",vin,vout);
 
 	crv <- NULL;
-	if (!is.null(ds_ref)) { learned_model[["ds_original"]] <- ds_ref; crv <- TRUE; }
+	if (!is.null(ds)) { learned_model[["ds_original"]] <- ds; crv <- TRUE; }
 
 	result <- aloja_outlier_dataset (learned_model=learned_model,vin=vin,ds=comp_dataset,sfCPU=sfCPU,saveall=saveall,cross.val=crv,sigma=sigma,min.output=min.output);
 
@@ -1440,15 +1443,18 @@ aloja_save_predictions <- function (results, testname = "default")
 	if (!is.null(results$ds_original)) write.table(results$ds_original, file = paste(testname,"-dsorig.csv",sep=""), sep = ",", row.names=FALSE);
 	if (!is.null(results$dataset)) write.table(results$dataset, file = paste(testname,"-ds.csv",sep=""), sep = ",", row.names=FALSE);
 
-	traux <- merge(x = results$dataset[results$dataset$ID %in% results$trainset,c("ID",results$varout)], y = results$predtrain, by = "ID", all.x = TRUE);
+	if (!is.null(results$dataset)) raux <- results$dataset[,c("ID",results$varout)];
+	if (is.null(results$dataset)) { raux <- data.frame(results$IDs,results$target); colnames(raux) <- c("ID",results$varout)}
+
+	traux <- merge(x = raux[raux$ID %in% results$trainset,c("ID",results$varout)], y = results$predtrain, by = "ID", all.x = TRUE);
 	colnames(traux) <- c("ID","Observed","Predicted");
 	write.table(traux, file = paste(testname,"-predtr.csv",sep=""), sep = ",", row.names=FALSE);
 	
-	tvaux <- merge(x = results$dataset[results$dataset$ID %in% results$validset,c("ID",results$varout)], y = results$predval, by = "ID", all.x = TRUE);
+	tvaux <- merge(x = raux[raux$ID %in% results$validset,c("ID",results$varout)], y = results$predval, by = "ID", all.x = TRUE);
 	colnames(tvaux) <- c("ID","Observed","Predicted");
 	write.table(tvaux, file = paste(testname,"-predtv.csv",sep=""), sep = ",", row.names=FALSE);
 
-	ttaux <- merge(x = results$dataset[results$dataset$ID %in% results$testset,c("ID",results$varout)], y = results$predtest, by = "ID", all.x = TRUE);
+	ttaux <- merge(x = raux[raux$ID %in% results$testset,c("ID",results$varout)], y = results$predtest, by = "ID", all.x = TRUE);
 	colnames(ttaux) <- c("ID","Observed","Predicted");
 	write.table(ttaux, file = paste(testname,"-predtt.csv",sep=""), sep = ",", row.names=FALSE);
 
@@ -1462,8 +1468,8 @@ aloja_save_predictions <- function (results, testname = "default")
 		aux <- merge(x = results$ds_original, y = aux[,c("ID","Pred","Code")], by = "ID", all.x = TRUE);
 		colnames(aux) <- c(colnames(results$ds_original),"Predicted","Code");
 	} else {
-		aux <- merge(x = results$dataset[,c("ID",result$varout)], y = aux[,c("ID","Pred","Code")], by = "ID", all.x = TRUE);
-		colnames(aux) <- c("ID",result$varout,"Predicted","Code");
+		aux <- merge(x = raux, y = aux[,c("ID","Pred","Code")], by = "ID", all.x = TRUE);
+		colnames(aux) <- c("ID",results$varout,"Predicted","Code");
 	}
 	write.table(aux, file = paste(testname,"-predictions.csv",sep=""), sep = ",", row.names=FALSE);
 }
