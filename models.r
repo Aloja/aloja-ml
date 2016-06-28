@@ -34,10 +34,10 @@ qrt.tree <- function (varout, dataset, m = 30, cp = 0.001, simple = 1)
 	for (i in unique(fit$where))
 	{
 		daux <- dataset[fit$where==i,c(vout,vin)];
-		j <- nodes[i];
+		j <- as.character(nodes[i]); # To character, compacting the list()
 
-		if (simple > 0) regs[[j]] <- lm(formula=daux[,vout] ~ ., data=data.frame(daux[,vin]));
-		if (simple <= 0) regs[[j]] <- lm(formula=daux[,vout] ~ . + (.)^2, data=data.frame(daux[,vin]));
+		if (simple > 0) regs[[j]] <- lm(formula=daux[,vout] ~ ., data=data.frame(daux[,vin]),model=FALSE,x=FALSE,y=FALSE);
+		if (simple <= 0) regs[[j]] <- lm(formula=daux[,vout] ~ . + (.)^2, data=data.frame(daux[,vin]),model=FALSE,x=FALSE,y=FALSE);
 		indexes <- c(indexes,j);
 
 		preds[[j]] <- regs[[j]]$fitted.values;
@@ -67,6 +67,11 @@ qrt.tree <- function (varout, dataset, m = 30, cp = 0.001, simple = 1)
 	retval;
 }
 
+predict.qrt <- function (model, newdata)
+{
+	qrt.predict(model, newdata);
+}
+
 qrt.predict <- function (model, newdata)
 {
 	colnames(newdata) <- gsub(" ",".",colnames(newdata));
@@ -75,7 +80,7 @@ qrt.predict <- function (model, newdata)
 	fit_node$frame$yval <- as.numeric(rownames(fit_node$frame));
 
 	sapply(1:nrow(newdata), function(i) {
-		node <- as.numeric(predict(fit_node,newdata[i,]));
+		node <- as.character(as.numeric(predict(fit_node,newdata[i,])));
 		pred <- as.numeric(predict(model$regs[[node]],newdata[i,]));
 		pred;
 	});
@@ -93,17 +98,23 @@ qrt.plot.tree <- function (model, uniform = TRUE, main = "Classification Tree", 
 qrt.regressions <- function (model)
 {
 	retval <- list()
-	for (i in sort(model$index)) retval[[paste("Reg-",i,sep="")]] <- model$regs[[i]]$coefficients[!is.na(model$regs[[i]]$coefficients)];
+	for (i in sort(model$index))
+	{
+		i <- as.character(i);
+		retval[[paste("Reg-",i,sep="")]] <- model$regs[[i]]$coefficients[!is.na(model$regs[[i]]$coefficients)];
+	}
 	retval;
 }
 
 qrt.regression.coefficients <- function (model, index)
 {
+	index <- as.character(index)
 	model$regs[[index]]$coefficients[!is.na(model$regs[[index]]$coefficients)];
 }
 
 qrt.regression.model <- function (model, index)
 {
+	index <- as.character(index)
 	model$regs[[index]]$model;
 }
 
@@ -120,7 +131,8 @@ qrt.json <- function (model)
 	{
 		if (faux$var[i] == "<leaf>")
 		{
-			caux <- t(model$regs[[as.numeric(raux[i])]]$coefficients);
+			index <- as.character(as.numeric(raux[i]));
+			caux <- t(model$regs[[index]]$coefficients);
 			eaux <- model$error_branch[raux[i],];
 			laux <- '';
 			for (j in 1:length(caux)) laux <- paste(laux,',"',colnames(caux)[j],'":"',caux[j],'"',sep="");
@@ -165,7 +177,7 @@ qrt.select <- function (vout, vin, traux, tvaux, mintervals, quiet = 1, simple =
 		ml <- qrt.tree(varout=vout,dataset=data.frame(traux[,c(vout,vin)]),m=i,simple=simple);
 		trmae <- c(trmae, ml$mae);
 
-		prediction <- qrt.predict(model=ml,newdata=data.frame(tvaux[,c(vout,vin)]));
+		prediction <- predict(model=ml,newdata=data.frame(tvaux[,c(vout,vin)]));
 
 		mae <- mean(abs(prediction - tvaux[,vout]));
 		tvmae <- c(tvmae,mae);

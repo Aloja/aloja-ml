@@ -804,7 +804,7 @@ aloja_regtree <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, s
 	}
 	rt[["model"]] <- qrt.tree(varout=rt$varout,dataset=data.frame(temptr[,c(rt$varout,rt$varin)]),m=mparam,simple=1);
 	rt[["predtrain"]] <- data.frame(ID=temptr[,"ID"],Pred=rt$model$fitted.values);
-	rt[["predval"]] <- data.frame(ID=temptv[,"ID"],Pred=qrt.predict(model=rt$model,newdata=data.frame(temptv[,c(rt$varout,rt$varin)])));
+	rt[["predval"]] <- data.frame(ID=temptv[,"ID"],Pred=predict(model=rt$model,newdata=data.frame(temptv[,c(rt$varout,rt$varin)])));
 
 	if (!is.null(prange))
 	{
@@ -833,7 +833,7 @@ aloja_regtree <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, s
 	}
 
 	# Testing and evaluation
-	rt[["predtest"]] <- data.frame(ID=temptt[,"ID"],Pred=qrt.predict(model=rt$model,newdata=data.frame(temptt[,c(rt$varout,rt$varin)])));
+	rt[["predtest"]] <- data.frame(ID=temptt[,"ID"],Pred=predict(model=rt$model,newdata=data.frame(temptt[,c(rt$varout,rt$varin)])));
 	if (!is.null(prange))
 	{
 		rt$predtest$Pred[rt$predtest$Pred < prange[1]] <- prange[1];
@@ -1090,10 +1090,8 @@ aloja_predict_individual_instance <- function (learned_model, vin, inst_predict)
 
 	options(warn=-1);
 
-	if ("list" %in% class(model_aux))
+	if ("kknn" %in% class(model_aux) || "svm" %in% class(model_aux))
 	{
-		retval <- qrt.predict(model=model_aux,newdata=data.frame(datamodel));
-	} else if ("kknn" %in% class(model_aux) || "svm" %in% class(model_aux)) {
 		newdata <- cbind(0,data.frame(datamodel));
 		colnames(newdata) <- c(learned_model$varout,colnames(datamodel));
 		retval <- predict(model_aux,newdata=newdata);
