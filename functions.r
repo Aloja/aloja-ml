@@ -1275,6 +1275,7 @@ aloja_outlier_dataset <- function (learned_model, vin = NULL, ds = NULL, sigma =
 aloja_outlier_instance <- function (learned_model, vin, instance, observed, display = 0, sfCPU = 1, saveall = NULL, ds = NULL, sigma = 3, min.output = 0, ...)
 {
 	if (!is.integer(display)) display <- as.integer(display);
+	if (!is.integer(observed)) observed <- as.integer(observed);
 
 	vout <- learned_model$varout;
 
